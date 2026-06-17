@@ -249,7 +249,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 19:40
 Branch: feature/TASK-024-queue-consumer
-Commit: pending
+Commit: 3be60b5
 
 Summary:
 - Created workers/queueConsumer package with package.json, tsconfig.json.

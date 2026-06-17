@@ -12,7 +12,7 @@ This backlog is the execution queue for 100% autopilot mode.
 ## Phase 1 — Monorepo Foundation
 
 - [x] TASK-010 Setup pnpm workspace
-- [ ] TASK-011 Setup React Vite frontend
+- [x] TASK-011 Setup React Vite frontend
 - [ ] TASK-012 Setup Cloudflare Workers API
 - [ ] TASK-013 Setup shared TypeScript types
 - [ ] TASK-014 Setup Zod validation schemas

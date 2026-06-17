@@ -1,4 +1,4 @@
-# TASK-010: Setup pnpm workspace
+# TASK-011: Setup React Vite frontend
 
 ## Status
 
@@ -6,7 +6,7 @@ DONE
 
 ## Goal
 
-Create the root pnpm monorepo foundation required by all later tasks, including workspace package discovery, strict TypeScript baseline, lint/test/build scripts, and placeholder workspace folders.
+Create the `apps/web` React + Vite frontend scaffold required by the source-of-truth docs, including TanStack Router, TanStack Query, basic route shell, and local build/test integration.
 
 ## Required Reading
 
@@ -15,7 +15,7 @@ Create the root pnpm monorepo foundation required by all later tasks, including 
 - `docs/architecture/implementation-stack.md`
 - `docs/architecture/folder-structure.md`
 - `docs/shared/enums.md`
-- `docs/database/naming-rules.md`
+- `docs/ui/configuration-crud.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -23,67 +23,51 @@ Create the root pnpm monorepo foundation required by all later tasks, including 
 
 ## Scope
 
-- Add root `package.json`.
-- Add `pnpm-workspace.yaml`.
-- Add root TypeScript, ESLint, Prettier, and Vitest configuration.
-- Add root `.gitignore` for dependency, build, coverage, and Cloudflare generated files.
-- Add placeholder workspace directories for `apps`, `workers`, and `packages`.
-- Ensure root scripts exist: `lint`, `typecheck`, `test`, and `build`.
-- Ensure quality gate can run after the root package exists.
-- Update local validation scripts only as needed for ESM-compatible root package execution.
+- Create `apps/web` package.
+- Configure Vite React app with strict TypeScript.
+- Add TanStack Router and TanStack Query providers.
+- Add a minimal route tree with home, compare placeholder, keyword search placeholder, and settings placeholder routes.
+- Add frontend CSS baseline without product feature implementation.
+- Ensure root quality gate includes the frontend package build.
 
 ## Out of Scope
 
-- Do not create React/Vite app implementation.
-- Do not create Cloudflare Worker implementation.
-- Do not add D1 migrations.
-- Do not implement product features, auth, Shopee extraction, AI, queue, or UI.
+- Do not implement auth flows.
+- Do not implement configuration CRUD screens.
+- Do not implement Shopee compare/search workflows.
+- Do not call backend APIs.
+- Do not add Cloudflare Pages deployment config.
 
 ## Allowed Files
 
+- `apps/web/**`
 - `package.json`
-- `pnpm-workspace.yaml`
-- `tsconfig.json`
-- `tsconfig.base.json`
-- `eslint.config.js`
-- `prettier.config.js`
-- `vitest.config.ts`
-- `.gitignore`
-- `apps/**`
-- `workers/**`
-- `packages/**`
+- `pnpm-lock.yaml`
 - `docs/tasks/**`
-- `scripts/quality-gate.js`
-- `scripts/validate-db-naming.js`
-- `scripts/validate-no-hardcode.js`
-- `scripts/validate-source-of-truth.js`
 
 ## Forbidden Files
 
+- `workers/**`
+- `packages/**`
 - `docs/database/schema.md`
 - `docs/api/api-contract.md`
-- `docs/prd/**`
-- `docs/architecture/technical-decisions.md`
 - `.ai/**`
-- `scripts/**`
 
 ## Input Contract
 
-The repository may start without any application scaffold or root package file.
+The root pnpm workspace exists and includes `apps/*`.
 
 ## Output Contract
 
-The repository has a pnpm workspace root with standard scripts and placeholder workspace folders ready for later tasks.
+`apps/web` is a buildable Vite React package that uses TanStack Router and TanStack Query.
 
 ## Acceptance Criteria
 
-- [x] `package.json` exists with `lint`, `typecheck`, `test`, and `build` scripts.
-- [x] `pnpm-workspace.yaml` includes `apps/*`, `workers/*`, and `packages/*`.
-- [x] TypeScript strict mode is configured.
-- [x] ESLint, Prettier, and Vitest configs exist.
-- [x] `.gitignore` excludes dependency, build, coverage, and Cloudflare generated files.
-- [x] Placeholder workspace folders exist without implementing feature behavior.
-- [x] Validation scripts run under the ESM root package configuration.
+- [x] `apps/web/package.json` exists with `dev`, `build`, `preview`, `lint`, `typecheck`, and `test` scripts.
+- [x] Vite React entrypoint exists.
+- [x] TanStack Router is configured.
+- [x] TanStack Query provider is configured.
+- [x] Placeholder routes compile without calling backend APIs.
 - [x] `node scripts/quality-gate.js` passes.
 
 ## Test Requirements

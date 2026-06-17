@@ -22,3 +22,25 @@ Quality Gate:
 - test: pass
 - build: pass
 - validation scripts: pass
+
+## TASK-011: Setup React Vite frontend
+
+Status: DONE
+CompletedAt: 2026-06-17 20:15
+Branch: codex/task-010-pnpm-workspace
+Commit: pending
+
+Summary:
+- Added `apps/web` React + Vite package.
+- Configured TanStack Router and TanStack Query providers.
+- Added placeholder home, compare, keyword search, and settings routes.
+- Added frontend CSS baseline and verified local render in browser.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass
+- build: pass
+- validation scripts: pass
+- browser verification: pass

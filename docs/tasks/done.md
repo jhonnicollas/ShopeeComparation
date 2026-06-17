@@ -191,3 +191,29 @@ Quality Gate:
 - test: pass (60 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-022: Setup R2 snapshot helper
+
+Status: DONE
+CompletedAt: 2026-06-17 18:14
+Branch: feature/TASK-022-r2-helper
+Commit: pending
+
+Summary:
+- Created packages/db/src/r2.ts with R2 helper functions.
+- Exported generateR2Key() to create unique keys with owner type prefix and timestamp.
+- Exported putSnapshot() to upload data to R2 with metadata.
+- Exported getSnapshot() to download data from R2.
+- Exported getSnapshotText() as convenience helper for text retrieval.
+- Added TypeScript types for R2 operations and owner types.
+- Created packages/db/src/r2.test.ts with 11 unit tests.
+- All tests use mock R2 bucket for isolation.
+- Handles both R2HTTPMetadata object and Headers instance for content type.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (71 tests: 22 enum, 36 schema, 11 R2, 2 component)
+- build: pass
+- validation scripts: pass

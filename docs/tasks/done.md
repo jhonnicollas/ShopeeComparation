@@ -94,3 +94,27 @@ Quality Gate:
 - test: pass (22 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-014: Setup Zod validation schemas
+
+Status: DONE
+CompletedAt: 2026-06-17 21:25
+Branch: feature/TASK-014-zod-schemas
+Commit: pending
+
+Summary:
+- Added zod v4 as a dependency of packages/shared.
+- Created Zod enum schemas for all 17 enums from docs/shared/enums.md.
+- Created Zod request/response schemas for auth, research, shopee resolve-url, AI model test, and health APIs.
+- Created Zod schemas for Shopee adapter output types: ProductSnapshot, ShopSnapshot, ResolveUrlResult, SearchResultCandidate, WeightExtraction.
+- Created Zod schema for AI report structured output.
+- Created Zod schema for queue message payload.
+- Added 36 unit tests covering schema parse success and failure cases.
+- Updated barrel exports in src/index.ts and src/schemas/index.ts.
+
+Quality Gate:
+- lint: pass
+- typecheck: pass
+- test: pass (58 tests)
+- build: pass
+- validation scripts: pass

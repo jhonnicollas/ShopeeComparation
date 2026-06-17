@@ -44,3 +44,24 @@ Quality Gate:
 - build: pass
 - validation scripts: pass
 - browser verification: pass
+
+## TASK-012: Setup Cloudflare Workers API
+
+Status: DONE
+CompletedAt: 2026-06-17 20:30
+Branch: codex/task-010-pnpm-workspace
+Commit: pending
+
+Summary:
+- Added `workers/api` Cloudflare Worker package.
+- Configured Hono entrypoint with `GET /api/health`.
+- Added typed Worker bindings for `DB`, `LOGS`, and `RESEARCH_QUEUE`.
+- Added Wrangler config with existing D1 and R2 resources.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass
+- build: pass
+- validation scripts: pass

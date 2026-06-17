@@ -2,8 +2,11 @@ node_modules/
 .pnpm-store/
 
 dist/
+**/dist/
 build/
+**/build/
 coverage/
+**/coverage/
 .output/
 
 .wrangler/

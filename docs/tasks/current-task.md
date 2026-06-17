@@ -1,4 +1,4 @@
-# TASK-011: Setup React Vite frontend
+# TASK-012: Setup Cloudflare Workers API
 
 ## Status
 
@@ -6,16 +6,16 @@ DONE
 
 ## Goal
 
-Create the `apps/web` React + Vite frontend scaffold required by the source-of-truth docs, including TanStack Router, TanStack Query, basic route shell, and local build/test integration.
+Create the `workers/api` Cloudflare Worker scaffold using Hono, existing Cloudflare bindings, TypeScript, and a minimal health endpoint.
 
 ## Required Reading
 
 - `docs/prd/prd.md`
 - `docs/architecture/technical-decisions.md`
 - `docs/architecture/implementation-stack.md`
+- `docs/architecture/cloudflare-architecture.md`
 - `docs/architecture/folder-structure.md`
-- `docs/shared/enums.md`
-- `docs/ui/configuration-crud.md`
+- `docs/configuration/env-variables.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -23,31 +23,31 @@ Create the `apps/web` React + Vite frontend scaffold required by the source-of-t
 
 ## Scope
 
-- Create `apps/web` package.
-- Configure Vite React app with strict TypeScript.
-- Add TanStack Router and TanStack Query providers.
-- Add a minimal route tree with home, compare placeholder, keyword search placeholder, and settings placeholder routes.
-- Add frontend CSS baseline without product feature implementation.
-- Ensure root quality gate includes the frontend package build.
+- Create `workers/api` package.
+- Configure Hono Worker entrypoint.
+- Add `GET /api/health` endpoint.
+- Add Worker environment binding types for `DB`, `LOGS`, and `RESEARCH_QUEUE`.
+- Add `workers/api/wrangler.toml` using existing D1 and R2 resources.
+- Ensure root quality gate includes API Worker build/typecheck.
 
 ## Out of Scope
 
-- Do not implement auth flows.
-- Do not implement configuration CRUD screens.
-- Do not implement Shopee compare/search workflows.
-- Do not call backend APIs.
-- Do not add Cloudflare Pages deployment config.
+- Do not implement auth endpoints.
+- Do not implement research endpoints.
+- Do not add D1 migrations.
+- Do not enqueue real jobs.
+- Do not deploy to Cloudflare.
 
 ## Allowed Files
 
-- `apps/web/**`
+- `workers/api/**`
 - `package.json`
 - `pnpm-lock.yaml`
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `workers/**`
+- `apps/web/**`
 - `packages/**`
 - `docs/database/schema.md`
 - `docs/api/api-contract.md`
@@ -55,19 +55,20 @@ Create the `apps/web` React + Vite frontend scaffold required by the source-of-t
 
 ## Input Contract
 
-The root pnpm workspace exists and includes `apps/*`.
+The pnpm workspace exists and includes `workers/*`.
 
 ## Output Contract
 
-`apps/web` is a buildable Vite React package that uses TanStack Router and TanStack Query.
+`workers/api` is a buildable Cloudflare Worker package with a health endpoint and correct bindings.
 
 ## Acceptance Criteria
 
-- [x] `apps/web/package.json` exists with `dev`, `build`, `preview`, `lint`, `typecheck`, and `test` scripts.
-- [x] Vite React entrypoint exists.
-- [x] TanStack Router is configured.
-- [x] TanStack Query provider is configured.
-- [x] Placeholder routes compile without calling backend APIs.
+- [x] `workers/api/package.json` exists with `dev`, `build`, `typecheck`, `lint`, and `test` scripts.
+- [x] `workers/api/src/index.ts` exports a Worker-compatible default.
+- [x] `GET /api/health` returns JSON health data.
+- [x] Wrangler config uses D1 binding `DB` and existing database `multi_Ai_db`.
+- [x] Wrangler config uses R2 binding `LOGS` and existing bucket `multi-apps-ai-bucket`.
+- [x] Queue binding name is `RESEARCH_QUEUE`.
 - [x] `node scripts/quality-gate.js` passes.
 
 ## Test Requirements

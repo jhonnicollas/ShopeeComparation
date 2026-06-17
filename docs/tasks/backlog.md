@@ -13,7 +13,7 @@ This backlog is the execution queue for 100% autopilot mode.
 
 - [x] TASK-010 Setup pnpm workspace
 - [x] TASK-011 Setup React Vite frontend
-- [ ] TASK-012 Setup Cloudflare Workers API
+- [x] TASK-012 Setup Cloudflare Workers API
 - [ ] TASK-013 Setup shared TypeScript types
 - [ ] TASK-014 Setup Zod validation schemas
 - [ ] TASK-015 Setup lint, typecheck, test, and build scripts

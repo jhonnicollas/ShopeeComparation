@@ -1,0 +1,21 @@
+name = "shopee-product-research-api"
+main = "src/index.ts"
+compatibility_date = "2026-06-17"
+account_id = "79dea2845a4b62ea5229c8676dea02c0"
+
+[vars]
+APP_ENV = "development"
+APP_NAME = "Shopee Product Research AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "multi_Ai_db"
+database_id = "b80ca989-6771-427f-a656-c7ab6ffc17ce"
+
+[[r2_buckets]]
+binding = "LOGS"
+bucket_name = "multi-apps-ai-bucket"
+
+[[queues.producers]]
+binding = "RESEARCH_QUEUE"
+queue = "shopee-research-queue"

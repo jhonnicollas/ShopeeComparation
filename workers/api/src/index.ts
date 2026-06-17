@@ -1,0 +1,24 @@
+import { Hono } from "hono";
+import type { D1Database, Queue, R2Bucket } from "@cloudflare/workers-types";
+
+export type ApiEnv = {
+  Bindings: {
+    DB: D1Database;
+    LOGS: R2Bucket;
+    RESEARCH_QUEUE: Queue;
+    APP_ENV: string;
+    APP_NAME: string;
+  };
+};
+
+const app = new Hono<ApiEnv>();
+
+app.get("/api/health", (c) => {
+  return c.json({
+    status: "ok",
+    appName: c.env.APP_NAME,
+    environment: c.env.APP_ENV,
+  });
+});
+
+export default app;

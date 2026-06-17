@@ -418,7 +418,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 20:40
 Branch: feature/TASK-034-me-api
-Commit: pending
+Commit: 3b1a1ae
 
 Summary:
 - Added GET /api/auth/me route to workers/api/src/routes/auth.ts.

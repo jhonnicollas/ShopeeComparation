@@ -16,7 +16,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-012 Setup Cloudflare Workers API
 - [x] TASK-013 Setup shared TypeScript types
 - [x] TASK-014 Setup Zod validation schemas
-- [ ] TASK-015 Setup lint, typecheck, test, and build scripts
+- [x] TASK-015 Setup lint, typecheck, test, and build scripts
 
 ## Phase 2 — Cloudflare Foundation
 

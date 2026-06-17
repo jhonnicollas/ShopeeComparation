@@ -1,4 +1,4 @@
-# TASK-014: Setup Zod validation schemas
+# TASK-015: Setup lint, typecheck, test, and build scripts
 
 ## Status
 
@@ -6,20 +6,13 @@ DONE
 
 ## Goal
 
-Create Zod schemas in `packages/shared/src/schemas/` that validate all external input, API request/response shapes, and internal contracts as required by the source-of-truth docs.
+Ensure all workspace packages have complete and consistent lint, typecheck, test, and build scripts, plus testing libraries (Testing Library for frontend) and format scripts per implementation-stack.md.
 
 ## Required Reading
 
-- `docs/prd/prd.md`
-- `docs/architecture/technical-decisions.md`
 - `docs/architecture/implementation-stack.md`
-- `docs/architecture/folder-structure.md`
-- `docs/shared/enums.md`
-- `docs/api/api-contract.md`
-- `docs/database/schema.md`
-- `docs/shopee/extraction-strategy.md`
-- `docs/shopee/search-api-strategy.md`
-- `docs/ai/9router-configuration.md`
+- `docs/standards/coding-standard.md`
+- `docs/standards/testing-standard.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -27,65 +20,59 @@ Create Zod schemas in `packages/shared/src/schemas/` that validate all external 
 
 ## Scope
 
-- Add `zod` dependency to `packages/shared`.
-- Create Zod schemas for all auth API requests (register, login).
-- Create Zod schemas for research API requests (compare-links, keyword-search).
-- Create Zod schemas for shopee resolve-url request.
-- Create Zod schemas for AI model test request.
-- Create Zod schemas for API error response shape.
-- Create Zod schemas for Shopee adapter output types (ResolveUrlResult, ProductSnapshot, ShopSnapshot, SearchResultCandidate, WeightExtraction).
-- Create Zod schemas for AI report structured output.
-- Create Zod schemas for queue message payload.
-- Create Zod enum schemas mirroring the const enums in constants/enums.ts.
-- Add unit tests verifying schemas parse valid data and reject invalid data.
-- Export all schemas from barrel `src/schemas/index.ts` and from `src/index.ts`.
+- Add `@testing-library/react` and `@testing-library/jest-dom` to `apps/web` devDependencies.
+- Add `jsdom` Vitest environment support for frontend component tests.
+- Add a `format:fix` script to root `package.json` alongside existing `format` check.
+- Ensure all four root scripts (`lint`, `typecheck`, `test`, `build`) work correctly across the workspace.
+- Add a minimal component smoke test in `apps/web` to verify testing library setup.
+- Verify all root scripts pass.
 
 ## Out of Scope
 
-- Do not create business logic or services.
-- Do not create D1 migrations or repositories.
-- Do not create API route handlers.
-- Do not modify `apps/web` or `workers/api`.
-- Do not create environment validation (that belongs in Phase 2).
+- Do not create feature-specific tests.
+- Do not modify source-of-truth docs other than task files.
+- Do not add business logic.
+- Do not change ESLint or Prettier configuration fundamentals.
 
 ## Allowed Files
 
-- `packages/shared/**`
+- `apps/web/package.json`
+- `apps/web/tsconfig.json`
+- `apps/web/vite.config.ts`
+- `apps/web/src/**/*.test.{ts,tsx}`
+- `package.json`
+- `vitest.config.ts`
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `apps/web/**`
-- `workers/api/**`
+- `workers/api/src/**`
+- `workers/api/wrangler.toml`
+- `packages/shared/src/**/*.ts` (except test files if needed)
 - `docs/api/api-contract.md`
 - `.ai/**`
 
 ## Input Contract
 
-`packages/shared` exists with types and enums. Zod is not yet a dependency.
+All workspace packages have `lint`, `typecheck`, `test`, `build` scripts. Quality gate passes.
 
 ## Output Contract
 
-`packages/shared` exports Zod schemas that other packages and workers can use for runtime validation of all external input and structured AI output.
+Root and workspace scripts are complete and consistent. Frontend component tests can use Testing Library with jsdom environment. A format:fix script exists.
 
 ## Acceptance Criteria
 
-- [x] `zod` is a dependency of `packages/shared`.
-- [x] Zod enum schemas exist for all enums from `docs/shared/enums.md`.
-- [x] Zod request schemas exist for register, login, compare-links, keyword-search, resolve-url, and AI model test.
-- [x] Zod schema exists for API error response.
-- [x] Zod schemas exist for Shopee adapter output shapes.
-- [x] Zod schema exists for AI report structured output.
-- [x] Zod schema exists for queue message payload.
-- [x] Unit tests verify schemas accept valid data and reject invalid data.
-- [x] `pnpm install`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass.
+- [x] `@testing-library/react` and `@testing-library/jest-dom` are devDependencies of `apps/web`.
+- [x] `apps/web` has a Vitest config that supports jsdom environment for component tests.
+- [x] Root `package.json` has `format:fix` script.
+- [x] A minimal component smoke test exists in `apps/web`.
+- [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass.
 - [x] `node scripts/quality-gate.js` passes.
 
 ## Test Requirements
 
-- [x] Unit tests for schema parse success with valid data.
-- [x] Unit tests for schema parse failure with invalid data.
-- [x] Type-level compile-time correctness verified by typecheck.
+- [x] Component smoke test runs and passes.
+- [x] Existing enum and schema tests still pass.
 
 ## Documentation Update
 

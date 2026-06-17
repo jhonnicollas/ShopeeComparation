@@ -100,7 +100,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 21:25
 Branch: feature/TASK-014-zod-schemas
-Commit: pending
+Commit: 9f55a10
 
 Summary:
 - Added zod v4 as a dependency of packages/shared.
@@ -116,5 +116,30 @@ Quality Gate:
 - lint: pass
 - typecheck: pass
 - test: pass (58 tests)
+- build: pass
+- validation scripts: pass
+
+## TASK-015: Setup lint, typecheck, test, and build scripts
+
+Status: DONE
+CompletedAt: 2026-06-17 17:57
+Branch: feature/TASK-015-quality-scripts
+Commit: pending
+
+Summary:
+- Added @testing-library/react, @testing-library/jest-dom, @testing-library/user-event, jsdom to apps/web devDependencies.
+- Created vitest.config.ts at workspace root with test.projects using node environment for workers/packages and jsdom for apps.
+- Created apps/web/src/test-setup.ts importing @testing-library/jest-dom/vitest matchers.
+- Created apps/web/src/pages/HomePage.test.tsx with 2 component smoke tests.
+- Added format:fix script to root package.json.
+- Fixed test to avoid duplicate element query by using container.querySelector for specific heading.
+- Migrated from deprecated test.workspace to test.projects in vitest config.
+- All workspace scripts (lint, typecheck, test, build) pass successfully.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (60 tests: 22 enum, 36 schema, 2 component)
 - build: pass
 - validation scripts: pass

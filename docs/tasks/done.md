@@ -7,7 +7,7 @@ Completed autopilot tasks will be appended here.
 Status: DONE
 CompletedAt: 2026-06-17 20:00
 Branch: codex/task-010-pnpm-workspace
-Commit: pending
+Commit: 96bc80c
 
 Summary:
 - Added root pnpm workspace configuration and package scripts.

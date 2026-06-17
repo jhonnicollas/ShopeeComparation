@@ -390,7 +390,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 20:29
 Branch: feature/TASK-033-logout-api
-Commit: pending
+Commit: 0fce691
 
 Summary:
 - Added POST /api/auth/logout route to workers/api/src/routes/auth.ts.

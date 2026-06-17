@@ -197,7 +197,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 18:14
 Branch: feature/TASK-022-r2-helper
-Commit: pending
+Commit: fc0266d
 
 Summary:
 - Created packages/db/src/r2.ts with R2 helper functions.

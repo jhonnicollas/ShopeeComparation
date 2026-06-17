@@ -275,7 +275,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 19:43
 Branch: feature/TASK-025-env-validation
-Commit: pending
+Commit: 4529390
 
 Summary:
 - Created packages/shared/src/schemas/env.ts with Zod schemas for env vars.

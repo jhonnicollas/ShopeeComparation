@@ -477,7 +477,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 20:49
 Branch: feature/TASK-036-protected-routes
-Commit: pending
+Commit: 686d4fc
 
 Summary:
 - Added useAuth hook to apps/web/src/lib/auth.ts using TanStack Query useQuery.

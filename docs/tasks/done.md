@@ -124,7 +124,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 17:57
 Branch: feature/TASK-015-quality-scripts
-Commit: pending
+Commit: f6fc08a
 
 Summary:
 - Added @testing-library/react, @testing-library/jest-dom, @testing-library/user-event, jsdom to apps/web devDependencies.

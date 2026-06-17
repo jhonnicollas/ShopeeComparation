@@ -1,4 +1,4 @@
-# TASK-034: Build me API
+# TASK-035: Build frontend login/register pages
 
 ## Status
 
@@ -6,14 +6,14 @@ DONE
 
 ## Goal
 
-Implement GET /api/auth/me endpoint that returns the current authenticated user's information based on session cookie. This is used by frontend to check auth state and get user profile.
+Create LoginPage and RegisterPage components in the React frontend that allow users to authenticate. Pages should use TanStack Query for API calls, Zod for client-side validation, and integrate with the backend auth API.
 
 ## Required Reading
 
-- `docs/api/api-contract.md` (auth/me endpoint)
-- `docs/database/schema.md` (sh_users, sh_sessions tables)
-- `docs/shared/enums.md` (user roles, statuses)
+- `docs/api/api-contract.md` (auth endpoints)
+- `docs/architecture/implementation-stack.md` (frontend stack)
 - `docs/standards/coding-standard.md`
+- `docs/standards/testing-standard.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -21,63 +21,69 @@ Implement GET /api/auth/me endpoint that returns the current authenticated user'
 
 ## Scope
 
-- Add GET /api/auth/me route to workers/api/src/routes/auth.ts.
-- Extract session token from cookie.
-- Hash token and find session in D1.
-- Validate session is not expired and not revoked.
-- Find user by session userId.
-- Return user info using meResponseSchema.
-- Add unit tests for me endpoint.
+- Create LoginPage component with email/password form.
+- Create RegisterPage component with email/password/name form.
+- Create API client helper for auth endpoints.
+- Add /login and /register routes to TanStack Router.
+- Use TanStack Query mutations for API calls.
+- Show loading, error, and success states.
+- Redirect to home on successful auth.
+- Add component tests for both pages.
 
 ## Out of Scope
 
-- Do not create update profile endpoint (later task).
 - Do not create protected route middleware (TASK-036).
-- Do not implement session refresh (later task).
+- Do not create user profile page (later task).
+- Do not create password reset flow (later task).
+- Do not implement social login (later task).
 
 ## Allowed Files
 
-- `workers/api/src/routes/auth.ts`
-- `workers/api/src/routes/auth.test.ts`
+- `apps/web/src/pages/LoginPage.tsx`
+- `apps/web/src/pages/RegisterPage.tsx`
+- `apps/web/src/pages/LoginPage.test.tsx`
+- `apps/web/src/pages/RegisterPage.test.tsx`
+- `apps/web/src/lib/api.ts`
+- `apps/web/src/lib/auth.ts`
+- `apps/web/src/app/router.tsx` (add routes)
+- `apps/web/src/app/queryClient.ts` (if needed)
+- `apps/web/src/styles/**` (CSS)
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `apps/web/**`
-- `packages/auth/**` (already done)
-- `packages/db/**` (repositories already done)
+- `workers/**`
+- `packages/**`
 - `.ai/**`
 
 ## Input Contract
 
-Client sends GET /api/auth/me with session_token cookie.
+User fills form with email/password (and name for register). Frontend posts to backend auth API.
 
 ## Output Contract
 
-On success: 200 OK with JSON { user: { id, email, name, role } }.
-On error: 401 if no valid session.
+On success: redirect to home page, session cookie set by backend.
+On error: show error message inline.
 
 ## Acceptance Criteria
 
-- [x] GET /api/auth/me route exists
-- [x] Session token is extracted from cookie
-- [x] Session is validated (not expired, not revoked)
-- [x] User info is returned based on session userId
-- [x] Returns 401 if no session cookie
-- [x] Returns 401 if session is invalid
-- [x] Returns 401 if user not found
-- [x] Returns 401 if user is disabled
-- [x] Unit tests pass for me endpoint
+- [x] LoginPage component exists
+- [x] RegisterPage component exists
+- [x] /login route registered in TanStack Router
+- [x] /register route registered in TanStack Router
+- [x] Forms use Zod for client-side validation
+- [x] API calls use TanStack Query mutations
+- [x] Loading state shown during submission
+- [x] Error state shown on failure
+- [x] Success redirects to home
+- [x] Component tests pass
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] Unit test for successful me query
-- [x] Unit test for missing session cookie
-- [x] Unit test for invalid session token
-- [x] Unit test for expired session
-- [x] Unit test for disabled user
+- [x] LoginPage renders form
+- [x] RegisterPage renders form
 - [x] Existing tests still pass
 
 ## Documentation Update

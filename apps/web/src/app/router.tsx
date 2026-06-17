@@ -9,6 +9,8 @@ import {
 import { ComparePage } from "../pages/ComparePage";
 import { HomePage } from "../pages/HomePage";
 import { KeywordSearchPage } from "../pages/KeywordSearchPage";
+import { LoginPage } from "../pages/LoginPage";
+import { RegisterPage } from "../pages/RegisterPage";
 import { SettingsPage } from "../pages/SettingsPage";
 
 const rootRoute = createRootRoute({
@@ -19,6 +21,18 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: HomePage,
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: LoginPage,
+});
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/register",
+  component: RegisterPage,
 });
 
 const compareRoute = createRoute({
@@ -41,6 +55,8 @@ const settingsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  loginRoute,
+  registerRoute,
   compareRoute,
   keywordSearchRoute,
   settingsRoute,

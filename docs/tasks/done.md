@@ -441,3 +441,33 @@ Quality Gate:
 - test: pass (179 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 32 auth, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-035: Build frontend login/register pages
+
+Status: DONE
+CompletedAt: 2026-06-17 20:45
+Branch: feature/TASK-035-frontend-auth
+Commit: pending
+
+Summary:
+- Created apps/web/src/lib/api.ts with API client and ApiClientError class.
+- Added apiRequest() helper that handles JSON, errors, and credentials.
+- Created apps/web/src/lib/auth.ts with register, login, logout, me functions.
+- Created apps/web/src/pages/LoginPage.tsx with email/password form.
+- Used TanStack Query useMutation for API calls.
+- Shows loading/error states, redirects to home on success.
+- Created apps/web/src/pages/RegisterPage.tsx with email/name/password form.
+- Added /login and /register routes to TanStack Router.
+- Added CSS for form panels, fields, buttons in global.css.
+- Created LoginPage.test.tsx with 4 component tests.
+- Created RegisterPage.test.tsx with 5 component tests.
+- Added cleanup() in test-setup.ts to fix test isolation.
+- All 188 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (188 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 32 auth, 11 component, 2 home)
+- build: pass
+- validation scripts: pass

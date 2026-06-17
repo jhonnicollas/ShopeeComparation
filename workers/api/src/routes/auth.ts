@@ -1,7 +1,8 @@
 import { Hono } from "hono";
-import { registerRequestSchema, registerResponseSchema } from "@shopee-research/shared";
+import { registerRequestSchema, registerResponseSchema, loginRequestSchema, loginResponseSchema } from "@shopee-research/shared";
 import {
   hashPassword,
+  verifyPassword,
   generateSessionToken,
   hashSessionTokenAsync,
   getSessionExpiry,
@@ -151,4 +152,114 @@ authRouter.post("/register", async (c) => {
 
   c.header("Set-Cookie", cookieValue);
   return c.json(responseBody, 201);
+});
+
+authRouter.post("/login", async (c) => {
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Request body must be valid JSON",
+          details: null,
+        },
+      },
+      400
+    );
+  }
+
+  const parsed = loginRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Invalid login input",
+          details: parsed.error.issues.map((i) => ({
+            path: i.path.join("."),
+            message: i.message,
+          })),
+        },
+      },
+      400
+    );
+  }
+
+  const { email, password } = parsed.data;
+  const user = await findUserByEmail(c.env.DB, email);
+  if (!user) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_CREDENTIALS",
+          message: "Invalid email or password",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  if (user.status !== "active") {
+    return c.json(
+      {
+        error: {
+          code: "ACCOUNT_DISABLED",
+          message: "Account is disabled",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  const pepper = c.env.PASSWORD_PEPPER ?? "";
+  const isValid = await verifyPassword(password, user.passwordHash, user.passwordSalt, pepper);
+  if (!isValid) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_CREDENTIALS",
+          message: "Invalid email or password",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  const sessionToken = generateSessionToken();
+  const tokenHash = await hashSessionTokenAsync(sessionToken);
+  const sessionId = generateId("ses");
+
+  const userAgent = c.req.header("user-agent") ?? "";
+  const ip = c.req.header("cf-connecting-ip") ?? "";
+  const userAgentHash = userAgent ? await hashUserAgent(userAgent) : null;
+  const ipHash = ip ? await hashIp(ip) : null;
+
+  await createSession(c.env.DB, {
+    id: sessionId,
+    userId: user.id,
+    tokenHash,
+    userAgentHash,
+    ipHash,
+    expiresAt: getSessionExpiry(SESSION_DURATION_MS),
+  });
+
+  const responseBody = loginResponseSchema.parse({
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    },
+  });
+
+  const isProduction = c.env.APP_ENV === "production";
+  const cookieValue = `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}${isProduction ? "; Secure" : ""}`;
+
+  c.header("Set-Cookie", cookieValue);
+  return c.json(responseBody, 200);
 });

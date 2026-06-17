@@ -304,3 +304,193 @@ describe("POST /api/auth/register", () => {
     expect(db.users[0].email).toBe("user@example.com");
   });
 });
+
+describe("POST /api/auth/login", () => {
+  let db: MockD1Database;
+
+  beforeEach(async () => {
+    db = new MockD1Database();
+    const { hashPassword } = await import("@shopee-research/auth");
+    const { hash, salt } = await hashPassword("password123");
+    db.users.push({
+      id: "usr_existing",
+      email: "user@example.com",
+      passwordHash: hash,
+      passwordSalt: salt,
+      name: "Existing User",
+      role: "user",
+      status: "active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  });
+
+  it("logs in successfully with correct credentials", async () => {
+    const res = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "user@example.com",
+          password: "password123",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { user: { id: string; email: string; role: string } };
+    expect(body.user.email).toBe("user@example.com");
+    expect(body.user.role).toBe("user");
+    expect(res.headers.get("set-cookie")).toContain("session_token=");
+    expect(db.sessions).toHaveLength(1);
+  });
+
+  it("returns 401 for wrong password", async () => {
+    const res = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "user@example.com",
+          password: "wrongPassword",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("INVALID_CREDENTIALS");
+    expect(db.sessions).toHaveLength(0);
+  });
+
+  it("returns 401 for non-existent email", async () => {
+    const res = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "nobody@example.com",
+          password: "password123",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("INVALID_CREDENTIALS");
+  });
+
+  it("returns 401 for disabled account", async () => {
+    db.users[0].status = "disabled";
+    const res = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "user@example.com",
+          password: "password123",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("ACCOUNT_DISABLED");
+  });
+
+  it("returns 400 for invalid JSON", async () => {
+    const res = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "not json",
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for missing password", async () => {
+    const res = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "user@example.com",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("normalizes email to lowercase", async () => {
+    const res = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "User@Example.COM",
+          password: "password123",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it("sets HTTP-only cookie on success", async () => {
+    const res = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "user@example.com",
+          password: "password123",
+        }),
+      },
+      createEnv(db)
+    );
+    const cookie = res.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("Path=/");
+  });
+
+  it("does not leak whether email exists", async () => {
+    const res1 = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "nobody@example.com",
+          password: "password123",
+        }),
+      },
+      createEnv(db)
+    );
+    const res2 = await authRouter.request(
+      "/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "user@example.com",
+          password: "wrongPassword",
+        }),
+      },
+      createEnv(db)
+    );
+    const body1 = (await res1.json()) as { error: { code: string; message: string } };
+    const body2 = (await res2.json()) as { error: { code: string; message: string } };
+    expect(body1.error.message).toBe(body2.error.message);
+  });
+});

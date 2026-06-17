@@ -356,3 +356,31 @@ Quality Gate:
 - test: pass (158 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 11 register, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-032: Build login API
+
+Status: DONE
+CompletedAt: 2026-06-17 20:26
+Branch: feature/TASK-032-login-api
+Commit: pending
+
+Summary:
+- Added POST /api/auth/login route to workers/api/src/routes/auth.ts.
+- Validates request using loginRequestSchema.
+- Finds user by email (case-insensitive).
+- Verifies password using verifyPassword with optional pepper.
+- Returns 401 for non-existent email with same error message as wrong password (no info leak).
+- Returns 401 for disabled account with ACCOUNT_DISABLED code.
+- Creates session in sh_sessions table with 30-day expiry.
+- Sets HTTP-only, SameSite=Lax, Secure (production) cookie.
+- Returns 200 with user info (id, email, role).
+- Added 9 unit tests covering all login scenarios.
+- All 167 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (167 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 20 auth, 2 component)
+- build: pass
+- validation scripts: pass

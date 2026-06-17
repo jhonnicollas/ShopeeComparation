@@ -471,3 +471,32 @@ Quality Gate:
 - test: pass (188 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 32 auth, 11 component, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-036: Build protected routes
+
+Status: DONE
+CompletedAt: 2026-06-17 20:49
+Branch: feature/TASK-036-protected-routes
+Commit: pending
+
+Summary:
+- Added useAuth hook to apps/web/src/lib/auth.ts using TanStack Query useQuery.
+- Returns user, isLoading, isAuthenticated, isError.
+- Uses 5-minute staleTime and retry: false.
+- Created apps/web/src/components/RequireAuth.tsx.
+- Shows loading state, renders children when authenticated, redirects to /login otherwise.
+- Wrapped /compare, /keyword-search, /settings routes with RequireAuth.
+- Updated AppShell to show user email and Sign Out button when authenticated.
+- Shows Sign In link when not authenticated.
+- Sign Out uses useMutation to call /api/auth/logout and clears auth cache.
+- Added CSS for user area, secondary button, and loading state.
+- Created RequireAuth.test.tsx with 3 component tests.
+- All 191 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (191 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 32 auth, 14 component, 2 home)
+- build: pass
+- validation scripts: pass

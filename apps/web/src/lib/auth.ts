@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "./api.js";
 
 export interface AuthUser {
@@ -58,4 +59,26 @@ export async function me(): Promise<MeResponse> {
   return apiRequest<MeResponse>("/auth/me", {
     method: "GET",
   });
+}
+
+export interface UseAuthResult {
+  user: AuthUser | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  isError: boolean;
+}
+
+export function useAuth(): UseAuthResult {
+  const query = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: me,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  return {
+    user: query.data?.user ?? null,
+    isLoading: query.isLoading,
+    isAuthenticated: query.isSuccess && !!query.data?.user,
+    isError: query.isError,
+  };
 }

@@ -1,4 +1,4 @@
-# TASK-035: Build frontend login/register pages
+# TASK-036: Build protected routes
 
 ## Status
 
@@ -6,12 +6,12 @@ DONE
 
 ## Goal
 
-Create LoginPage and RegisterPage components in the React frontend that allow users to authenticate. Pages should use TanStack Query for API calls, Zod for client-side validation, and integrate with the backend auth API.
+Create authentication middleware and protected route components for the React frontend. The middleware checks if user is authenticated via /api/auth/me and redirects to /login if not. Protected routes wrap pages that require authentication.
 
 ## Required Reading
 
-- `docs/api/api-contract.md` (auth endpoints)
-- `docs/architecture/implementation-stack.md` (frontend stack)
+- `docs/api/api-contract.md` (auth/me endpoint)
+- `docs/architecture/implementation-stack.md` (TanStack Router)
 - `docs/standards/coding-standard.md`
 - `docs/standards/testing-standard.md`
 - `docs/tasks/autopilot-task-contract.md`
@@ -21,33 +21,30 @@ Create LoginPage and RegisterPage components in the React frontend that allow us
 
 ## Scope
 
-- Create LoginPage component with email/password form.
-- Create RegisterPage component with email/password/name form.
-- Create API client helper for auth endpoints.
-- Add /login and /register routes to TanStack Router.
-- Use TanStack Query mutations for API calls.
-- Show loading, error, and success states.
-- Redirect to home on successful auth.
-- Add component tests for both pages.
+- Create useAuth hook in apps/web/src/lib/auth.ts for client-side auth state.
+- Create RequireAuth component that wraps protected routes.
+- Add auth state to TanStack Query with stale time.
+- Add loading state while checking auth.
+- Redirect to /login if not authenticated.
+- Apply RequireAuth to /compare, /keyword-search, /settings routes.
+- Add auth state to AppShell (show user info or login link).
+- Add component tests for RequireAuth and useAuth.
 
 ## Out of Scope
 
-- Do not create protected route middleware (TASK-036).
+- Do not create admin role checking (later task).
 - Do not create user profile page (later task).
-- Do not create password reset flow (later task).
-- Do not implement social login (later task).
+- Do not implement auto token refresh (later task).
 
 ## Allowed Files
 
-- `apps/web/src/pages/LoginPage.tsx`
-- `apps/web/src/pages/RegisterPage.tsx`
-- `apps/web/src/pages/LoginPage.test.tsx`
-- `apps/web/src/pages/RegisterPage.test.tsx`
-- `apps/web/src/lib/api.ts`
-- `apps/web/src/lib/auth.ts`
-- `apps/web/src/app/router.tsx` (add routes)
+- `apps/web/src/lib/auth.ts` (add useAuth hook)
+- `apps/web/src/components/RequireAuth.tsx`
+- `apps/web/src/components/RequireAuth.test.tsx`
+- `apps/web/src/app/router.tsx` (wrap protected routes)
 - `apps/web/src/app/queryClient.ts` (if needed)
-- `apps/web/src/styles/**` (CSS)
+- `apps/web/src/app/router.tsx` (update AppShell)
+- `apps/web/src/styles/**` (CSS for auth UI)
 - `docs/tasks/**`
 
 ## Forbidden Files
@@ -58,32 +55,33 @@ Create LoginPage and RegisterPage components in the React frontend that allow us
 
 ## Input Contract
 
-User fills form with email/password (and name for register). Frontend posts to backend auth API.
+User navigates to a protected route. Frontend checks auth state via /api/auth/me.
 
 ## Output Contract
 
-On success: redirect to home page, session cookie set by backend.
-On error: show error message inline.
+- If authenticated: render the protected route content.
+- If not authenticated: redirect to /login.
+- If loading: show loading state.
 
 ## Acceptance Criteria
 
-- [x] LoginPage component exists
-- [x] RegisterPage component exists
-- [x] /login route registered in TanStack Router
-- [x] /register route registered in TanStack Router
-- [x] Forms use Zod for client-side validation
-- [x] API calls use TanStack Query mutations
-- [x] Loading state shown during submission
-- [x] Error state shown on failure
-- [x] Success redirects to home
-- [x] Component tests pass
+- [x] useAuth hook exists with isLoading, isAuthenticated, user
+- [x] RequireAuth component exists
+- [x] /compare route is protected
+- [x] /keyword-search route is protected
+- [x] /settings route is protected
+- [x] Unauthenticated users are redirected to /login
+- [x] AppShell shows user info when authenticated
+- [x] AppShell shows login link when not authenticated
+- [x] Component tests pass for RequireAuth
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] LoginPage renders form
-- [x] RegisterPage renders form
+- [x] RequireAuth renders children when authenticated
+- [x] RequireAuth redirects when not authenticated
+- [x] RequireAuth shows loading state while checking
 - [x] Existing tests still pass
 
 ## Documentation Update

@@ -243,3 +243,48 @@ h2 {
 .formFootnote a:hover {
   text-decoration: underline;
 }
+
+.userArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.userEmail {
+  font-size: 13px;
+  color: #52606d;
+}
+
+.secondaryButton {
+  background: transparent;
+  color: #2b6cb0;
+  border: 1px solid #2b6cb0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background: #ebf4ff;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loadingState {
+  padding: 24px;
+  text-align: center;
+  color: #52606d;
+  font-size: 14px;
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+}

@@ -35,7 +35,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-033 Build logout API
 - [x] TASK-034 Build me API
 - [x] TASK-035 Build frontend login/register pages
-- [ ] TASK-036 Build protected routes
+- [x] TASK-036 Build protected routes
 
 ## Phase 4 — Runtime Configuration
 

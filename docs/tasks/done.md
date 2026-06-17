@@ -243,3 +243,29 @@ Quality Gate:
 - test: pass (80 tests: 22 enum, 36 schema, 11 R2, 9 queue, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-024: Setup Cloudflare Queue consumer
+
+Status: DONE
+CompletedAt: 2026-06-17 19:40
+Branch: feature/TASK-024-queue-consumer
+Commit: pending
+
+Summary:
+- Created workers/queueConsumer package with package.json, tsconfig.json.
+- Created workers/queueConsumer/wrangler.toml with queue consumer binding for shopee-research-queue.
+- Configured max_batch_size=10, max_batch_timeout=30, max_retries=3, dead_letter_queue.
+- Created workers/queueConsumer/src/index.ts with Hono worker and queue handler.
+- Implemented processQueueBatch() to validate messages using queueMessageSchema.
+- Acknowledges valid messages and retries invalid ones.
+- Added /health endpoint for worker health checks.
+- Created workers/queueConsumer/src/index.test.ts with 8 unit tests.
+- All tests use mock queue messages for isolation.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (88 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 2 component)
+- build: pass
+- validation scripts: pass

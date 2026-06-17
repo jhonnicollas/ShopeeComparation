@@ -1,4 +1,4 @@
-# TASK-023: Setup Cloudflare Queue producer
+# TASK-024: Setup Cloudflare Queue consumer
 
 ## Status
 
@@ -6,13 +6,13 @@ DONE
 
 ## Goal
 
-Create a Cloudflare Queue producer helper that API worker uses to send research job messages to RESEARCH_QUEUE. The helper should validate message payload and integrate with the existing queue binding.
+Create a Cloudflare Queue consumer worker at `workers/queueConsumer` that processes research job messages from RESEARCH_QUEUE. The consumer must validate messages, acknowledge successful processing, and reject invalid messages back to the queue.
 
 ## Required Reading
 
 - `docs/architecture/implementation-stack.md` (queue section)
 - `docs/architecture/cloudflare-architecture.md` (request flow)
-- `docs/api/api-contract.md` (research session/job creation)
+- `docs/architecture/folder-structure.md` (workers/queueConsumer location)
 - `docs/configuration/env-variables.md` (RESEARCH_QUEUE binding)
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
@@ -21,56 +21,56 @@ Create a Cloudflare Queue producer helper that API worker uses to send research 
 
 ## Scope
 
-- Create `packages/db/src/queue.ts` with queue producer helper functions.
-- Implement `sendResearchJobMessage()` function to send job messages to RESEARCH_QUEUE.
-- Use Queue message schema from packages/shared.
-- Add TypeScript types for queue operations.
-- Add unit tests for queue producer functions.
-- Re-export queue message type from shared package.
+- Create `workers/queueConsumer` worker package.
+- Create `workers/queueConsumer/src/index.ts` with Hono queue handler.
+- Create `workers/queueConsumer/wrangler.toml` with queue consumer binding.
+- Validate incoming queue messages using queueMessageSchema.
+- Acknowledge successful messages and reject invalid ones.
+- Add unit tests for message handler.
+- Add package.json with lint, typecheck, test, build scripts.
 
 ## Out of Scope
 
-- Do not create queue consumer worker (TASK-024).
-- Do not create actual queue (already exists in Cloudflare).
-- Do not create job execution logic (later task).
-- Do not create queue retry/dead letter logic (later task).
+- Do not create actual job execution logic (later task).
+- Do not create Mastra workflow integration (later task).
+- Do not create Shopee extraction logic (later task).
+- Do not deploy worker (requires Cloudflare credentials).
 
 ## Allowed Files
 
-- `packages/db/src/queue.ts`
-- `packages/db/src/queue.test.ts`
-- `packages/db/src/index.ts` (re-export)
+- `workers/queueConsumer/**`
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `workers/queueConsumer/**` (not created yet)
+- `workers/api/**` (existing API worker)
 - `apps/web/**`
+- `packages/**` (except if needed for imports)
 - `.ai/**`
 
 ## Input Contract
 
-Cloudflare Queue exists with binding `RESEARCH_QUEUE`. Worker environment has `env.RESEARCH_QUEUE` of type `Queue`.
+Cloudflare Queue RESEARCH_QUEUE exists. Messages are JSON strings with research job payload matching queueMessageSchema.
 
 ## Output Contract
 
-`packages/db/src/queue.ts` exports `sendResearchJobMessage()` function that workers can use to send job messages to the queue. Helper accepts Queue binding and message payload.
+`workers/queueConsumer/src/index.ts` exports default Hono worker that handles queue messages. Worker validates messages and logs processing status.
 
 ## Acceptance Criteria
 
-- [x] `packages/db/src/queue.ts` exists
-- [x] Exports `sendResearchJobMessage()` function
-- [x] Uses queue message schema from shared package
-- [x] Validates message payload before sending
-- [x] All functions have TypeScript types
-- [x] Unit tests pass for queue producer functions
+- [x] `workers/queueConsumer` directory exists
+- [x] `workers/queueConsumer/package.json` exists
+- [x] `workers/queueConsumer/wrangler.toml` exists with queue consumer binding
+- [x] `workers/queueConsumer/src/index.ts` exists with Hono handler
+- [x] Message validation uses queueMessageSchema
+- [x] Unit tests pass for message handler
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] Unit test for sendResearchJobMessage() with mock queue
-- [x] Unit test for payload validation
+- [x] Unit test for valid message processing
+- [x] Unit test for invalid message rejection
 - [x] Existing tests still pass
 
 ## Documentation Update

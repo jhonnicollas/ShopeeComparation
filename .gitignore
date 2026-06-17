@@ -1,0 +1,17 @@
+node_modules/
+.pnpm-store/
+
+dist/
+build/
+coverage/
+.output/
+
+.wrangler/
+.vite-temp/
+
+.env
+.env.*
+!.env.example
+
+*.log
+*.local

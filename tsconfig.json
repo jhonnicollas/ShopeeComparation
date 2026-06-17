@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "eslint.config.js",
+    "prettier.config.js",
+    "vitest.config.ts",
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "workers/**/*.ts",
+    "workers/**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx"
+  ]
+}

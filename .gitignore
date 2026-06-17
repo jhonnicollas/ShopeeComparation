@@ -11,6 +11,8 @@ coverage/
 
 .wrangler/
 .vite-temp/
+.vite/
+**/.vite/
 
 .env
 .env.*

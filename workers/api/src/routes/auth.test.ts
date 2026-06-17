@@ -665,3 +665,186 @@ describe("POST /api/auth/logout", () => {
     expect(cookie).toContain("Max-Age=0");
   });
 });
+
+describe("GET /api/auth/me", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("returns current user info for valid session", async () => {
+    const sessionVal = "valid-me-session-123";
+    const tokenHash = await hashSessionTokenAsync(sessionVal);
+    db.users.push({
+      id: "usr_me",
+      email: "me@example.com",
+      passwordHash: "hash",
+      passwordSalt: "salt",
+      name: "Me User",
+      role: "user",
+      status: "active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    db.sessions.push({
+      id: "ses_me",
+      userId: "usr_me",
+      tokenHash,
+      userAgentHash: null,
+      ipHash: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      revokedAt: null,
+    });
+
+    const res = await authRouter.request(
+      "/me",
+      {
+        method: "GET",
+        headers: {
+          cookie: `session_token=${sessionVal}`,
+        },
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { user: { id: string; email: string; name: string; role: string } };
+    expect(body.user.id).toBe("usr_me");
+    expect(body.user.email).toBe("me@example.com");
+    expect(body.user.name).toBe("Me User");
+    expect(body.user.role).toBe("user");
+  });
+
+  it("returns 401 when no session cookie is provided", async () => {
+    const res = await authRouter.request(
+      "/me",
+      {
+        method: "GET",
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("UNAUTHENTICATED");
+  });
+
+  it("returns 401 when session token is invalid", async () => {
+    const res = await authRouter.request(
+      "/me",
+      {
+        method: "GET",
+        headers: {
+          cookie: "session_token=nonexistent",
+        },
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 when session is expired", async () => {
+    const sessionVal = "expired-me-456";
+    const tokenHash = await hashSessionTokenAsync(sessionVal);
+    db.users.push({
+      id: "usr_me",
+      email: "me@example.com",
+      passwordHash: "hash",
+      passwordSalt: "salt",
+      name: null,
+      role: "user",
+      status: "active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    db.sessions.push({
+      id: "ses_expired_me",
+      userId: "usr_me",
+      tokenHash,
+      userAgentHash: null,
+      ipHash: null,
+      expiresAt: new Date(Date.now() - 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      revokedAt: null,
+    });
+
+    const res = await authRouter.request(
+      "/me",
+      {
+        method: "GET",
+        headers: {
+          cookie: `session_token=${sessionVal}`,
+        },
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 when user is disabled", async () => {
+    const sessionVal = "disabled-me-789";
+    const tokenHash = await hashSessionTokenAsync(sessionVal);
+    db.users.push({
+      id: "usr_disabled",
+      email: "disabled@example.com",
+      passwordHash: "hash",
+      passwordSalt: "salt",
+      name: null,
+      role: "user",
+      status: "disabled",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    db.sessions.push({
+      id: "ses_disabled",
+      userId: "usr_disabled",
+      tokenHash,
+      userAgentHash: null,
+      ipHash: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      revokedAt: null,
+    });
+
+    const res = await authRouter.request(
+      "/me",
+      {
+        method: "GET",
+        headers: {
+          cookie: `session_token=${sessionVal}`,
+        },
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("ACCOUNT_DISABLED");
+  });
+
+  it("returns 401 when user not found for session", async () => {
+    const sessionVal = "orphan-me-012";
+    const tokenHash = await hashSessionTokenAsync(sessionVal);
+    db.sessions.push({
+      id: "ses_orphan",
+      userId: "usr_deleted",
+      tokenHash,
+      userAgentHash: null,
+      ipHash: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      revokedAt: null,
+    });
+
+    const res = await authRouter.request(
+      "/me",
+      {
+        method: "GET",
+        headers: {
+          cookie: `session_token=${sessionVal}`,
+        },
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+  });
+});

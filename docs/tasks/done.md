@@ -412,3 +412,32 @@ Quality Gate:
 - test: pass (173 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 26 auth, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-034: Build me API
+
+Status: DONE
+CompletedAt: 2026-06-17 20:40
+Branch: feature/TASK-034-me-api
+Commit: pending
+
+Summary:
+- Added GET /api/auth/me route to workers/api/src/routes/auth.ts.
+- Extracts session token from cookie using extractSessionToken helper.
+- Hashes token using SHA-256 and finds session in D1.
+- Validates session is not expired and not revoked.
+- Finds user by session userId using findUserById.
+- Validates user status is active.
+- Returns 200 with user info (id, email, name, role) on success.
+- Returns 401 with UNAUTHENTICATED for missing/invalid/expired session.
+- Returns 401 with ACCOUNT_DISABLED for disabled user.
+- Returns 401 with UNAUTHENTICATED for orphan session (user deleted).
+- Added 6 unit tests covering all me scenarios.
+- All 179 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (179 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 32 auth, 2 component)
+- build: pass
+- validation scripts: pass

@@ -1,4 +1,4 @@
-# TASK-033: Build logout API
+# TASK-034: Build me API
 
 ## Status
 
@@ -6,13 +6,13 @@ DONE
 
 ## Goal
 
-Implement POST /api/auth/logout endpoint that revokes the current session and clears the session cookie.
+Implement GET /api/auth/me endpoint that returns the current authenticated user's information based on session cookie. This is used by frontend to check auth state and get user profile.
 
 ## Required Reading
 
-- `docs/api/api-contract.md` (auth/logout endpoint)
-- `docs/database/schema.md` (sh_sessions table)
-- `docs/shared/enums.md`
+- `docs/api/api-contract.md` (auth/me endpoint)
+- `docs/database/schema.md` (sh_users, sh_sessions tables)
+- `docs/shared/enums.md` (user roles, statuses)
 - `docs/standards/coding-standard.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
@@ -21,17 +21,17 @@ Implement POST /api/auth/logout endpoint that revokes the current session and cl
 
 ## Scope
 
-- Add POST /api/auth/logout route to workers/api/src/routes/auth.ts.
+- Add GET /api/auth/me route to workers/api/src/routes/auth.ts.
 - Extract session token from cookie.
 - Hash token and find session in D1.
-- Revoke session by setting revokedAt timestamp.
-- Clear session cookie.
-- Return success response.
-- Add unit tests for logout endpoint.
+- Validate session is not expired and not revoked.
+- Find user by session userId.
+- Return user info using meResponseSchema.
+- Add unit tests for me endpoint.
 
 ## Out of Scope
 
-- Do not create /api/auth/me endpoint (TASK-034).
+- Do not create update profile endpoint (later task).
 - Do not create protected route middleware (TASK-036).
 - Do not implement session refresh (later task).
 
@@ -50,32 +50,34 @@ Implement POST /api/auth/logout endpoint that revokes the current session and cl
 
 ## Input Contract
 
-Client sends POST /api/auth/logout with session_token cookie.
+Client sends GET /api/auth/me with session_token cookie.
 
 ## Output Contract
 
-On success: 200 OK with JSON { success: true } and Set-Cookie to clear session.
+On success: 200 OK with JSON { user: { id, email, name, role } }.
 On error: 401 if no valid session.
 
 ## Acceptance Criteria
 
-- [x] POST /api/auth/logout route exists
+- [x] GET /api/auth/me route exists
 - [x] Session token is extracted from cookie
-- [x] Session is revoked in database
-- [x] Session cookie is cleared
-- [x] Returns 200 with success response
+- [x] Session is validated (not expired, not revoked)
+- [x] User info is returned based on session userId
 - [x] Returns 401 if no session cookie
 - [x] Returns 401 if session is invalid
-- [x] Unit tests pass for logout endpoint
+- [x] Returns 401 if user not found
+- [x] Returns 401 if user is disabled
+- [x] Unit tests pass for me endpoint
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] Unit test for successful logout
+- [x] Unit test for successful me query
 - [x] Unit test for missing session cookie
 - [x] Unit test for invalid session token
-- [x] Unit test for already revoked session
+- [x] Unit test for expired session
+- [x] Unit test for disabled user
 - [x] Existing tests still pass
 
 ## Documentation Update

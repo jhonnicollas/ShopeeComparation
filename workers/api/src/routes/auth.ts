@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { registerRequestSchema, registerResponseSchema, loginRequestSchema, loginResponseSchema, logoutResponseSchema } from "@shopee-research/shared";
+import { registerRequestSchema, registerResponseSchema, loginRequestSchema, loginResponseSchema, logoutResponseSchema, meResponseSchema } from "@shopee-research/shared";
 import {
   hashPassword,
   verifyPassword,
@@ -15,6 +15,7 @@ import {
 import {
   createUser,
   findUserByEmail,
+  findUserById,
   createSession,
   findSessionByTokenHash,
   revokeSession,
@@ -335,4 +336,87 @@ authRouter.post("/logout", async (c) => {
   const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
   c.header("Set-Cookie", clearCookie);
   return c.json(logoutResponseSchema.parse({ success: true }), 200);
+});
+
+authRouter.get("/me", async (c) => {
+  const cookieHeader = c.req.header("cookie");
+  const sessionToken = extractSessionToken(cookieHeader);
+  if (!sessionToken) {
+    return c.json(
+      {
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "No session cookie provided",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  const tokenHash = await hashSessionTokenAsync(sessionToken);
+  const session = await findSessionByTokenHash(c.env.DB, tokenHash);
+  if (!session) {
+    return c.json(
+      {
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "Session not found",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  if (isSessionExpired(session.expiresAt) || isSessionRevoked(session.revokedAt)) {
+    return c.json(
+      {
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "Session is no longer valid",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  const user = await findUserById(c.env.DB, session.userId);
+  if (!user) {
+    return c.json(
+      {
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "User not found",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  if (user.status !== "active") {
+    return c.json(
+      {
+        error: {
+          code: "ACCOUNT_DISABLED",
+          message: "Account is disabled",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  const responseBody = meResponseSchema.parse({
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    },
+  });
+
+  return c.json(responseBody, 200);
 });

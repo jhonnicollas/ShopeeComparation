@@ -447,7 +447,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 20:45
 Branch: feature/TASK-035-frontend-auth
-Commit: pending
+Commit: a23f2df
 
 Summary:
 - Created apps/web/src/lib/api.ts with API client and ApiClientError class.

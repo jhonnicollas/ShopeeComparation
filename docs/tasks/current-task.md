@@ -1,4 +1,4 @@
-# TASK-032: Build login API
+# TASK-033: Build logout API
 
 ## Status
 
@@ -6,13 +6,13 @@ DONE
 
 ## Goal
 
-Implement POST /api/auth/login endpoint that authenticates a user with email and password, creates a session, and returns user info with session cookie.
+Implement POST /api/auth/logout endpoint that revokes the current session and clears the session cookie.
 
 ## Required Reading
 
-- `docs/api/api-contract.md` (auth/login endpoint)
-- `docs/database/schema.md` (sh_users, sh_sessions tables)
-- `docs/shared/enums.md` (user roles, statuses)
+- `docs/api/api-contract.md` (auth/logout endpoint)
+- `docs/database/schema.md` (sh_sessions table)
+- `docs/shared/enums.md`
 - `docs/standards/coding-standard.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
@@ -21,20 +21,19 @@ Implement POST /api/auth/login endpoint that authenticates a user with email and
 
 ## Scope
 
-- Add POST /api/auth/login route to workers/api/src/routes/auth.ts.
-- Validate request using loginRequestSchema.
-- Find user by email and verify password.
-- Create session and set HTTP-only cookie.
-- Return user info using loginResponseSchema.
-- Add error handling for invalid credentials.
-- Add unit tests for login endpoint.
+- Add POST /api/auth/logout route to workers/api/src/routes/auth.ts.
+- Extract session token from cookie.
+- Hash token and find session in D1.
+- Revoke session by setting revokedAt timestamp.
+- Clear session cookie.
+- Return success response.
+- Add unit tests for logout endpoint.
 
 ## Out of Scope
 
-- Do not create logout endpoint (TASK-033).
-- Do not create rate limiting (later task).
-- Do not create 2FA (later task).
-- Do not create frontend pages (TASK-035).
+- Do not create /api/auth/me endpoint (TASK-034).
+- Do not create protected route middleware (TASK-036).
+- Do not implement session refresh (later task).
 
 ## Allowed Files
 
@@ -51,33 +50,32 @@ Implement POST /api/auth/login endpoint that authenticates a user with email and
 
 ## Input Contract
 
-Client sends POST /api/auth/login with JSON body: { email, password }.
+Client sends POST /api/auth/logout with session_token cookie.
 
 ## Output Contract
 
-On success: 200 OK with JSON { user: { id, email, role } } and Set-Cookie header.
-On error: 401 with standard error response for invalid credentials.
+On success: 200 OK with JSON { success: true } and Set-Cookie to clear session.
+On error: 401 if no valid session.
 
 ## Acceptance Criteria
 
-- [x] POST /api/auth/login route exists
-- [x] Request validation uses loginRequestSchema
-- [x] Password is verified against stored hash
-- [x] Session cookie is set on success
-- [x] Invalid credentials returns 401
-- [x] Non-existent email returns 401 (not 404)
-- [x] Disabled account returns 401
-- [x] Unit tests pass for login endpoint
+- [x] POST /api/auth/logout route exists
+- [x] Session token is extracted from cookie
+- [x] Session is revoked in database
+- [x] Session cookie is cleared
+- [x] Returns 200 with success response
+- [x] Returns 401 if no session cookie
+- [x] Returns 401 if session is invalid
+- [x] Unit tests pass for logout endpoint
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] Unit test for successful login
-- [x] Unit test for wrong password
-- [x] Unit test for non-existent email
-- [x] Unit test for disabled account
-- [x] Unit test for invalid input
+- [x] Unit test for successful logout
+- [x] Unit test for missing session cookie
+- [x] Unit test for invalid session token
+- [x] Unit test for already revoked session
 - [x] Existing tests still pass
 
 ## Documentation Update

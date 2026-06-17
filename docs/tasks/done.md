@@ -384,3 +384,31 @@ Quality Gate:
 - test: pass (167 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 20 auth, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-033: Build logout API
+
+Status: DONE
+CompletedAt: 2026-06-17 20:29
+Branch: feature/TASK-033-logout-api
+Commit: pending
+
+Summary:
+- Added POST /api/auth/logout route to workers/api/src/routes/auth.ts.
+- Extracts session token from cookie using extractSessionToken helper.
+- Hashes token using SHA-256 and finds session in D1.
+- Validates session is not expired and not revoked.
+- Revokes session by calling revokeSession() which sets revokedAt.
+- Clears session cookie with Max-Age=0.
+- Returns 200 with { success: true } on success.
+- Returns 401 with UNAUTHENTICATED for missing/invalid/expired/revoked sessions.
+- Added 6 unit tests covering all logout scenarios.
+- Extended MockD1Database to support session lookup by tokenHash and revoke.
+- All 173 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (173 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 26 auth, 2 component)
+- build: pass
+- validation scripts: pass

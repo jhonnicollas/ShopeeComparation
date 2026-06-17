@@ -72,6 +72,23 @@ class MockD1Database {
         const id = boundArgs[0];
         return this.sessions.find((s) => s.id === id) ?? null;
       });
+    } else if (query.includes("SELECT * FROM sh_sessions WHERE tokenHash")) {
+      stmt.first.mockImplementation(async () => {
+        const boundArgs = stmt.bind.mock.calls[0] || [];
+        const tokenHash = boundArgs[0];
+        return this.sessions.find((s) => s.tokenHash === tokenHash) ?? null;
+      });
+    } else if (query.includes("UPDATE sh_sessions SET revokedAt")) {
+      stmt.run.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const revokedAt = args[0];
+        const sessionId = args[1];
+        const session = this.sessions.find((s) => s.id === sessionId);
+        if (session) {
+          session.revokedAt = revokedAt;
+        }
+        return { success: true };
+      });
     }
     return stmt;
   }
@@ -492,5 +509,159 @@ describe("POST /api/auth/login", () => {
     const body1 = (await res1.json()) as { error: { code: string; message: string } };
     const body2 = (await res2.json()) as { error: { code: string; message: string } };
     expect(body1.error.message).toBe(body2.error.message);
+  });
+});
+
+import { hashSessionTokenAsync } from "@shopee-research/auth";
+
+describe("POST /api/auth/logout", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("logs out successfully and revokes session", async () => {
+    const sessionVal = "abc123def456ghi789jkl012mno";
+    const tokenHash = await hashSessionTokenAsync(sessionVal);
+    db.sessions.push({
+      id: "ses_test",
+      userId: "usr_test",
+      tokenHash,
+      userAgentHash: null,
+      ipHash: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      revokedAt: null,
+    });
+
+    const res = await authRouter.request(
+      "/logout",
+      {
+        method: "POST",
+        headers: {
+          cookie: `session_token=${sessionVal}`,
+        },
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { success: boolean };
+    expect(body.success).toBe(true);
+    expect(db.sessions[0].revokedAt).not.toBeNull();
+    const cookie = res.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain("Max-Age=0");
+  });
+
+  it("returns 401 when no session cookie is provided", async () => {
+    const res = await authRouter.request(
+      "/logout",
+      {
+        method: "POST",
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("UNAUTHENTICATED");
+  });
+
+  it("returns 401 when session token is invalid", async () => {
+    const res = await authRouter.request(
+      "/logout",
+      {
+        method: "POST",
+        headers: {
+          cookie: "session_token=nonexistent-token",
+        },
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+    const cookie = res.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain("Max-Age=0");
+  });
+
+  it("returns 401 when session is expired", async () => {
+    const sessionVal = "expired-id-456";
+    const tokenHash = await hashSessionTokenAsync(sessionVal);
+    db.sessions.push({
+      id: "ses_expired",
+      userId: "usr_test",
+      tokenHash,
+      userAgentHash: null,
+      ipHash: null,
+      expiresAt: new Date(Date.now() - 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      revokedAt: null,
+    });
+
+    const res = await authRouter.request(
+      "/logout",
+      {
+        method: "POST",
+        headers: {
+          cookie: `session_token=${sessionVal}`,
+        },
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 when session is already revoked", async () => {
+    const sessionVal = "revoked-id-789";
+    const tokenHash = await hashSessionTokenAsync(sessionVal);
+    db.sessions.push({
+      id: "ses_revoked",
+      userId: "usr_test",
+      tokenHash,
+      userAgentHash: null,
+      ipHash: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      revokedAt: new Date().toISOString(),
+    });
+
+    const res = await authRouter.request(
+      "/logout",
+      {
+        method: "POST",
+        headers: {
+          cookie: `session_token=${sessionVal}`,
+        },
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("clears session cookie on success", async () => {
+    const sessionVal = "valid-id-012";
+    const tokenHash = await hashSessionTokenAsync(sessionVal);
+    db.sessions.push({
+      id: "ses_test2",
+      userId: "usr_test",
+      tokenHash,
+      userAgentHash: null,
+      ipHash: null,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      revokedAt: null,
+    });
+
+    const res = await authRouter.request(
+      "/logout",
+      {
+        method: "POST",
+        headers: {
+          cookie: `session_token=${sessionVal}`,
+        },
+      },
+      createEnv(db)
+    );
+    const cookie = res.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("Max-Age=0");
   });
 });

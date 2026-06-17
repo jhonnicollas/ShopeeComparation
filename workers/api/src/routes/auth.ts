@@ -1,11 +1,13 @@
 import { Hono } from "hono";
-import { registerRequestSchema, registerResponseSchema, loginRequestSchema, loginResponseSchema } from "@shopee-research/shared";
+import { registerRequestSchema, registerResponseSchema, loginRequestSchema, loginResponseSchema, logoutResponseSchema } from "@shopee-research/shared";
 import {
   hashPassword,
   verifyPassword,
   generateSessionToken,
   hashSessionTokenAsync,
   getSessionExpiry,
+  isSessionExpired,
+  isSessionRevoked,
   hashUserAgent,
   hashIp,
   validateAuthInput,
@@ -14,6 +16,8 @@ import {
   createUser,
   findUserByEmail,
   createSession,
+  findSessionByTokenHash,
+  revokeSession,
 } from "@shopee-research/db";
 
 type Bindings = {
@@ -39,6 +43,20 @@ function bytesToBase64Url(bytes: Uint8Array): string {
     binary += String.fromCharCode(bytes[i]!);
   }
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function extractSessionToken(cookieHeader: string | undefined): string | null {
+  if (!cookieHeader) {
+    return null;
+  }
+  const cookies = cookieHeader.split(";").map((c) => c.trim());
+  for (const cookie of cookies) {
+    const [name, value] = cookie.split("=");
+    if (name === SESSION_COOKIE_NAME && value) {
+      return value;
+    }
+  }
+  return null;
 }
 
 export const authRouter = new Hono<{ Bindings: Bindings }>();
@@ -262,4 +280,59 @@ authRouter.post("/login", async (c) => {
 
   c.header("Set-Cookie", cookieValue);
   return c.json(responseBody, 200);
+});
+
+authRouter.post("/logout", async (c) => {
+  const cookieHeader = c.req.header("cookie");
+  const sessionToken = extractSessionToken(cookieHeader);
+  if (!sessionToken) {
+    return c.json(
+      {
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "No session cookie provided",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  const tokenHash = await hashSessionTokenAsync(sessionToken);
+  const session = await findSessionByTokenHash(c.env.DB, tokenHash);
+  if (!session) {
+    const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+    c.header("Set-Cookie", clearCookie);
+    return c.json(
+      {
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "Session not found",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  if (isSessionExpired(session.expiresAt) || isSessionRevoked(session.revokedAt)) {
+    const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+    c.header("Set-Cookie", clearCookie);
+    return c.json(
+      {
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "Session is no longer valid",
+          details: null,
+        },
+      },
+      401
+    );
+  }
+
+  await revokeSession(c.env.DB, session.id);
+
+  const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  c.header("Set-Cookie", clearCookie);
+  return c.json(logoutResponseSchema.parse({ success: true }), 200);
 });

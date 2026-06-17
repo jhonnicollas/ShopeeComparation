@@ -9,7 +9,7 @@
     "test": "vitest run --passWithNoTests",
     "build": "tsc --noEmit"
   },
-  "devDependencies": {
+  "dependencies": {
     "@shopee-research/shared": "workspace:*"
   }
 }

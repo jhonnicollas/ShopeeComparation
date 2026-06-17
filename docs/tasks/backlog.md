@@ -23,7 +23,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-020 Setup wrangler config with existing DB and LOGS bindings
 - [x] TASK-021 Setup D1 schema using sh_ tables and camelCase columns
 - [x] TASK-022 Setup R2 snapshot helper
-- [ ] TASK-023 Setup Cloudflare Queue producer
+- [x] TASK-023 Setup Cloudflare Queue producer
 - [ ] TASK-024 Setup Cloudflare Queue consumer
 - [ ] TASK-025 Setup environment validation
 

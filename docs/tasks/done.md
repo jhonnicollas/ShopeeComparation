@@ -217,3 +217,29 @@ Quality Gate:
 - test: pass (71 tests: 22 enum, 36 schema, 11 R2, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-023: Setup Cloudflare Queue producer
+
+Status: DONE
+CompletedAt: 2026-06-17 18:17
+Branch: feature/TASK-023-queue-producer
+Commit: pending
+
+Summary:
+- Created packages/db/src/queue.ts with queue producer functions.
+- Exported sendResearchJobMessage() to send validated research job messages to RESEARCH_QUEUE.
+- Exported sendBatchResearchJobMessages() for batch operations.
+- Validates message payload using queueMessageSchema from shared package.
+- Generates unique message IDs with timestamp and random suffix.
+- Adds sentAt timestamp to message body for tracking.
+- Created packages/db/src/queue.test.ts with 9 unit tests.
+- Added @shopee-research/shared as runtime dependency in db package.
+- Re-exported queue functions from packages/db/src/index.ts.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (80 tests: 22 enum, 36 schema, 11 R2, 9 queue, 2 component)
+- build: pass
+- validation scripts: pass

@@ -1,4 +1,4 @@
-# TASK-022: Setup R2 snapshot helper
+# TASK-023: Setup Cloudflare Queue producer
 
 ## Status
 
@@ -6,14 +6,14 @@ DONE
 
 ## Goal
 
-Create an R2 snapshot helper utility for storing and retrieving raw snapshots, AI responses, and large artifacts in the R2 bucket binding LOGS. This helper will be used by extractors and AI workflows to store raw data.
+Create a Cloudflare Queue producer helper that API worker uses to send research job messages to RESEARCH_QUEUE. The helper should validate message payload and integrate with the existing queue binding.
 
 ## Required Reading
 
-- `docs/database/schema.md` (rawSnapshots table, rawSnapshotR2Key columns)
-- `docs/configuration/env-variables.md` (R2 binding LOGS)
-- `docs/architecture/cloudflare-architecture.md`
-- `docs/standards/logging-standard.md`
+- `docs/architecture/implementation-stack.md` (queue section)
+- `docs/architecture/cloudflare-architecture.md` (request flow)
+- `docs/api/api-contract.md` (research session/job creation)
+- `docs/configuration/env-variables.md` (RESEARCH_QUEUE binding)
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -21,60 +21,56 @@ Create an R2 snapshot helper utility for storing and retrieving raw snapshots, A
 
 ## Scope
 
-- Create `packages/db/src/r2.ts` with helper functions for R2 operations.
-- Implement `putSnapshot()` function to upload data to R2.
-- Implement `getSnapshot()` function to download data from R2.
-- Implement `generateR2Key()` function to create unique R2 keys with proper prefixes.
-- Add TypeScript types for R2 operations.
-- Add unit tests for helper functions.
-- Use the LOGS R2 binding from worker environment.
+- Create `packages/db/src/queue.ts` with queue producer helper functions.
+- Implement `sendResearchJobMessage()` function to send job messages to RESEARCH_QUEUE.
+- Use Queue message schema from packages/shared.
+- Add TypeScript types for queue operations.
+- Add unit tests for queue producer functions.
+- Re-export queue message type from shared package.
 
 ## Out of Scope
 
-- Do not create R2 bucket (already exists).
-- Do not create actual upload logic (later task).
-- Do not create snapshot metadata storage (uses sh_rawSnapshots table).
-- Do not create browser-facing R2 URLs (later task).
+- Do not create queue consumer worker (TASK-024).
+- Do not create actual queue (already exists in Cloudflare).
+- Do not create job execution logic (later task).
+- Do not create queue retry/dead letter logic (later task).
 
 ## Allowed Files
 
-- `packages/db/src/r2.ts`
-- `packages/db/src/r2.test.ts`
-- `packages/db/package.json` (add test dep if needed)
+- `packages/db/src/queue.ts`
+- `packages/db/src/queue.test.ts`
+- `packages/db/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `workers/**` (helpers are reusable)
+- `workers/queueConsumer/**` (not created yet)
 - `apps/web/**`
-- `packages/db/migrations/**`
 - `.ai/**`
 
 ## Input Contract
 
-R2 bucket `multi-apps-ai-bucket` exists with binding `LOGS`. Worker environment has `env.LOGS` of type `R2Bucket`.
+Cloudflare Queue exists with binding `RESEARCH_QUEUE`. Worker environment has `env.RESEARCH_QUEUE` of type `Queue`.
 
 ## Output Contract
 
-`packages/db/src/r2.ts` exports helper functions that workers can use to store and retrieve snapshots in R2. Helpers accept R2Bucket and return R2 keys.
+`packages/db/src/queue.ts` exports `sendResearchJobMessage()` function that workers can use to send job messages to the queue. Helper accepts Queue binding and message payload.
 
 ## Acceptance Criteria
 
-- [x] `packages/db/src/r2.ts` exists
-- [x] Exports `putSnapshot()` function
-- [x] Exports `getSnapshot()` function
-- [x] Exports `generateR2Key()` function
-- [x] Uses LOGS binding type from shared package
+- [x] `packages/db/src/queue.ts` exists
+- [x] Exports `sendResearchJobMessage()` function
+- [x] Uses queue message schema from shared package
+- [x] Validates message payload before sending
 - [x] All functions have TypeScript types
-- [x] Unit tests pass for helper functions
+- [x] Unit tests pass for queue producer functions
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] Unit test for generateR2Key() with different prefixes
-- [x] Unit test for putSnapshot() with mock R2 bucket
-- [x] Unit test for getSnapshot() with mock R2 bucket
+- [x] Unit test for sendResearchJobMessage() with mock queue
+- [x] Unit test for payload validation
 - [x] Existing tests still pass
 
 ## Documentation Update

@@ -50,7 +50,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 20:30
 Branch: codex/task-010-pnpm-workspace
-Commit: pending
+Commit: 3b1343a
 
 Summary:
 - Added `workers/api` Cloudflare Worker package.

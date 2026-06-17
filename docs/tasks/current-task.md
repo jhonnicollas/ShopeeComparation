@@ -1,4 +1,4 @@
-# TASK-020: Setup wrangler config with existing DB and LOGS bindings
+# TASK-021: Setup D1 schema using sh_ tables and camelCase columns
 
 ## Status
 
@@ -6,14 +6,14 @@ DONE
 
 ## Goal
 
-Verify and complete wrangler.toml configuration for all workers (api, queueConsumer, mastra) with correct bindings to existing D1 database, R2 bucket, and Cloudflare Queues per source-of-truth docs.
+Create D1 SQL migration file(s) for all tables defined in docs/database/schema.md, following strict naming rules (sh_ prefix, camelCase columns, no underscores in column names).
 
 ## Required Reading
 
-- `docs/configuration/env-variables.md`
-- `docs/architecture/cloudflare-architecture.md`
-- `docs/architecture/folder-structure.md`
+- `docs/database/schema.md`
+- `docs/database/naming-rules.md`
 - `docs/architecture/implementation-stack.md`
+- `docs/configuration/env-variables.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -21,57 +21,55 @@ Verify and complete wrangler.toml configuration for all workers (api, queueConsu
 
 ## Scope
 
-- Verify `workers/api/wrangler.toml` has correct D1, R2, and queue producer bindings.
-- Add non-secret environment variables to `workers/api/wrangler.toml` per env-variables.md.
-- Document that secrets must be set via `wrangler secret put` (not committed).
-- Ensure account_id, database_id, bucket_name match source-of-truth exactly.
-- Ensure compatibility_date is current.
-- Do not create queue consumer or mastra workers yet (those are later tasks).
+- Create `packages/db` package with migrations directory.
+- Create initial SQL migration file with all 20 tables from schema.md.
+- Verify all table names start with `sh_`.
+- Verify all column names use camelCase without underscores.
+- Add package.json with migration scripts.
+- Document migration execution process.
+- Do not run migrations yet (requires wrangler D1 access).
 
 ## Out of Scope
 
-- Do not create `workers/queueConsumer` or `workers/mastra` (Phase 2 tasks TASK-023, TASK-024).
-- Do not add secret values to wrangler.toml.
-- Do not create D1 migrations (TASK-021).
-- Do not create R2 helpers (TASK-022).
-- Do not deploy workers.
+- Do not create repository layer (later task).
+- Do not create query helpers (later task).
+- Do not seed data (later task).
+- Do not execute migrations against live D1 (requires deployment).
 
 ## Allowed Files
 
-- `workers/api/wrangler.toml`
+- `packages/db/**`
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `workers/queueConsumer/**` (not created yet)
-- `workers/mastra/**` (not created yet)
-- `packages/**` (except task docs)
+- `workers/**` (except if needed for types)
 - `apps/web/**`
 - `.ai/**`
 
 ## Input Contract
 
-`workers/api/wrangler.toml` exists with basic D1, R2, and queue producer bindings from TASK-012.
+D1 database `multi_Ai_db` exists with binding `DB` in wrangler.toml. No tables exist yet.
 
 ## Output Contract
 
-`workers/api/wrangler.toml` has complete and correct configuration matching source-of-truth env-variables.md with all non-secret vars and binding configs.
+`packages/db/migrations/0001_initial_schema.sql` contains all 20 tables with correct naming. Migration can be applied via `wrangler d1 migrations apply`.
 
 ## Acceptance Criteria
 
-- [x] `workers/api/wrangler.toml` has correct `account_id = "79dea2845a4b62ea5229c8676dea02c0"`
-- [x] `workers/api/wrangler.toml` has correct D1 binding with `database_id = "b80ca989-6771-427f-a656-c7ab6ffc17ce"`
-- [x] `workers/api/wrangler.toml` has correct R2 binding with `bucket_name = "multi-apps-ai-bucket"`
-- [x] `workers/api/wrangler.toml` has queue producer binding `RESEARCH_QUEUE`
-- [x] `workers/api/wrangler.toml` includes all required non-secret vars from env-variables.md
-- [x] No secret values are committed in wrangler.toml
-- [x] `compatibility_date` is set to current date or recent
+- [x] `packages/db` directory exists
+- [x] `packages/db/package.json` exists with name, scripts
+- [x] `packages/db/migrations/0001_initial_schema.sql` exists
+- [x] Migration file contains all 20 tables from schema.md
+- [x] All table names start with `sh_`
+- [x] All column names are camelCase without underscores
+- [x] Migration file is valid SQL syntax
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] No new tests required (config-only task)
+- [x] No unit tests required for SQL migration files
 - [x] Existing tests still pass
 
 ## Documentation Update

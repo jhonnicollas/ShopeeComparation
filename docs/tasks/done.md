@@ -167,3 +167,27 @@ Quality Gate:
 - test: pass (60 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-021: Setup D1 schema using sh_ tables and camelCase columns
+
+Status: DONE
+CompletedAt: 2026-06-17 18:10
+Branch: feature/TASK-021-d1-schema
+Commit: pending
+
+Summary:
+- Created packages/db package with package.json, tsconfig.json, and src/index.ts.
+- Created initial migration file packages/db/migrations/0001_initial_schema.sql with all 20 tables from schema.md.
+- All tables use sh_ prefix and camelCase columns without underscores.
+- Added foreign key constraints for related tables.
+- Added 22 indexes for common query patterns.
+- Migration ready to apply via: wrangler d1 migrations apply multi_Ai_db.
+- Added @shopee-research/db to workspace.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (60 tests)
+- build: pass
+- validation scripts: pass

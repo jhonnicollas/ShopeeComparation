@@ -21,7 +21,7 @@ This backlog is the execution queue for 100% autopilot mode.
 ## Phase 2 — Cloudflare Foundation
 
 - [x] TASK-020 Setup wrangler config with existing DB and LOGS bindings
-- [ ] TASK-021 Setup D1 schema using sh_ tables and camelCase columns
+- [x] TASK-021 Setup D1 schema using sh_ tables and camelCase columns
 - [ ] TASK-022 Setup R2 snapshot helper
 - [ ] TASK-023 Setup Cloudflare Queue producer
 - [ ] TASK-024 Setup Cloudflare Queue consumer

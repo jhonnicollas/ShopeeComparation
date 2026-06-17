@@ -28,7 +28,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 20:15
 Branch: codex/task-010-pnpm-workspace
-Commit: pending
+Commit: 9ba4db1
 
 Summary:
 - Added `apps/web` React + Vite package.

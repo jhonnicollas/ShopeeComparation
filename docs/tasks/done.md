@@ -149,7 +149,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 18:01
 Branch: feature/TASK-020-wrangler-config
-Commit: pending
+Commit: 9ef2c4a
 
 Summary:
 - Updated workers/api/wrangler.toml with all required non-secret environment variables from env-variables.md.

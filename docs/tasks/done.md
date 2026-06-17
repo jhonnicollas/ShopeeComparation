@@ -65,3 +65,32 @@ Quality Gate:
 - test: pass
 - build: pass
 - validation scripts: pass
+
+## TASK-013: Setup shared TypeScript types
+
+Status: DONE
+CompletedAt: 2026-06-17 21:15
+Branch: feature/TASK-013-shared-types
+Commit: pending
+
+Summary:
+- Created `packages/shared` package with package.json, tsconfig.json, and src/ structure.
+- Defined all 17 enum const objects and string literal union types matching docs/shared/enums.md.
+- Defined ID prefix constants for all 20 entity types.
+- Defined all 20 database row interface types matching docs/database/schema.md.
+- Defined all API request/response types matching docs/api/api-contract.md.
+- Defined Shopee adapter types: ResolveUrlResult, ProductSnapshot, ShopSnapshot, SearchProvider, SearchInput, SearchResultCandidate, ShopeeExtractor, ScoringWeights, AiReportStructured, QueueMessage, RuntimeConfigSnapshot.
+- Defined Worker environment types: ApiEnv, QueueConsumerEnv.
+- Added barrel src/index.ts re-exporting everything.
+- Added 22 unit tests covering all enum values match source-of-truth docs.
+- Removed packages/.gitkeep since the package directory now has real files.
+- Updated root tsconfig.json to include @cloudflare/workers-types for shared env types.
+- Updated root package.json devDependencies.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (22 tests)
+- build: pass
+- validation scripts: pass

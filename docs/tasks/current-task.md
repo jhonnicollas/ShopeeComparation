@@ -1,4 +1,4 @@
-# TASK-012: Setup Cloudflare Workers API
+# TASK-013: Setup shared TypeScript types
 
 ## Status
 
@@ -6,16 +6,18 @@ DONE
 
 ## Goal
 
-Create the `workers/api` Cloudflare Worker scaffold using Hono, existing Cloudflare bindings, TypeScript, and a minimal health endpoint.
+Create the `packages/shared` package scaffold with all canonical TypeScript types that map to the enums, database schema, API contracts, and domain entities defined in the source-of-truth docs.
 
 ## Required Reading
 
 - `docs/prd/prd.md`
 - `docs/architecture/technical-decisions.md`
 - `docs/architecture/implementation-stack.md`
-- `docs/architecture/cloudflare-architecture.md`
 - `docs/architecture/folder-structure.md`
-- `docs/configuration/env-variables.md`
+- `docs/shared/enums.md`
+- `docs/database/schema.md`
+- `docs/database/naming-rules.md`
+- `docs/api/api-contract.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -23,62 +25,65 @@ Create the `workers/api` Cloudflare Worker scaffold using Hono, existing Cloudfl
 
 ## Scope
 
-- Create `workers/api` package.
-- Configure Hono Worker entrypoint.
-- Add `GET /api/health` endpoint.
-- Add Worker environment binding types for `DB`, `LOGS`, and `RESEARCH_QUEUE`.
-- Add `workers/api/wrangler.toml` using existing D1 and R2 resources.
-- Ensure root quality gate includes API Worker build/typecheck.
+- Create `packages/shared` package with `package.json`, `tsconfig.json`, and `src/` structure.
+- Create type definitions matching all enums in `docs/shared/enums.md`.
+- Create type definitions matching all database table rows in `docs/database/schema.md`.
+- Create type definitions matching all API request/response shapes in `docs/api/api-contract.md`.
+- Create domain types for Shopee extraction adapters from `docs/shopee/extraction-strategy.md` and `docs/shopee/search-api-strategy.md`.
+- Create a Worker environment type that other workers can import.
+- Export all types from a barrel `index.ts`.
+- Add unit tests verifying type structure and enum constant coverage.
+- Remove `packages/.gitkeep` once the package directory has real files.
 
 ## Out of Scope
 
-- Do not implement auth endpoints.
-- Do not implement research endpoints.
-- Do not add D1 migrations.
-- Do not enqueue real jobs.
-- Do not deploy to Cloudflare.
+- Do not create Zod schemas (TASK-014).
+- Do not create business logic or services.
+- Do not create D1 migrations or repositories.
+- Do not create runtime configuration or environment validation.
+- Do not modify `apps/web` or `workers/api` beyond type imports if needed.
 
 ## Allowed Files
 
-- `workers/api/**`
-- `package.json`
-- `pnpm-lock.yaml`
+- `packages/shared/**`
+- `packages/.gitkeep` (may be removed)
 - `docs/tasks/**`
 
 ## Forbidden Files
 
 - `apps/web/**`
-- `packages/**`
+- `workers/api/src/**`
+- `workers/api/wrangler.toml`
 - `docs/database/schema.md`
 - `docs/api/api-contract.md`
 - `.ai/**`
 
 ## Input Contract
 
-The pnpm workspace exists and includes `workers/*`.
+The pnpm workspace exists and includes `packages/*`. Root scripts `lint`, `typecheck`, `test`, `build` exist.
 
 ## Output Contract
 
-`workers/api` is a buildable Cloudflare Worker package with a health endpoint and correct bindings.
+`packages/shared` is a buildable TypeScript package that exports all canonical types and enums. Other packages and workers can import from `@shopee-research/shared`.
 
 ## Acceptance Criteria
 
-- [x] `workers/api/package.json` exists with `dev`, `build`, `typecheck`, `lint`, and `test` scripts.
-- [x] `workers/api/src/index.ts` exports a Worker-compatible default.
-- [x] `GET /api/health` returns JSON health data.
-- [x] Wrangler config uses D1 binding `DB` and existing database `multi_Ai_db`.
-- [x] Wrangler config uses R2 binding `LOGS` and existing bucket `multi-apps-ai-bucket`.
-- [x] Queue binding name is `RESEARCH_QUEUE`.
+- [x] `packages/shared/package.json` exists with `build`, `typecheck`, `lint`, `test` scripts.
+- [x] `packages/shared/tsconfig.json` extends root base config.
+- [x] All enum types from `docs/shared/enums.md` are defined as TypeScript const objects and string literal unions.
+- [x] All database row types from `docs/database/schema.md` are defined as TypeScript interfaces.
+- [x] All API request/response types from `docs/api/api-contract.md` are defined.
+- [x] Shopee adapter types (`ResolveUrlResult`, `ProductSnapshot`, `ShopSnapshot`, `SearchProvider`, `SearchInput`, `SearchResultCandidate`) are defined.
+- [x] Worker environment type `ApiEnv` is exported.
+- [x] Barrel `src/index.ts` re-exports everything.
+- [x] Unit tests exist covering enum values match the source-of-truth docs.
+- [x] `pnpm install`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass.
 - [x] `node scripts/quality-gate.js` passes.
 
 ## Test Requirements
 
-- [x] Run `pnpm install`.
-- [x] Run `pnpm lint`.
-- [x] Run `pnpm typecheck`.
-- [x] Run `pnpm test`.
-- [x] Run `pnpm build`.
-- [x] Run `node scripts/quality-gate.js`.
+- [x] Unit tests for enum constant values matching docs/shared/enums.md.
+- [x] Type-level compile-time correctness verified by typecheck.
 
 ## Documentation Update
 

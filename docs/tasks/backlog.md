@@ -29,7 +29,7 @@ This backlog is the execution queue for 100% autopilot mode.
 
 ## Phase 3 — Auth
 
-- [ ] TASK-030 Build auth schema
+- [x] TASK-030 Build auth schema
 - [ ] TASK-031 Build register API
 - [ ] TASK-032 Build login API
 - [ ] TASK-033 Build logout API

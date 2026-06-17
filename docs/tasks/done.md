@@ -294,3 +294,32 @@ Quality Gate:
 - test: pass (100 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-030: Build auth schema
+
+Status: DONE
+CompletedAt: 2026-06-17 20:18
+Branch: feature/TASK-030-auth-schema
+Commit: pending
+
+Summary:
+- Created packages/auth package with package.json, tsconfig.json.
+- Created packages/auth/src/password.ts with PBKDF2 password hashing.
+- Implemented hashPassword() and verifyPassword() using Web Crypto API.
+- Supports optional pepper from PASSWORD_PEPPER env var.
+- Created packages/auth/src/session.ts with session token utilities.
+- Implemented generateSessionToken(), hashSessionToken(), hashSessionTokenAsync().
+- Added getSessionExpiry(), isSessionExpired(), isSessionRevoked().
+- Added hashUserAgent() and hashIp() for privacy-preserving hashes.
+- Created packages/auth/src/validation.ts with email/password/name validation.
+- Added validateEmail(), validatePassword(), validateName(), validateAuthInput().
+- Created 47 unit tests across 3 test files (8 password, 19 session, 20 validation).
+- All functions use Web Crypto API compatible with Cloudflare Workers.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (147 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 2 component)
+- build: pass
+- validation scripts: pass

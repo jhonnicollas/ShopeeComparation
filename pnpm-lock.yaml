@@ -76,6 +76,12 @@ importers:
         specifier: ^29.1.1
         version: 29.1.1
 
+  packages/auth:
+    dependencies:
+      '@shopee-research/shared':
+        specifier: workspace:*
+        version: link:../shared
+
   packages/db:
     dependencies:
       '@shopee-research/shared':

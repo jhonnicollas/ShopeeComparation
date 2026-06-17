@@ -173,7 +173,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 18:10
 Branch: feature/TASK-021-d1-schema
-Commit: pending
+Commit: 1b26c4e
 
 Summary:
 - Created packages/db package with package.json, tsconfig.json, and src/index.ts.

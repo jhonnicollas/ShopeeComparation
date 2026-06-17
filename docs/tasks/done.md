@@ -300,7 +300,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 20:18
 Branch: feature/TASK-030-auth-schema
-Commit: pending
+Commit: 3f16fa7
 
 Summary:
 - Created packages/auth package with package.json, tsconfig.json.

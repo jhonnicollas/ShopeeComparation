@@ -362,7 +362,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 20:26
 Branch: feature/TASK-032-login-api
-Commit: pending
+Commit: e5bd2a0
 
 Summary:
 - Added POST /api/auth/login route to workers/api/src/routes/auth.ts.

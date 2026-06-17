@@ -143,3 +143,27 @@ Quality Gate:
 - test: pass (60 tests: 22 enum, 36 schema, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-020: Setup wrangler config with existing DB and LOGS bindings
+
+Status: DONE
+CompletedAt: 2026-06-17 18:01
+Branch: feature/TASK-020-wrangler-config
+Commit: pending
+
+Summary:
+- Updated workers/api/wrangler.toml with all required non-secret environment variables from env-variables.md.
+- Added APP_BASE_URL, NINEROUTER_BASE_URL, NINEROUTER_MODEL_PRIMARY, NINEROUTER_MODEL_FAST, NINEROUTER_MODEL_FALLBACK.
+- Added JOB_POLL_INTERVAL_MS, MAX_COMPARE_LINKS, KEYWORD_SEARCH_LIMIT, DEFAULT_SHIPPED_FROM.
+- Added comment documenting secrets that must be set via wrangler secret put (NINEROUTER_API_KEY, SESSION_SECRET, PASSWORD_PEPPER).
+- Verified account_id, database_id, bucket_name match source-of-truth exactly.
+- Verified D1, R2, and queue producer bindings are correct.
+- No secret values committed.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (60 tests)
+- build: pass
+- validation scripts: pass

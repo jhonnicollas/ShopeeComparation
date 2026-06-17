@@ -25,7 +25,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-022 Setup R2 snapshot helper
 - [x] TASK-023 Setup Cloudflare Queue producer
 - [x] TASK-024 Setup Cloudflare Queue consumer
-- [ ] TASK-025 Setup environment validation
+- [x] TASK-025 Setup environment validation
 
 ## Phase 3 — Auth
 

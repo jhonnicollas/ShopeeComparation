@@ -269,3 +269,28 @@ Quality Gate:
 - test: pass (88 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-025: Setup environment validation
+
+Status: DONE
+CompletedAt: 2026-06-17 19:43
+Branch: feature/TASK-025-env-validation
+Commit: pending
+
+Summary:
+- Created packages/shared/src/schemas/env.ts with Zod schemas for env vars.
+- Created envSchema validating all non-secret vars from env-variables.md.
+- Created appEnvSchema for APP_ENV enum (development/staging/production).
+- Transforms numeric string vars (JOB_POLL_INTERVAL_MS, MAX_COMPARE_LINKS, etc.) to numbers.
+- Created packages/shared/src/env.ts with validateEnv() and safeValidateEnv() functions.
+- EnvValidationError class provides clear error messages with all issues.
+- Created packages/shared/src/env.test.ts with 12 unit tests.
+- Re-exported env schema from packages/shared/src/schemas/index.ts.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (100 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 2 component)
+- build: pass
+- validation scripts: pass

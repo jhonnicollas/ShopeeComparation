@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { D1Database, Queue, R2Bucket } from "@cloudflare/workers-types";
+import { authRouter } from "./routes/auth.js";
 
 export type ApiEnv = {
   Bindings: {
@@ -8,6 +9,7 @@ export type ApiEnv = {
     RESEARCH_QUEUE: Queue;
     APP_ENV: string;
     APP_NAME: string;
+    PASSWORD_PEPPER?: string;
   };
 };
 
@@ -20,5 +22,7 @@ app.get("/api/health", (c) => {
     environment: c.env.APP_ENV,
   });
 });
+
+app.route("/api/auth", authRouter);
 
 export default app;

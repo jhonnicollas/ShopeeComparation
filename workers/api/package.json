@@ -11,6 +11,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@shopee-research/auth": "workspace:*",
+    "@shopee-research/db": "workspace:*",
+    "@shopee-research/shared": "workspace:*",
     "hono": "^4.10.7"
   },
   "devDependencies": {

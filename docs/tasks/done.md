@@ -323,3 +323,36 @@ Quality Gate:
 - test: pass (147 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 2 component)
 - build: pass
 - validation scripts: pass
+
+## TASK-031: Build register API
+
+Status: DONE
+CompletedAt: 2026-06-17 20:23
+Branch: feature/TASK-031-register-api
+Commit: pending
+
+Summary:
+- Created packages/db/src/repositories/users.ts with user CRUD functions.
+- Implemented findUserByEmail(), findUserById(), createUser(), updateUserPassword().
+- Created packages/db/src/repositories/sessions.ts with session CRUD functions.
+- Implemented findSessionByTokenHash(), createSession(), revokeSession(), revokeAllUserSessions().
+- Created workers/api/src/routes/auth.ts with auth router.
+- Implemented POST /api/auth/register endpoint.
+- Validates request using registerRequestSchema.
+- Hashes password with PBKDF2 + optional pepper.
+- Creates user in sh_users table.
+- Creates session in sh_sessions table with 30-day expiry.
+- Sets HTTP-only, SameSite=Lax, Secure (production) cookie.
+- Normalizes email to lowercase.
+- Returns 201 with user info, 400 for invalid input, 409 for duplicate email.
+- Added @shopee-research/auth, @shopee-research/db as API worker dependencies.
+- Created 11 unit tests covering all register scenarios.
+- All 158 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (158 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 11 register, 2 component)
+- build: pass
+- validation scripts: pass

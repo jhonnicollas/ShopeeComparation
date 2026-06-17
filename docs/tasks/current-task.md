@@ -1,4 +1,4 @@
-# TASK-030: Build auth schema
+# TASK-031: Build register API
 
 ## Status
 
@@ -6,15 +6,14 @@ DONE
 
 ## Goal
 
-Create auth-specific migration file and password hashing/validation utilities for the auth system. This includes password hashing with PBKDF2 (Web Crypto API), session token generation, and input validation helpers.
+Implement POST /api/auth/register endpoint that creates a new user account, hashes the password, stores the user in D1, creates a session, and returns user info with session cookie.
 
 ## Required Reading
 
-- `docs/api/api-contract.md` (auth endpoints)
+- `docs/api/api-contract.md` (auth/register endpoint)
 - `docs/database/schema.md` (sh_users, sh_sessions tables)
-- `docs/database/naming-rules.md`
 - `docs/shared/enums.md` (user roles, statuses)
-- `docs/configuration/env-variables.md` (SESSION_SECRET, PASSWORD_PEPPER)
+- `docs/standards/coding-standard.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -22,57 +21,66 @@ Create auth-specific migration file and password hashing/validation utilities fo
 
 ## Scope
 
-- Create `packages/auth` package with auth utilities.
-- Create `packages/auth/src/password.ts` with PBKDF2 password hashing.
-- Create `packages/auth/src/session.ts` with session token generation and validation.
-- Create `packages/auth/src/validation.ts` with email/password validation helpers.
-- Add unit tests for all auth utilities.
-- Use Web Crypto API (available in Cloudflare Workers).
+- Create D1 repository functions for users and sessions.
+- Add POST /api/auth/register route to workers/api.
+- Validate request using registerRequestSchema.
+- Hash password using auth package.
+- Generate session token and store in D1.
+- Set HTTP-only session cookie.
+- Return user info using registerResponseSchema.
+- Add error handling for duplicate emails.
+- Add unit tests for register endpoint.
 
 ## Out of Scope
 
-- Do not create API route handlers (TASK-031, TASK-032, etc.).
-- Do not create D1 repository layer (later task).
-- Do not create frontend auth pages (TASK-035).
-- Do not implement session storage (uses D1 sh_sessions table).
+- Do not create login/logout endpoints (TASK-032, TASK-033).
+- Do not create frontend pages (TASK-035).
+- Do not create protected route middleware (TASK-036).
+- Do not implement email verification (later task).
 
 ## Allowed Files
 
-- `packages/auth/**`
+- `workers/api/src/**`
+- `packages/db/src/repositories/**` (new)
+- `packages/db/src/repositories/*.test.ts`
+- `packages/db/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `workers/**` (auth is reusable)
 - `apps/web/**`
-- `packages/db/**` (repositories are separate)
+- `packages/auth/**` (already done in TASK-030)
 - `.ai/**`
 
 ## Input Contract
 
-User provides email and password. System needs to hash passwords securely and generate session tokens.
+Client sends POST /api/auth/register with JSON body: { email, password, name? }.
 
 ## Output Contract
 
-`packages/auth` exports password hashing, session token generation, and validation utilities. All functions are testable and use Web Crypto API.
+On success: 201 Created with JSON { user: { id, email, name, role } } and Set-Cookie header.
+On error: 400/409 with standard error response.
 
 ## Acceptance Criteria
 
-- [x] `packages/auth` directory exists
-- [x] `packages/auth/package.json` exists
-- [x] `packages/auth/src/password.ts` exists with hashPassword/verifyPassword
-- [x] `packages/auth/src/session.ts` exists with generateSessionToken/hashSessionToken
-- [x] `packages/auth/src/validation.ts` exists with validateEmail/validatePassword
-- [x] All functions use Web Crypto API
-- [x] Unit tests pass for all auth utilities
+- [x] D1 user repository functions exist
+- [x] D1 session repository functions exist
+- [x] POST /api/auth/register route exists
+- [x] Request validation uses registerRequestSchema
+- [x] Password is hashed before storage
+- [x] Session cookie is HTTP-only and secure
+- [x] Duplicate email returns 409 error
+- [x] Invalid input returns 400 error
+- [x] Unit tests pass for register endpoint
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] Unit test for password hashing and verification
-- [x] Unit test for session token generation
-- [x] Unit test for email/password validation
+- [x] Unit test for successful registration
+- [x] Unit test for duplicate email
+- [x] Unit test for invalid input
+- [x] Unit test for password hashing
 - [x] Existing tests still pass
 
 ## Documentation Update

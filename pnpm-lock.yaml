@@ -103,6 +103,15 @@ importers:
 
   workers/api:
     dependencies:
+      '@shopee-research/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@shopee-research/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@shopee-research/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       hono:
         specifier: ^4.10.7
         version: 4.12.25

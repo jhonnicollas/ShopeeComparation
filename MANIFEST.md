@@ -1,16 +1,21 @@
-# Manifest — Source of Truth Docs v3
+# Manifest — Shopee Product Research AI Source of Truth v4 Autopilot
 
-Generated at: 2026-06-17T10:47:32.483894Z
-
-## Files
+Total files: 53
 
 - `.ai/agent-roles.md`
 - `.ai/agent-rules.md`
+- `.ai/autopilot-policy.md`
+- `.ai/autopilot-prompt.md`
+- `.ai/commit-rules.md`
 - `.ai/done-definition.md`
+- `.ai/failure-report-template.md`
 - `.ai/forbidden-actions.md`
 - `.ai/implementation-prompt.md`
 - `.ai/review-checklist.md`
 - `.ai/reviewer-prompt.md`
+- `.ai/self-review.md`
+- `.ai/stop-conditions.md`
+- `.ai/task-runner.md`
 - `MANIFEST.md`
 - `README.md`
 - `VALIDATION.md`
@@ -21,6 +26,7 @@ Generated at: 2026-06-17T10:47:32.483894Z
 - `docs/architecture/cloudflare-architecture.md`
 - `docs/architecture/data-flow.md`
 - `docs/architecture/folder-structure.md`
+- `docs/architecture/implementation-stack.md`
 - `docs/architecture/system-overview.md`
 - `docs/architecture/technical-decisions.md`
 - `docs/configuration/env-variables.md`
@@ -32,6 +38,7 @@ Generated at: 2026-06-17T10:47:32.483894Z
 - `docs/prd/prd.md`
 - `docs/prd/user-stories.md`
 - `docs/scoring/scoring-engine.md`
+- `docs/shared/enums.md`
 - `docs/shopee/extraction-strategy.md`
 - `docs/shopee/search-api-strategy.md`
 - `docs/shopee/url-resolver.md`
@@ -40,5 +47,15 @@ Generated at: 2026-06-17T10:47:32.483894Z
 - `docs/standards/security-standard.md`
 - `docs/standards/testing-standard.md`
 - `docs/tasks/backlog.md`
+- `docs/tasks/autopilot-task-contract.md`
+- `docs/tasks/current-task.md`
+- `docs/tasks/done.md`
+- `docs/tasks/failed.md`
 - `docs/tasks/task-template.md`
 - `docs/ui/configuration-crud.md`
+- `scripts/autopilot.sh`
+- `scripts/quality-gate.js`
+- `scripts/quality-gate.sh`
+- `scripts/validate-db-naming.js`
+- `scripts/validate-no-hardcode.js`
+- `scripts/validate-source-of-truth.js`

@@ -114,7 +114,7 @@
 
 ## Job Progress
 
-- Job memiliki status pending, processing, completed, failed, atau partial success.
+- Job memiliki status `pending`, `processing`, `completed`, `failed`, atau `partialSuccess`.
 - Frontend polling job status.
 - Job logs disimpan.
 - Error ditampilkan user-friendly.

@@ -1,35 +1,42 @@
-# Validation Report v3
+# Validation Report — v4 Autopilot
 
-## Database Naming Validation
+## Generated Files
 
-- Tables checked: 19
-- Table prefix violations: 0
-- Columns checked: 236
-- Column underscore violations: 0
+- Source directory: `/mnt/data/shopee_source_docs_v4_autopilot`
+- ZIP: `/mnt/data/shopee_product_research_ai_source_of_truth_autopilot_v4.zip`
 
-## Table Prefix Rule
+## Autopilot Files
 
-All table names must start with `sh_`.
+Added:
 
-Violations:
+- `.ai/autopilot-prompt.md`
+- `.ai/autopilot-policy.md`
+- `.ai/stop-conditions.md`
+- `.ai/commit-rules.md`
+- `.ai/task-runner.md`
+- `.ai/self-review.md`
+- `.ai/failure-report-template.md`
+- `docs/tasks/backlog.md`
+- `docs/tasks/current-task.md`
+- `docs/tasks/done.md`
+- `docs/tasks/failed.md`
+- `docs/tasks/task-template.md`
+- `scripts/quality-gate.sh`
+- `scripts/validate-db-naming.js`
+- `scripts/validate-no-hardcode.js`
+- `scripts/validate-source-of-truth.js`
+- `scripts/autopilot.sh`
 
-None
+## Database Naming Rule
 
-## Column Naming Rule
+- Table prefix required: `sh_`
+- Column names: camelCase only
+- Column underscore allowed: No
 
-All column names must use camelCase and must not contain underscore.
+## Security Rule
 
-Violations:
+Cloudflare token is not written into Markdown or source files. Use `wrangler secret put CLOUDFLARE_API_TOKEN`.
 
-None
+## Notes
 
-## Secret Handling Validation
-
-The Cloudflare token provided during planning was not written into Markdown as a raw value. It must be stored as a deployment secret and rotated before production.
-
-## Added Required Docs
-
-- `docs/configuration/env-variables.md`
-- `docs/configuration/runtime-configuration.md`
-- `docs/shopee/search-api-strategy.md`
-- `docs/ui/configuration-crud.md`
+This package is designed for 100% autopilot coding execution with hard stop conditions.

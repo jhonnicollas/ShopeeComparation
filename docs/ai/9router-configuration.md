@@ -4,17 +4,29 @@
 
 9router is the AI gateway. All AI model calls must go through the backend or Mastra workflow, never from frontend.
 
+## Runtime Configuration Source
+
+9router runtime configuration is D1-first.
+
+Load order:
+
+1. Active provider/model rows from `sh_aiProviderConfigs` and `sh_aiModelConfigs`.
+2. Safe bootstrap environment defaults if D1 is empty.
+3. Built-in development fallback only for non-secret local bootstrap.
+
+D1 stores `secretRef`, not the actual API key. The Worker reads the secret value from `env[secretRef]`.
+
 ## Environment Variables
 
 | Name | Required | Description |
 |---|---|---|
-| NINEROUTER_BASE_URL | yes | Base URL of 9router server |
+| NINEROUTER_BASE_URL | yes | Bootstrap fallback base URL if D1 config is empty |
 | NINEROUTER_API_KEY | yes | API key for 9router |
-| NINEROUTER_MODEL_PRIMARY | yes | Primary model for final report |
-| NINEROUTER_MODEL_FAST | yes | Fast model for small extraction/classification |
-| NINEROUTER_MODEL_FALLBACK | yes | Fallback model if primary fails |
-| NINEROUTER_TIMEOUT_MS | yes | Request timeout |
-| NINEROUTER_MAX_RETRIES | yes | Retry count |
+| NINEROUTER_MODEL_PRIMARY | yes | Bootstrap fallback primary model if D1 config is empty |
+| NINEROUTER_MODEL_FAST | yes | Bootstrap fallback fast model if D1 config is empty |
+| NINEROUTER_MODEL_FALLBACK | yes | Bootstrap fallback model if D1 config is empty |
+| NINEROUTER_TIMEOUT_MS | yes | Bootstrap fallback request timeout |
+| NINEROUTER_MAX_RETRIES | yes | Bootstrap fallback retry count |
 
 ## Use Cases
 

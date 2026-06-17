@@ -1,26 +1,35 @@
 # TASK-XXX: Task Title
 
+## Status
+
+TODO
+
 ## Goal
 
-Explain the goal.
+Describe the exact goal of this task.
 
 ## Required Reading
 
 - `docs/prd/prd.md`
 - `docs/architecture/technical-decisions.md`
-- `docs/architecture/system-overview.md`
-- `docs/api/api-contract.md`
+- `docs/architecture/implementation-stack.md`
+- `docs/shared/enums.md`
 - `docs/database/schema.md`
+- `docs/database/naming-rules.md`
+- `docs/api/api-contract.md`
+- `docs/configuration/runtime-configuration.md`
+- `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
-- `.ai/done-definition.md`
+- `.ai/autopilot-policy.md`
+- `.ai/stop-conditions.md`
 
 ## Scope
 
-What must be created or changed.
+List what must be implemented.
 
 ## Out of Scope
 
-What must not be changed.
+List what must not be implemented.
 
 ## Allowed Files
 
@@ -29,38 +38,43 @@ What must not be changed.
 
 ## Forbidden Files
 
-- `path/to/forbidden`
+- `path/to/file`
+- `path/to/folder/**`
 
 ## Input Contract
 
-Describe input.
+Define input shape or behavior.
 
 ## Output Contract
 
-Describe output.
+Define output shape or behavior.
 
 ## Acceptance Criteria
 
-- [ ] Criteria 1
-- [ ] Criteria 2
+- [ ] Criterion 1
+- [ ] Criterion 2
 
-## Test Requirement
+## Test Requirements
 
-- Unit test:
-- Integration test:
-- Manual test:
+- [ ] Unit test
+- [ ] Integration test if applicable
+- [ ] Manual verification if applicable
 
 ## Documentation Update
 
-- [ ] Update relevant docs.
+- [ ] Update related docs if behavior changes.
 
-## Final Response Required
+## Stop Conditions Check
 
-Agent must return:
+- [ ] No hard stop condition is triggered.
 
-1. Summary.
-2. Files changed.
-3. Tests run.
-4. Manual verification.
-5. Risks.
-6. Next task suggestion.
+## Completion Rule
+
+Task is complete only when:
+
+- Lint passes.
+- Typecheck passes.
+- Tests pass.
+- Build passes.
+- Self-review passes.
+- Task is committed.

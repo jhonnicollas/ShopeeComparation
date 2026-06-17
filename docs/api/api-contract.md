@@ -7,6 +7,43 @@
 - API must not expose internal stacktrace.
 - All protected endpoints require session cookie.
 - Heavy operations must return jobId, not wait synchronously.
+- Enum values must follow `docs/shared/enums.md`.
+- API errors must use the standard error shape below.
+
+## Standard Error Response
+
+```json
+{
+  "error": {
+    "code": "INVALID_INPUT",
+    "message": "Input is invalid.",
+    "details": null
+  }
+}
+```
+
+Rules:
+
+- `code` must be one of the error codes in `docs/shared/enums.md`.
+- `message` is user-facing and must not contain stacktrace or secrets.
+- `details` may contain safe validation details in development and safe field-level hints in production.
+
+## Field Evidence Shape
+
+When an endpoint returns detailed extracted product, shop, weight, feature, resolver, or report data, it may include evidence rows:
+
+```json
+{
+  "ownerType": "product",
+  "ownerId": "prd_xxx",
+  "fieldName": "priceMin",
+  "valueText": "125000",
+  "source": "productDetailApi",
+  "confidence": 0.92,
+  "status": "available",
+  "rawSnapshotR2Key": "raw/product/prd_xxx.json"
+}
+```
 
 ## Auth API
 

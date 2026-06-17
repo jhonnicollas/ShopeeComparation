@@ -8,7 +8,7 @@ Dokumen ini adalah keputusan teknis yang dikunci untuk MVP. AI agent tidak boleh
 | 2 | Package manager | **pnpm + pnpm workspace** | Menentukan monorepo setup, script lint/typecheck/test/build, dan dependency management lintas apps/packages. |
 | 3 | ID generation strategy | **nanoid + entity prefix** | Semua entity memakai ID string prefixed, misalnya `usr_`, `ses_`, `rsr_`, `prd_`, `shp_`, `cmp_`, `job_`. ID dibuat di application layer, bukan auto increment. |
 | 4 | Auth implementation | **Email/password + WebCrypto PBKDF2-SHA-256 + opaque session cookie** | Menentukan `TASK-017`. Password di-hash dengan salt unik dan iterasi configurable. Session memakai token acak, token disimpan sebagai hash di D1, cookie `shSession` HttpOnly/Secure/SameSite=Lax. |
-| 5 | 9router configuration | **Environment-based 9router client** | Menentukan `TASK-034`. Config memakai `NINEROUTER_BASE_URL`, `NINEROUTER_API_KEY`, `NINEROUTER_MODEL_PRIMARY`, `NINEROUTER_MODEL_FAST`, `NINEROUTER_MODEL_FALLBACK`, dan timeout/retry policy. |
+| 5 | 9router configuration | **D1 runtime config with env secret/bootstrap fallback** | Menentukan `TASK-034` dan runtime configuration. Provider, base URL non-secret, model, timeout, dan retry policy dimuat dari D1 config tables. Environment variables hanya dipakai untuk secret values dan safe bootstrap fallback saat D1 belum memiliki config. |
 | 6 | Job progress transport | **Polling, bukan WebSocket** | Menentukan frontend architecture. Frontend poll `GET /api/jobs/:id` dengan interval adaptif. WebSocket ditunda agar Cloudflare Worker, D1, dan Queue lebih sederhana. |
 | 7 | Shopee search strategy | **Adapter-based extraction: official API jika tersedia, fallback scrape terbatas** | Menentukan `TASK-060–065`. Strategi urutan: official/affiliate API jika ada → fetch ringan → 9router web fetch → Browser Run → optional VPS scraper. Tidak login, tidak bypass CAPTCHA, tidak akses cart/checkout/order/user. |
 | 8 | Validation library | **Zod** | Menentukan `packages/shared`. Semua request API, response extractor, output AI, dan contract internal divalidasi dengan Zod. |
@@ -39,6 +39,16 @@ Keputusan di atas berlaku untuk semua task implementasi. Jika agent ingin mengub
 | 13 | Cloudflare R2 resource | Existing `multi-apps-ai-bucket` via binding `LOGS` | Semua raw snapshot/log besar masuk bucket ini. |
 | 14 | AI provider CRUD | Provider and model config editable from frontend | Admin bisa test provider/model dari UI. |
 | 15 | Search provider CRUD | Search strategy editable from frontend | Strategy API/scrape/fallback bisa diganti tanpa redeploy. |
+
+## Runtime Config Precedence
+
+All runtime configuration must be loaded with this precedence:
+
+1. Active D1 runtime configuration row.
+2. Safe bootstrap environment default if no D1 row exists.
+3. Built-in development fallback only when a task explicitly needs local bootstrap and the value is not a secret, not a production URL, not a provider model, and not a scoring weight.
+
+Secrets are never loaded from D1 values. D1 stores only `secretRef`, and the Worker reads the secret value from `env[secretRef]`.
 
 ## Cloudflare Resource Decision
 

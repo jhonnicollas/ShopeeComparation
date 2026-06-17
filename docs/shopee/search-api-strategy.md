@@ -96,7 +96,7 @@ The system must not:
 - Retry only transient failures.
 - Do not retry CAPTCHA or forbidden responses aggressively.
 - Use exponential backoff.
-- Mark `PARTIAL_SUCCESS` if some candidates fail.
+- Mark `partialSuccess` if some candidates fail.
 
 ## Data Quality Rules
 

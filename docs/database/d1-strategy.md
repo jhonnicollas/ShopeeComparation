@@ -33,7 +33,7 @@ R2 menyimpan data besar:
 
 ## Why Not Store Raw Data in D1
 
-Raw data dapat membuat D1 cepat penuh dan query menjadi lambat. Semua data besar wajib masuk R2. D1 hanya menyimpan `rawSnapshotKey` atau `rawResponseKey`.
+Raw data dapat membuat D1 cepat penuh dan query menjadi lambat. Semua data besar wajib masuk R2. D1 hanya menyimpan `rawSnapshotR2Key` atau `rawResponseR2Key`.
 
 ## Retention Policy
 

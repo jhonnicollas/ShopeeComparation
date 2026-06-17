@@ -77,7 +77,7 @@ Dokumen ini adalah keputusan teknis yang dikunci untuk MVP. AI agent tidak boleh
 | 2 | Package manager | **pnpm + pnpm workspace** | Menentukan monorepo setup, script lint/typecheck/test/build, dan dependency management lintas apps/packages. |
 | 3 | ID generation strategy | **nanoid + entity prefix** | Semua entity memakai ID string prefixed, misalnya `usr_`, `ses_`, `rsr_`, `prd_`, `shp_`, `cmp_`, `job_`. ID dibuat di application layer, bukan auto increment. |
 | 4 | Auth implementation | **Email/password + WebCrypto PBKDF2-SHA-256 + opaque session cookie** | Menentukan `TASK-017`. Password di-hash dengan salt unik dan iterasi configurable. Session memakai token acak, token disimpan sebagai hash di D1, cookie `shSession` HttpOnly/Secure/SameSite=Lax. |
-| 5 | 9router configuration | **Environment-based 9router client** | Menentukan `TASK-034`. Config memakai `NINEROUTER_BASE_URL`, `NINEROUTER_API_KEY`, `NINEROUTER_MODEL_PRIMARY`, `NINEROUTER_MODEL_FAST`, `NINEROUTER_MODEL_FALLBACK`, dan timeout/retry policy. |
+| 5 | 9router configuration | **D1 runtime config with env secret/bootstrap fallback** | Provider, model, timeout, dan retry policy dimuat dari D1 config tables. Environment variables hanya untuk secret values dan safe bootstrap fallback saat D1 belum memiliki config. |
 | 6 | Job progress transport | **Polling, bukan WebSocket** | Menentukan frontend architecture. Frontend poll `GET /api/jobs/:id` dengan interval adaptif. WebSocket ditunda agar Cloudflare Worker, D1, dan Queue lebih sederhana. |
 | 7 | Shopee search strategy | **Adapter-based extraction: official API jika tersedia, fallback scrape terbatas** | Menentukan `TASK-060–065`. Strategi urutan: official/affiliate API jika ada → fetch ringan → 9router web fetch → Browser Run → optional VPS scraper. Tidak login, tidak bypass CAPTCHA, tidak akses cart/checkout/order/user. |
 | 8 | Validation library | **Zod** | Menentukan `packages/shared`. Semua request API, response extractor, output AI, dan contract internal divalidasi dengan Zod. |
@@ -369,6 +369,12 @@ Konfigurasi yang wajib disimpan di D1 dan dapat dikelola dari frontend admin/set
 10. Default shipped from.
 
 Secret value tidak boleh disimpan di D1. D1 hanya menyimpan `secretRef`, sedangkan secret value disimpan di Cloudflare secret atau CI/CD secret store.
+
+Runtime configuration precedence:
+
+1. D1 active config row.
+2. Safe environment bootstrap default.
+3. Built-in development fallback only for non-secret local bootstrap.
 
 ### Required Configuration UI
 

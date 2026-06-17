@@ -30,7 +30,7 @@ Dokumen ini adalah source of truth untuk field produk, toko, berat, fitur, dan r
 | specificationJson | string | no | JSON spec |
 | variationJson | string | no | JSON variant |
 | confidenceScore | number | yes | 0 to 1 |
-| rawSnapshotKey | string | no | R2 key |
+| rawSnapshotR2Key | string | no | R2 key |
 
 ## Product Weight Fields
 
@@ -52,7 +52,7 @@ Dokumen ini adalah source of truth untuk field produk, toko, berat, fitur, dan r
 | name | string | no | Shop name |
 | shopUrl | string | no | Shop URL |
 | statusJson | string | no | JSON status labels |
-| primaryStatus | string | yes | MALL, OFFICIAL, STAR, STAR_PLUS, REGULAR, UNKNOWN |
+| primaryStatus | string | yes | MALL, OFFICIAL, STAR, STARPLUS, PREFERRED, REGULAR, UNKNOWN |
 | rating | number | no | Shop rating |
 | ratingCount | number | no | Rating count |
 | responseRate | number | no | Percentage |
@@ -62,7 +62,7 @@ Dokumen ini adalah source of truth untuk field produk, toko, berat, fitur, dan r
 | joinedAgeText | string | no | Joined text |
 | location | string | no | Shop location |
 | confidenceScore | number | yes | 0 to 1 |
-| rawSnapshotKey | string | no | R2 key |
+| rawSnapshotR2Key | string | no | R2 key |
 
 ## Feature Fields
 
@@ -91,3 +91,20 @@ Review detail is optional in MVP. Summary fields:
 ## Data Quality Requirement
 
 Every extracted field should have traceable source and confidence when possible.
+
+Normalized product and shop columns store display/query values. Per-field evidence must be stored using the shared field evidence shape:
+
+```ts
+export type FieldEvidence = {
+  ownerType: "product" | "shop" | "weight" | "feature" | "resolver" | "report";
+  ownerId: string;
+  fieldName: string;
+  valueText: string | null;
+  source: string | null;
+  confidence: number;
+  status: "available" | "unavailable" | "partial";
+  rawSnapshotR2Key?: string | null;
+};
+```
+
+If a field is missing, use `valueText: null`, `confidence: 0`, and `status: "unavailable"`.

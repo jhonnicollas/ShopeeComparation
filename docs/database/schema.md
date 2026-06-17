@@ -9,6 +9,17 @@
 - Timestamp disimpan sebagai ISO string UTC.
 - Raw data besar tidak boleh disimpan di D1; gunakan R2.
 
+## Field Evidence Strategy
+
+Scalar product and shop columns store normalized values for querying and display. Per-field source, confidence, and availability status are stored in `sh_fieldEvidence`.
+
+Rules:
+
+- Every extracted product, shop, weight, and feature field should have one evidence row when possible.
+- Missing fields use `valueText = null`, `confidence = 0`, and `status = 'unavailable'`.
+- Large raw values are not stored in `valueText`; store the raw artifact in R2 and reference it through `rawSnapshotR2Key` or `rawResponseR2Key`.
+- `fieldName` must match the normalized field name, for example `priceMin`, `rating`, `responseRate`, or `value`.
+
 ## Tables
 
 ### sh_users
@@ -247,6 +258,21 @@
 | r2Key | TEXT NOT NULL | R2 object key |
 | contentType | TEXT | MIME/content type |
 | sizeBytes | INTEGER | Size in bytes |
+| createdAt | TEXT NOT NULL | Created timestamp |
+
+### sh_fieldEvidence
+
+| Column | Type | Notes |
+|---|---|---|
+| id | TEXT PRIMARY KEY | Example `evd_xxx` |
+| ownerType | TEXT NOT NULL | `product`, `shop`, `weight`, `feature`, `resolver`, `report` |
+| ownerId | TEXT NOT NULL | Related entity ID |
+| fieldName | TEXT NOT NULL | Field name in camelCase |
+| valueText | TEXT | Short normalized value as text if safe |
+| source | TEXT | Source name, adapter, or document section |
+| confidence | REAL NOT NULL DEFAULT 0 | 0 to 1 |
+| status | TEXT NOT NULL | `available`, `unavailable`, `partial` |
+| rawSnapshotR2Key | TEXT | Optional R2 raw artifact key |
 | createdAt | TEXT NOT NULL | Created timestamp |
 
 
@@ -553,6 +579,19 @@ CREATE TABLE IF NOT EXISTS sh_rawSnapshots (
   "r2Key" TEXT NOT NULL,
   "contentType" TEXT,
   "sizeBytes" INTEGER,
+  "createdAt" TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sh_fieldEvidence (
+  "id" TEXT PRIMARY KEY,
+  "ownerType" TEXT NOT NULL,
+  "ownerId" TEXT NOT NULL,
+  "fieldName" TEXT NOT NULL,
+  "valueText" TEXT,
+  "source" TEXT,
+  "confidence" REAL NOT NULL DEFAULT 0,
+  "status" TEXT NOT NULL,
+  "rawSnapshotR2Key" TEXT,
   "createdAt" TEXT NOT NULL
 );
 

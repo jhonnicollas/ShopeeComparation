@@ -44,5 +44,6 @@ ID value menggunakan prefixed nanoid:
 | Job log | `log_` | `log_abc123` |
 | AI report | `air_` | `air_abc123` |
 | Raw snapshot | `raw_` | `raw_abc123` |
+| Field evidence | `evd_` | `evd_abc123` |
 
 Underscore pada ID value diperbolehkan karena aturan larangan underscore hanya berlaku untuk **nama column**.

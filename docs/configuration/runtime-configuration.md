@@ -85,6 +85,8 @@ Urutan loading config:
 4. Cache config per request/job dengan TTL pendek.
 5. Admin update harus mengubah `updatedAt` agar cache bisa di-invalidate.
 
+Environment variables are not the primary runtime configuration source. They are allowed only for secret values and safe bootstrap fallback while D1 is empty.
+
 ## Secret Handling
 
 D1 hanya boleh menyimpan nama secret reference, contoh:

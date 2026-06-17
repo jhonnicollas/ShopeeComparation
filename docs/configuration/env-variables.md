@@ -76,8 +76,8 @@ Non-secret variable boleh ada di Wrangler config atau environment deployment, te
 | `APP_ENV` | Yes | `development` | `development`, `staging`, `production` |
 | `APP_NAME` | Yes | `Shopee Product Research AI` | Nama aplikasi |
 | `APP_BASE_URL` | Yes | empty | URL frontend |
-| `NINEROUTER_BASE_URL` | Yes | empty | Base URL 9router |
-| `NINEROUTER_MODEL_PRIMARY` | Yes | configured in DB | Fallback env default jika DB kosong |
+| `NINEROUTER_BASE_URL` | Yes | empty | Bootstrap fallback base URL 9router if D1 config is empty |
+| `NINEROUTER_MODEL_PRIMARY` | Yes | configured in DB | Bootstrap fallback jika DB kosong |
 | `NINEROUTER_MODEL_FAST` | No | configured in DB | Model cepat untuk extraction ringan |
 | `NINEROUTER_MODEL_FALLBACK` | No | configured in DB | Model fallback |
 | `JOB_POLL_INTERVAL_MS` | No | `3000` | Default polling frontend |

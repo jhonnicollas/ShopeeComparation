@@ -329,7 +329,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 20:23
 Branch: feature/TASK-031-register-api
-Commit: pending
+Commit: c3ad9b4
 
 Summary:
 - Created packages/db/src/repositories/users.ts with user CRUD functions.

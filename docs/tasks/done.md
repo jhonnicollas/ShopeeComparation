@@ -794,3 +794,26 @@ Quality Gate:
 - test: pass (307 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 20 shopee fixtures, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-052: Create ProductSnapshot contract
+
+Status: DONE
+CompletedAt: 2026-06-18 00:14
+Branch: feature/TASK-052-product-contract
+Commit: pending
+
+Summary:
+- Verified ProductSnapshot interface exists in packages/shared/src/types/shopee.ts.
+- Created packages/shopee/src/contracts/products.ts with re-exports and helpers.
+- Added isValidProductSnapshot() type guard function.
+- Added getConfidenceLevel() helper.
+- Created products.test.ts with 7 unit tests.
+- All 314 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (314 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 20 shopee fixtures, 7 shopee contracts, 2 home)
+- build: pass
+- validation scripts: pass

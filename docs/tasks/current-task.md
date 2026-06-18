@@ -1,4 +1,4 @@
-# TASK-051: Create Shopee shop fixture data
+# TASK-052: Create ProductSnapshot contract
 
 ## Status
 
@@ -6,51 +6,44 @@ DONE
 
 ## Goal
 
-Create fixture data for Shopee shops that will be used by the mock extractor.
+Verify and ensure ProductSnapshot contract exists in shared package, documenting the shape used by Shopee extractors.
 
 ## Required Reading
 
-- `docs/database/schema.md` (sh_shops)
+- `docs/database/schema.md` (sh_products)
 - `docs/shopee/extraction-strategy.md`
-- `docs/shared/enums.md` (shop status)
+- `docs/shared/enums.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create shop fixtures with diverse statuses.
-- Include trust metrics (rating, response rate).
-- Add unit tests.
+- Verify ProductSnapshot interface in packages/shared exists.
+- Re-export from packages/shopee.
+- Add contract documentation.
 
 ## Out of Scope
 
-- Do not create real extractor (TASK-054).
+- Do not modify shared type definitions (already correct).
 
 ## Allowed Files
 
-- `packages/shopee/src/fixtures/shops.ts`
-- `packages/shopee/src/fixtures/shops.test.ts`
-- `packages/shopee/src/index.ts`
+- `packages/shopee/src/contracts/products.ts` (new re-export)
+- `packages/shopee/src/contracts/index.ts`
 - `docs/tasks/**`
 
 ## Input Contract
 
-N/A - static fixture data.
+ProductSnapshot type exists in packages/shared/src/types/shopee.ts.
 
 ## Output Contract
 
-Export array of sample shop data objects.
+packages/shopee re-exports ProductSnapshot and provides helper type guards.
 
 ## Acceptance Criteria
 
-- [ ] shopFixtures exported
-- [ ] Includes 4+ sample shops
-- [ ] Unit tests pass
+- [ ] Contract module exists
+- [ ] Re-exports ProductSnapshot
 - [ ] Quality gate passes
-
-## Test Requirements
-
-- [ ] Fixture structure tests
-- [ ] Existing tests still pass
 
 ## Completion Rule
 

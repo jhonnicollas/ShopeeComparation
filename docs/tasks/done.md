@@ -500,3 +500,31 @@ Quality Gate:
 - test: pass (191 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 32 auth, 14 component, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-040: Build configuration database tables
+
+Status: DONE
+CompletedAt: 2026-06-17 22:14
+Branch: feature/TASK-040-config-tables
+Commit: pending
+
+Summary:
+- Created packages/db/src/repositories/appConfigs.ts with CRUD for sh_appConfigs.
+- findAppConfigByKey, findAppConfigById, listAppConfigs, listAppConfigsByCategory, listPublicAppConfigs, createAppConfig, updateAppConfig, deleteAppConfig.
+- Created packages/db/src/repositories/aiProviderConfigs.ts with CRUD for sh_aiProviderConfigs.
+- Supports lastTestStatus/lastTestAt/lastTestMessage for test console.
+- Created packages/db/src/repositories/aiModelConfigs.ts with CRUD for sh_aiModelConfigs.
+- Added findDefaultModelByUsageType for usage type lookup.
+- Created packages/db/src/repositories/searchProviderConfigs.ts with CRUD for sh_searchProviderConfigs.
+- Created packages/db/src/repositories/scoringConfigs.ts with CRUD for sh_scoringConfigs.
+- Added findDefaultScoringConfig helper.
+- Created configs.test.ts with 29 unit tests for all repositories.
+- All 220 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (220 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 32 auth, 14 component, 29 config repos, 2 home)
+- build: pass
+- validation scripts: pass

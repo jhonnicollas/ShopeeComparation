@@ -3,3 +3,8 @@ export * from "./r2.js";
 export * from "./queue.js";
 export * from "./repositories/users.js";
 export * from "./repositories/sessions.js";
+export * from "./repositories/appConfigs.js";
+export * from "./repositories/aiProviderConfigs.js";
+export * from "./repositories/aiModelConfigs.js";
+export * from "./repositories/searchProviderConfigs.js";
+export * from "./repositories/scoringConfigs.js";

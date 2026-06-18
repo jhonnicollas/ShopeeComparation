@@ -1,4 +1,4 @@
-# TASK-036: Build protected routes
+# TASK-040: Build configuration database tables
 
 ## Status
 
@@ -6,14 +6,14 @@ DONE
 
 ## Goal
 
-Create authentication middleware and protected route components for the React frontend. The middleware checks if user is authenticated via /api/auth/me and redirects to /login if not. Protected routes wrap pages that require authentication.
+Create repository/CRUD layer for all configuration database tables: sh_appConfigs, sh_aiProviderConfigs, sh_aiModelConfigs, sh_searchProviderConfigs, sh_scoringConfigs. The DDL tables already exist from TASK-021; this task adds the data access layer.
 
 ## Required Reading
 
-- `docs/api/api-contract.md` (auth/me endpoint)
-- `docs/architecture/implementation-stack.md` (TanStack Router)
-- `docs/standards/coding-standard.md`
-- `docs/standards/testing-standard.md`
+- `docs/database/schema.md` (config tables)
+- `docs/configuration/runtime-configuration.md`
+- `docs/shared/enums.md` (config categories, value types, auth types)
+- `docs/architecture/folder-structure.md` (db/repositories)
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -21,67 +21,64 @@ Create authentication middleware and protected route components for the React fr
 
 ## Scope
 
-- Create useAuth hook in apps/web/src/lib/auth.ts for client-side auth state.
-- Create RequireAuth component that wraps protected routes.
-- Add auth state to TanStack Query with stale time.
-- Add loading state while checking auth.
-- Redirect to /login if not authenticated.
-- Apply RequireAuth to /compare, /keyword-search, /settings routes.
-- Add auth state to AppShell (show user info or login link).
-- Add component tests for RequireAuth and useAuth.
+- Create packages/db/src/repositories/appConfigs.ts with CRUD operations.
+- Create packages/db/src/repositories/aiProviderConfigs.ts with CRUD operations.
+- Create packages/db/src/repositories/aiModelConfigs.ts with CRUD operations.
+- Create packages/db/src/repositories/searchProviderConfigs.ts with CRUD operations.
+- Create packages/db/src/repositories/scoringConfigs.ts with CRUD operations.
+- Add unit tests for each repository using mock D1.
+- Re-export all from packages/db/src/index.ts.
 
 ## Out of Scope
 
-- Do not create admin role checking (later task).
-- Do not create user profile page (later task).
-- Do not implement auto token refresh (later task).
+- Do not create API endpoints (TASK-041 through TASK-045).
+- Do not create frontend CRUD pages (TASK-046).
+- Do not create seed data (later task).
+- Do not create DDL migrations (already done in TASK-021).
 
 ## Allowed Files
 
-- `apps/web/src/lib/auth.ts` (add useAuth hook)
-- `apps/web/src/components/RequireAuth.tsx`
-- `apps/web/src/components/RequireAuth.test.tsx`
-- `apps/web/src/app/router.tsx` (wrap protected routes)
-- `apps/web/src/app/queryClient.ts` (if needed)
-- `apps/web/src/app/router.tsx` (update AppShell)
-- `apps/web/src/styles/**` (CSS for auth UI)
+- `packages/db/src/repositories/appConfigs.ts`
+- `packages/db/src/repositories/aiProviderConfigs.ts`
+- `packages/db/src/repositories/aiModelConfigs.ts`
+- `packages/db/src/repositories/searchProviderConfigs.ts`
+- `packages/db/src/repositories/scoringConfigs.ts`
+- `packages/db/src/repositories/*.test.ts`
+- `packages/db/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Forbidden Files
 
 - `workers/**`
-- `packages/**`
+- `apps/web/**`
+- `packages/db/migrations/**`
 - `.ai/**`
 
 ## Input Contract
 
-User navigates to a protected route. Frontend checks auth state via /api/auth/me.
+D1 database has config tables (sh_appConfigs, sh_aiProviderConfigs, sh_aiModelConfigs, sh_searchProviderConfigs, sh_scoringConfigs). Repository functions accept D1Database and row data.
 
 ## Output Contract
 
-- If authenticated: render the protected route content.
-- If not authenticated: redirect to /login.
-- If loading: show loading state.
+Repository functions provide CRUD operations for each config table. All functions return parsed row objects or null.
 
 ## Acceptance Criteria
 
-- [x] useAuth hook exists with isLoading, isAuthenticated, user
-- [x] RequireAuth component exists
-- [x] /compare route is protected
-- [x] /keyword-search route is protected
-- [x] /settings route is protected
-- [x] Unauthenticated users are redirected to /login
-- [x] AppShell shows user info when authenticated
-- [x] AppShell shows login link when not authenticated
-- [x] Component tests pass for RequireAuth
+- [x] packages/db/src/repositories/appConfigs.ts exists
+- [x] packages/db/src/repositories/aiProviderConfigs.ts exists
+- [x] packages/db/src/repositories/aiModelConfigs.ts exists
+- [x] packages/db/src/repositories/searchProviderConfigs.ts exists
+- [x] packages/db/src/repositories/scoringConfigs.ts exists
+- [x] Each repository has find/list/create/update/delete operations
+- [x] Unit tests pass for all repositories
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] RequireAuth renders children when authenticated
-- [x] RequireAuth redirects when not authenticated
-- [x] RequireAuth shows loading state while checking
+- [x] Unit test for create and find operations
+- [x] Unit test for list and update operations
+- [x] Unit test for delete operations
 - [x] Existing tests still pass
 
 ## Documentation Update

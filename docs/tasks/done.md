@@ -723,3 +723,26 @@ Quality Gate:
 - test: pass (287 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-048: Build 9router model test frontend
+
+Status: DONE
+CompletedAt: 2026-06-18 00:02
+Branch: feature/TASK-048-test-frontend
+Commit: pending
+
+Summary:
+- Added testAiModel() function to apps/web/src/lib/config.ts.
+- Added ModelTestResult type with status, latencyMs, outputValidJson, message.
+- Updated ConfigPage AI Models tab to add Test button per row.
+- Shows test result inline with success/failed badge and latency.
+- Added CSS for testBadgeSuccess, testBadgeFailed, testBadgeNone.
+- All 287 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (287 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 2 home)
+- build: pass
+- validation scripts: pass

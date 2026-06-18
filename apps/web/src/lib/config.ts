@@ -114,3 +114,16 @@ export const listScoringConfigs = () =>
 
 export const deleteScoringConfig = (id: string) =>
   apiRequest<{ success: boolean }>(`/config/scoring-configs/${id}`, { method: "DELETE" });
+
+export interface ModelTestResult {
+  status: "success" | "failed";
+  latencyMs: number;
+  outputValidJson: boolean;
+  message: string;
+}
+
+export const testAiModel = (id: string, prompt?: string) =>
+  apiRequest<ModelTestResult>(`/config/ai-models/${id}/test`, {
+    method: "POST",
+    body: JSON.stringify({ prompt }),
+  });

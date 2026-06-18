@@ -11,6 +11,8 @@ import {
   listAppConfigs,
   listScoringConfigs,
   listSearchProviders,
+  testAiModel,
+  type ModelTestResult,
 } from "../lib/config.js";
 import { ApiClientError } from "../lib/api.js";
 
@@ -203,9 +205,17 @@ function AiModelsTab({ onDelete }: { onDelete: () => void }) {
     queryKey: ["config", "ai-models"],
     queryFn: () => listAiModels(),
   });
-  const mutation = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteAiModel(id),
     onSuccess: onDelete,
+  });
+  const [testResult, setTestResult] = useState<Record<string, ModelTestResult> | null>(null);
+  const testMutation = useMutation({
+    mutationFn: (id: string) => testAiModel(id),
+    onSuccess: (result, id) => {
+      setTestResult((prev) => ({ ...(prev ?? {}), [id]: result }));
+      onDelete();
+    },
   });
 
   return (
@@ -223,6 +233,7 @@ function AiModelsTab({ onDelete }: { onDelete: () => void }) {
                 <th>Usage</th>
                 <th>Default</th>
                 <th>Enabled</th>
+                <th>Test</th>
                 <th></th>
               </tr>
             </thead>
@@ -235,11 +246,34 @@ function AiModelsTab({ onDelete }: { onDelete: () => void }) {
                   <td>{m.isDefault === 1 ? "Yes" : "No"}</td>
                   <td>{m.isEnabled === 1 ? "Yes" : "No"}</td>
                   <td>
+                    {testResult?.[m.id] ? (
+                      <span
+                        className={
+                          testResult[m.id]?.status === "success"
+                            ? "testBadgeSuccess"
+                            : "testBadgeFailed"
+                        }
+                      >
+                        {testResult[m.id]?.status} ({testResult[m.id]?.latencyMs}ms)
+                      </span>
+                    ) : (
+                      <span className="testBadgeNone">not tested</span>
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="secondaryButton"
+                      onClick={() => testMutation.mutate(m.id)}
+                      disabled={testMutation.isPending}
+                    >
+                      Test
+                    </button>
                     <button
                       type="button"
                       className="dangerButton"
-                      onClick={() => mutation.mutate(m.id)}
-                      disabled={mutation.isPending}
+                      onClick={() => deleteMutation.mutate(m.id)}
+                      disabled={deleteMutation.isPending}
                     >
                       Delete
                     </button>

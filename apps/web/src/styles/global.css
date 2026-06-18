@@ -360,3 +360,28 @@ h2 {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.testBadgeSuccess {
+  display: inline-block;
+  background: #d1fae5;
+  color: #065f46;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.testBadgeFailed {
+  display: inline-block;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.testBadgeNone {
+  color: #94a3b8;
+  font-size: 12px;
+}

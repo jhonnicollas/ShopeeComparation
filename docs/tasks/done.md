@@ -1141,7 +1141,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 01:18
 Branch: feature/TASK-066-red-flag-ui
-Commit: pending
+Commit: 6269aca
 
 Summary:
 - Created apps/web/src/components/RedFlagList.tsx.

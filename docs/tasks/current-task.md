@@ -1,4 +1,4 @@
-# TASK-059: Build compare links frontend page
+# TASK-060: Build deterministic scoring engine
 
 ## Status
 
@@ -6,49 +6,49 @@ DONE
 
 ## Goal
 
-Build the frontend compare-links page that lets users submit Shopee links and poll job status.
+Create a deterministic scoring engine in packages/core that computes product scores based on rating, reviews, sold count, price, shop trust, response rate, and feature match.
 
 ## Required Reading
 
-- `docs/api/api-contract.md`
-- `docs/architecture/implementation-stack.md`
+- `docs/shared/enums.md` (scoring fields)
+- `docs/configuration/runtime-configuration.md` (scoring weights)
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Update ComparePage with form for adding links.
-- Add TanStack Query mutation for submission.
-- Add TanStack Query polling for job status.
-- Show progress and status.
-- Add component tests.
+- Create packages/core package.
+- Implement calculateProductScore() function with deterministic algorithm.
+- Support custom weights via ScoringWeights input.
+- Add unit tests verifying determinism.
 
 ## Out of Scope
 
-- Do not implement keyword search page.
-- Do not implement scoring display.
+- Do not implement risk detection (TASK-062).
+- Do not implement comparison ranking (TASK-064).
 
 ## Allowed Files
 
-- `apps/web/src/pages/ComparePage.tsx`
-- `apps/web/src/pages/ComparePage.test.tsx`
+- `packages/core/src/scoring/engine.ts`
+- `packages/core/src/scoring/engine.test.ts`
+- `packages/core/package.json`
+- `packages/core/tsconfig.json`
+- `packages/core/src/index.ts`
 - `docs/tasks/**`
 
 ## Input Contract
 
-User enters up to 5 links in form.
+ProductSnapshot, ShopSnapshot, and ScoringWeights.
 
 ## Output Contract
 
-Form submits, shows job status, polls until completion.
+ScoringOutput with breakdown scores.
 
 ## Acceptance Criteria
 
-- [ ] ComparePage form implemented
-- [ ] Add/remove link buttons
-- [ ] Submit calls POST /api/research/compare-links
-- [ ] Polls GET /api/research/jobs/:id
-- [ ] Shows progress and status
-- [ ] Component tests pass
+- [ ] packages/core exists
+- [ ] calculateProductScore implemented
+- [ ] Deterministic (same input = same output)
+- [ ] Unit tests pass
 - [ ] Quality gate passes
 
 ## Completion Rule

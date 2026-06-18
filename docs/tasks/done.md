@@ -986,3 +986,29 @@ Quality Gate:
 - test: pass (358 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 10 save extracted, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-060: Build deterministic scoring engine
+
+Status: DONE
+CompletedAt: 2026-06-18 00:42
+Branch: feature/TASK-060-scoring-engine
+Commit: pending
+
+Summary:
+- Created packages/core package with package.json, tsconfig.json.
+- Created packages/core/src/scoring/engine.ts.
+- Implemented calculateProductScore() with rating, review, sold, price, shopTrust, responseRate, featureMatch.
+- Implemented individual score calculators (calculateRatingScore, etc).
+- Implemented compareProductScores for sorting.
+- Default weights: rating=0.25, sold=0.15, price=0.15, shopTrust=0.15, etc.
+- All scores deterministic (same input = same output).
+- Created engine.test.ts with 22 unit tests.
+- All 380 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (380 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 22 core, 10 save extracted, 2 home)
+- build: pass
+- validation scripts: pass

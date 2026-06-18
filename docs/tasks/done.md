@@ -1044,7 +1044,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:50
 Branch: feature/TASK-062-risk-engine
-Commit: pending
+Commit: 29143d5
 
 Summary:
 - Created packages/core/src/risk/engine.ts.

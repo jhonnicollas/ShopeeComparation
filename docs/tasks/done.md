@@ -1012,3 +1012,29 @@ Quality Gate:
 - test: pass (380 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 22 core, 10 save extracted, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-061: Build score breakdown
+
+Status: DONE
+CompletedAt: 2026-06-18 00:45
+Branch: feature/TASK-061-score-breakdown
+Commit: pending
+
+Summary:
+- Created packages/core/src/scoring/breakdown.ts.
+- Implemented generateScoreBreakdown() returning ScoreBreakdownItem[].
+- Each item has component, score, weight, contribution, reason, level.
+- 7 components: rating, reviewCount, soldCount, price, shopTrust, responseRate, featureMatch.
+- Contribution = score * weight.
+- Level: low (<0.4), medium (0.4-0.7), high (>=0.7).
+- Human-readable reasons for each level.
+- Added 5 unit tests.
+- All 385 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (385 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 22 core, 10 save extracted, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

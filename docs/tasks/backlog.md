@@ -65,7 +65,7 @@ This backlog is the execution queue for 100% autopilot mode.
 ## Phase 6 — Scoring and Risk
 
 - [x] TASK-060 Build deterministic scoring engine
-- [ ] TASK-061 Build score breakdown
+- [x] TASK-061 Build score breakdown
 - [ ] TASK-062 Build risk detection engine
 - [ ] TASK-063 Build data quality checker
 - [ ] TASK-064 Build comparison ranking

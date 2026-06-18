@@ -1,4 +1,4 @@
-# TASK-060: Build deterministic scoring engine
+# TASK-061: Build score breakdown
 
 ## Status
 
@@ -6,48 +6,46 @@ DONE
 
 ## Goal
 
-Create a deterministic scoring engine in packages/core that computes product scores based on rating, reviews, sold count, price, shop trust, response rate, and feature match.
+Create a function that generates human-readable score breakdown explanation from ScoringOutput.
 
 ## Required Reading
 
-- `docs/shared/enums.md` (scoring fields)
-- `docs/configuration/runtime-configuration.md` (scoring weights)
+- `docs/shared/enums.md`
+- `docs/architecture/folder-structure.md` (core/scoring)
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create packages/core package.
-- Implement calculateProductScore() function with deterministic algorithm.
-- Support custom weights via ScoringWeights input.
-- Add unit tests verifying determinism.
+- Create packages/core/src/scoring/breakdown.ts.
+- Implement generateScoreBreakdown() function.
+- Return explanation array with component scores and reasons.
+- Add unit tests.
 
 ## Out of Scope
 
-- Do not implement risk detection (TASK-062).
-- Do not implement comparison ranking (TASK-064).
+- Do not change scoring algorithm.
+- Do not create UI.
 
 ## Allowed Files
 
-- `packages/core/src/scoring/engine.ts`
-- `packages/core/src/scoring/engine.test.ts`
-- `packages/core/package.json`
-- `packages/core/tsconfig.json`
-- `packages/core/src/index.ts`
+- `packages/core/src/scoring/breakdown.ts`
+- `packages/core/src/scoring/breakdown.test.ts`
+- `packages/core/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Input Contract
 
-ProductSnapshot, ShopSnapshot, and ScoringWeights.
+ScoringOutput from shared.
 
 ## Output Contract
 
-ScoringOutput with breakdown scores.
+ScoreBreakdown array with component explanations.
 
 ## Acceptance Criteria
 
-- [ ] packages/core exists
-- [ ] calculateProductScore implemented
-- [ ] Deterministic (same input = same output)
+- [ ] breakdown.ts exists
+- [ ] generateScoreBreakdown implemented
+- [ ] Returns per-component explanations
 - [ ] Unit tests pass
 - [ ] Quality gate passes
 

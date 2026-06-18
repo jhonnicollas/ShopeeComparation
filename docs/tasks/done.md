@@ -899,7 +899,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:24
 Branch: feature/TASK-056-research-session
-Commit: pending
+Commit: 25eb73c
 
 Summary:
 - Research session creation was implemented as part of TASK-055 (compare-links endpoint).
@@ -921,7 +921,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:24
 Branch: feature/TASK-057-job-polling
-Commit: pending
+Commit: 25eb73c
 
 Summary:
 - Added GET /api/research/jobs/:id endpoint with ownership validation.

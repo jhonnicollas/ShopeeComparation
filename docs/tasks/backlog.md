@@ -60,7 +60,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-056 Build research session creation
 - [x] TASK-057 Build job creation and polling
 - [x] TASK-058 Save products, shops, weights, and comparison items to D1
-- [ ] TASK-059 Build compare links frontend page
+- [x] TASK-059 Build compare links frontend page
 
 ## Phase 6 — Scoring and Risk
 

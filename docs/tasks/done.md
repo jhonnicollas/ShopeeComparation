@@ -961,3 +961,28 @@ Quality Gate:
 - test: pass (354 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 17 component, 29 config repos, 27 shopee, 10 save extracted, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-059: Build compare links frontend page
+
+Status: DONE
+CompletedAt: 2026-06-18 00:35
+Branch: feature/TASK-059-compare-frontend
+Commit: pending
+
+Summary:
+- Updated ComparePage with full form for adding/removing up to 5 links.
+- Uses TanStack Query useMutation to POST /api/research/compare-links.
+- Uses TanStack Query useQuery to poll GET /api/research/jobs/:id every 3s.
+- Shows job status, progress, and current step.
+- Shows "View Results" button when completed.
+- Uses ApiClientError for error handling.
+- Added ComparePage.test.tsx with 4 component tests.
+- All 358 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (358 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 10 save extracted, 2 home)
+- build: pass
+- validation scripts: pass

@@ -1,4 +1,4 @@
-# TASK-058: Save products, shops, weights, and comparison items to D1
+# TASK-059: Build compare links frontend page
 
 ## Status
 
@@ -6,52 +6,49 @@ DONE
 
 ## Goal
 
-Create repository functions to save extracted products, shops, weights, features, and comparison items to D1 from the queue consumer.
+Build the frontend compare-links page that lets users submit Shopee links and poll job status.
 
 ## Required Reading
 
-- `docs/database/schema.md` (sh_products, sh_shops, sh_productWeights, sh_productFeatures, sh_comparisonItems)
-- `docs/shared/enums.md`
+- `docs/api/api-contract.md`
+- `docs/architecture/implementation-stack.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Add upsert functions for products, shops, weights, features.
-- Add createComparisonItem function.
-- Use prefixed IDs (prd_, shp_, wgt_, fea_, cim_).
-- Handle duplicate inserts (UPSERT pattern).
-- Add unit tests.
+- Update ComparePage with form for adding links.
+- Add TanStack Query mutation for submission.
+- Add TanStack Query polling for job status.
+- Show progress and status.
+- Add component tests.
 
 ## Out of Scope
 
-- Do not implement actual extraction logic.
-- Do not implement scoring calculation.
+- Do not implement keyword search page.
+- Do not implement scoring display.
 
 ## Allowed Files
 
-- `packages/db/src/repositories/products.ts`
-- `packages/db/src/repositories/shops.ts`
-- `packages/db/src/repositories/comparisonItems.ts`
-- `packages/db/src/repositories/*.test.ts`
-- `packages/db/src/index.ts` (re-export)
+- `apps/web/src/pages/ComparePage.tsx`
+- `apps/web/src/pages/ComparePage.test.tsx`
 - `docs/tasks/**`
 
 ## Input Contract
 
-ProductSnapshot, ShopSnapshot, and comparison data from extraction.
+User enters up to 5 links in form.
 
 ## Output Contract
 
-Saved rows in D1, returned with IDs.
+Form submits, shows job status, polls until completion.
 
 ## Acceptance Criteria
 
-- [ ] upsertProduct implemented
-- [ ] upsertShop implemented
-- [ ] saveProductWeight implemented
-- [ ] saveProductFeatures implemented
-- [ ] createComparisonItem implemented
-- [ ] Unit tests pass
+- [ ] ComparePage form implemented
+- [ ] Add/remove link buttons
+- [ ] Submit calls POST /api/research/compare-links
+- [ ] Polls GET /api/research/jobs/:id
+- [ ] Shows progress and status
+- [ ] Component tests pass
 - [ ] Quality gate passes
 
 ## Completion Rule

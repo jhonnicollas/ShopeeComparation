@@ -1606,3 +1606,29 @@ Quality Gate:
 - test: pass (560 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-095: Build product weight extractor
+
+Status: DONE
+CompletedAt: 2026-06-19 00:35
+Branch: main
+Commit: 5e78d34
+
+Summary:
+- Created WeightExtractor in packages/shopee/src/parser/weightExtractor.ts.
+- Supports gram, kg, mg, lb, oz units.
+- Multiple patterns: "500g", "1.5 kg", "Berat: 500g", "weight: 1200 g", etc.
+- Source attribution: productSpecification, description, metadata, variant, shipping, aiExtraction.
+- Returns WeightExtraction with value, unit, rawText, source, confidence.
+- Preserves original unit (no normalization) per PRD output format.
+- Picks highest confidence match when multiple found.
+- Added 20 unit tests covering all units, patterns, sources, and edge cases.
+- All 580 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (580 tests)
+- build: pass
+- validation scripts: pass

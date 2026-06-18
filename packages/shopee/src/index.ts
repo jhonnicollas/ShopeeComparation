@@ -3,6 +3,7 @@ export * from "./fixtures/shops.js";
 export * from "./contracts/index.js";
 export * from "./extractors/mockExtractor.js";
 export * from "./extractors/fallbackExtractor.js";
+export * from "./extractors/snapshotStorage.js";
 export * from "./resolver/urlParser.js";
 export * from "./resolver/resolveUrl.js";
 export * from "./resolver/webFetchAdapter.js";

@@ -992,7 +992,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:42
 Branch: feature/TASK-060-scoring-engine
-Commit: pending
+Commit: d600181
 
 Summary:
 - Created packages/core package with package.json, tsconfig.json.

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { configRouter } from "./config.js";
 
 interface MockD1PreparedStatement {
@@ -1906,5 +1906,214 @@ describe("DELETE /api/config/scoring-configs/:id", () => {
     );
     expect(res.status).toBe(200);
     expect(db.scoringConfigs).toHaveLength(0);
+  });
+});
+
+describe("POST /api/config/ai-models/:id/test", () => {
+  let db: MockD1Database;
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await configRouter.request(
+      "/ai-models/aim_1/test",
+      { method: "POST", headers: { "content-type": "application/json" }, body: "{}" },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 for non-admin", async () => {
+    const token = await createAdminSession(db, "user");
+    const res = await configRouter.request(
+      "/ai-models/aim_1/test",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: "{}",
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 404 for missing model", async () => {
+    const token = await createAdminSession(db, "admin");
+    const res = await configRouter.request(
+      "/ai-models/missing/test",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: "{}",
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 if provider missing", async () => {
+    const token = await createAdminSession(db, "admin");
+    db.aiModels.push({
+      id: "aim_1",
+      providerKey: "missing-provider",
+      modelKey: "primary",
+      modelName: `test-model-${""}`,
+      displayName: null,
+      usageType: "reasoning",
+      contextWindow: null,
+      supportsJson: 0,
+      supportsTools: 0,
+      supportsVision: 0,
+      costInput: null,
+      costOutput: null,
+      isDefault: 0,
+      isEnabled: 1,
+      lastTestStatus: null,
+      lastTestAt: null,
+      lastTestMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await configRouter.request(
+      "/ai-models/aim_1/test",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: "{}",
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("successfully tests model and updates DB", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: '{"ok":true,"message":"test"}' } }],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+    const token = await createAdminSession(db, "admin");
+    db.aiProviders.push({
+      id: "aip_1",
+      providerKey: "test-provider",
+      displayName: "Test",
+      baseUrl: "https://api.test.com",
+      authType: "bearer",
+      secretRef: "TEST_KEY",
+      timeoutMs: 60000,
+      retryCount: 1,
+      isEnabled: 1,
+      lastTestStatus: null,
+      lastTestAt: null,
+      lastTestMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    db.aiModels.push({
+      id: "aim_1",
+      providerKey: "test-provider",
+      modelKey: "primary",
+      modelName: `test-model-${""}`,
+      displayName: null,
+      usageType: "reasoning",
+      contextWindow: null,
+      supportsJson: 0,
+      supportsTools: 0,
+      supportsVision: 0,
+      costInput: null,
+      costOutput: null,
+      isDefault: 0,
+      isEnabled: 1,
+      lastTestStatus: null,
+      lastTestAt: null,
+      lastTestMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const env = createEnv(db) as Record<string, unknown>;
+    env.TEST_KEY = "test-secret-value";
+    const res = await configRouter.request(
+      "/ai-models/aim_1/test",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: "{}",
+      },
+      env
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { status: string; outputValidJson: boolean };
+    expect(body.status).toBe("success");
+    expect(body.outputValidJson).toBe(true);
+    expect(db.aiModels[0].lastTestStatus).toBe("success");
+    expect(db.aiModels[0].lastTestAt).not.toBeNull();
+  });
+
+  it("returns 502 when test fails", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response("Bad request", { status: 400 })
+    );
+    const token = await createAdminSession(db, "admin");
+    db.aiProviders.push({
+      id: "aip_1",
+      providerKey: "test-provider",
+      displayName: "Test",
+      baseUrl: "https://api.test.com",
+      authType: "bearer",
+      secretRef: "TEST_KEY",
+      timeoutMs: 60000,
+      retryCount: 1,
+      isEnabled: 1,
+      lastTestStatus: null,
+      lastTestAt: null,
+      lastTestMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    db.aiModels.push({
+      id: "aim_1",
+      providerKey: "test-provider",
+      modelKey: "primary",
+      modelName: `test-model-${""}`,
+      displayName: null,
+      usageType: "reasoning",
+      contextWindow: null,
+      supportsJson: 0,
+      supportsTools: 0,
+      supportsVision: 0,
+      costInput: null,
+      costOutput: null,
+      isDefault: 0,
+      isEnabled: 1,
+      lastTestStatus: null,
+      lastTestAt: null,
+      lastTestMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const env = createEnv(db) as Record<string, unknown>;
+    env.TEST_KEY = "test-secret-value";
+    const res = await configRouter.request(
+      "/ai-models/aim_1/test",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: "{}",
+      },
+      env
+    );
+    expect(res.status).toBe(502);
+    expect(db.aiModels[0].lastTestStatus).toBe("failed");
   });
 });

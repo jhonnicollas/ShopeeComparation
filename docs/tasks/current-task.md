@@ -1,4 +1,4 @@
-# TASK-046: Build frontend configuration CRUD page
+# TASK-047: Build 9router model test API
 
 ## Status
 
@@ -6,68 +6,61 @@ DONE
 
 ## Goal
 
-Create a frontend configuration CRUD page that allows admin users to manage app configs, AI providers, AI models, search providers, and scoring configs.
+Implement POST /api/config/ai-models/:id/test endpoint that calls 9router API to test a configured model and updates lastTestStatus/lastTestAt/lastTestMessage in the database.
 
 ## Required Reading
 
-- `docs/ui/configuration-crud.md`
 - `docs/api/api-contract.md`
+- `docs/ai/9router-configuration.md`
 - `docs/configuration/runtime-configuration.md`
-- `docs/architecture/implementation-stack.md`
+- `docs/shared/enums.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create apps/web/src/lib/config.ts with API client functions.
-- Create ConfigPage with tabs for each config type.
-- Use TanStack Query for data fetching and mutations.
-- Show loading/error states.
-- Add component tests.
+- Create testAiModel endpoint in workers/api/src/routes/config.ts.
+- Resolve AI provider and secret from env via secretRef.
+- Call 9router with model name to test response.
+- Update lastTestStatus/lastTestAt/lastTestMessage in sh_aiModelConfigs.
+- Return test result with success/message.
+- Add unit tests.
 
 ## Out of Scope
 
-- Do not implement actual edit dialogs (list/create/delete only).
-- Do not implement test console (TASK-048).
+- Do not create test console UI (TASK-048).
+- Do not create test for AI providers (only models).
 
 ## Allowed Files
 
-- `apps/web/src/lib/config.ts`
-- `apps/web/src/pages/ConfigPage.tsx`
-- `apps/web/src/pages/ConfigPage.test.tsx`
-- `apps/web/src/app/router.tsx`
-- `apps/web/src/styles/global.css`
+- `workers/api/src/routes/config.ts`
+- `workers/api/src/routes/config.test.ts`
 - `docs/tasks/**`
-
-## Forbidden Files
-
-- `workers/**`
-- `packages/**`
-- `.ai/**`
 
 ## Input Contract
 
-Admin user navigates to /settings/config and sees tabs for each config type.
+Admin calls POST /api/config/ai-models/:id/test with optional request body { prompt }.
 
 ## Output Contract
 
-Page shows list of configs with create/delete buttons. On submit, calls API and refreshes.
+Returns { success, status, message, latencyMs }.
 
 ## Acceptance Criteria
 
-- [ ] ConfigPage component exists
-- [ ] /settings/config route exists
-- [ ] Tabs for each config type
-- [ ] List view with create/delete
-- [ ] API client functions exist
-- [ ] Loading/error states shown
-- [ ] Component tests pass
+- [ ] Test endpoint implemented
+- [ ] Reads model config from DB
+- [ ] Reads provider config and resolves secret
+- [ ] Calls 9router API
+- [ ] Updates lastTestStatus/lastTestAt/lastTestMessage
+- [ ] Admin only
+- [ ] Unit tests pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] ConfigPage renders
-- [ ] Tabs render
-- [ ] Existing tests still pass
+- [ ] Unit test for successful test
+- [ ] Unit test for failed test
+- [ ] Unit test for model not found
+- [ ] Unit test for non-admin denied
 
 ## Completion Rule
 

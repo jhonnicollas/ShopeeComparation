@@ -695,3 +695,31 @@ Quality Gate:
 - test: pass (281 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 90 auth/api, 17 component, 29 config repos, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-047: Build 9router model test API
+
+Status: DONE
+CompletedAt: 2026-06-18 00:00
+Branch: feature/TASK-047-model-test-api
+Commit: pending
+
+Summary:
+- Created workers/api/src/lib/nineRouter.ts with testNineRouterModel() function.
+- Calls 9router /chat/completions endpoint with timeout and abort controller.
+- Returns status, latencyMs, outputValidJson, message, responseText.
+- Added POST /api/config/ai-models/:id/test endpoint to config router.
+- Validates model and provider exist (404 if missing).
+- Resolves secret via env[secretRef] (500 if missing).
+- Calls 9router with default test prompt if not provided.
+- Updates lastTestStatus/lastTestAt/lastTestMessage in DB.
+- Returns 200 on success, 502 on failure.
+- Added 6 unit tests with mocked fetch.
+- All 287 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (287 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 2 home)
+- build: pass
+- validation scripts: pass

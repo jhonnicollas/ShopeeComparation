@@ -71,6 +71,7 @@ import {
   updateScoringConfig,
 } from "@shopee-research/db";
 import { authenticate, authErrorResponse, requireAdmin } from "../lib/auth.js";
+import { testNineRouterModel } from "../lib/nineRouter.js";
 
 type Bindings = {
   DB: D1Database;
@@ -1138,4 +1139,96 @@ configRouter.delete("/scoring-configs/:id", async (c) => {
 
   await deleteScoringConfig(c.env.DB, id);
   return c.json(deleteScoringConfigResponseSchema.parse({ success: true }), 200);
+});
+
+configRouter.post("/ai-models/:id/test", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const model = await findAiModelById(c.env.DB, id);
+  if (!model) {
+    return c.json(
+      { error: { code: "MODEL_NOT_FOUND", message: "AI model not found", details: null } },
+      404
+    );
+  }
+
+  const provider = await findAiProviderByKey(c.env.DB, model.providerKey);
+  if (!provider) {
+    return c.json(
+      { error: { code: "PROVIDER_NOT_FOUND", message: "AI provider not found", details: null } },
+      404
+    );
+  }
+
+  let body: { prompt?: string } = {};
+  try {
+    body = (await c.req.json()) as { prompt?: string };
+  } catch {
+    body = {};
+  }
+  const prompt =
+    body.prompt ?? 'Return JSON only: {"ok": true, "message": "test"}';
+
+  if (provider.secretRef) {
+    const apiKey = (c.env as unknown as Record<string, string | undefined>)[provider.secretRef];
+    if (!apiKey) {
+      return c.json(
+        { error: { code: "SECRET_NOT_FOUND", message: `Secret ${provider.secretRef} not found`, details: null } },
+        500
+      );
+    }
+    const result = await testNineRouterModel({
+      baseUrl: provider.baseUrl,
+      apiKey,
+      modelName: model.modelName,
+      prompt,
+      timeoutMs: provider.timeoutMs,
+    });
+    await updateAiModel(c.env.DB, id, {
+      lastTestStatus: result.status,
+      lastTestAt: new Date().toISOString(),
+      lastTestMessage: result.message.slice(0, 500),
+    });
+    return c.json(
+      {
+        status: result.status,
+        latencyMs: result.latencyMs,
+        outputValidJson: result.outputValidJson,
+        message: result.message,
+      },
+      result.status === "success" ? 200 : 502
+    );
+  }
+
+  const result = await testNineRouterModel({
+    baseUrl: provider.baseUrl,
+    apiKey: "no-key-required",
+    modelName: model.modelName,
+    prompt,
+    timeoutMs: provider.timeoutMs,
+  });
+  await updateAiModel(c.env.DB, id, {
+    lastTestStatus: result.status,
+    lastTestAt: new Date().toISOString(),
+    lastTestMessage: result.message.slice(0, 500),
+  });
+  return c.json(
+    {
+      status: result.status,
+      latencyMs: result.latencyMs,
+      outputValidJson: result.outputValidJson,
+      message: result.message,
+    },
+    result.status === "success" ? 200 : 502
+  );
 });

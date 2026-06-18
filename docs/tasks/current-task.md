@@ -1,12 +1,12 @@
-# TASK-094: Build shop parser
+# TASK-095: Build product weight extractor
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a Shopee shop parser that extracts ShopSnapshot fields from raw HTML/JSON content. Each field must include source and confidence, missing fields return null with confidence 0. Shop status is normalized to canonical enum values (MALL, OFFICIAL, STAR, STARPLUS, PREFERRED, REGULAR, UNKNOWN).
+Build a Shopee product weight extractor that extracts WeightExtraction from raw text/HTML/JSON. Supports multiple weight units (gram, kg, mg, lb, oz), sources from specifications, description, metadata, variants, and shipping info. Each extraction has source and confidence.
 
 ## Required Reading
 
@@ -14,18 +14,16 @@ Build a Shopee shop parser that extracts ShopSnapshot fields from raw HTML/JSON 
 - `docs/architecture/technical-decisions.md`
 - `docs/shared/enums.md`
 - `docs/database/schema.md`
-- `docs/shopee/extraction-strategy.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 
 ## Scope
 
-- Create `packages/shopee/src/parser/shopParser.ts` — ShopParser class
-- Parses raw HTML/JSON to extract ShopSnapshot fields
-- Each field has source and confidence score
-- Missing fields return null with confidence 0 (no fabrication)
-- Shop status normalized to canonical enum
-- Support multiple input formats (HTML, JSON, JSON-LD)
+- Create `packages/shopee/src/parser/weightExtractor.ts` — WeightExtractor class
+- Extracts weight from text with multiple patterns
+- Supports units: gram, kg, mg, lb, oz
+- Source attribution (productSpecification, description, metadata, variant, shipping, aiExtraction)
+- Returns WeightExtraction type with value, unit, rawText, source, confidence
 - Add comprehensive unit tests
 
 ## Out of Scope
@@ -36,8 +34,8 @@ Build a Shopee shop parser that extracts ShopSnapshot fields from raw HTML/JSON 
 
 ## Allowed Files
 
-- `packages/shopee/src/parser/shopParser.ts` (new)
-- `packages/shopee/src/parser/shopParser.test.ts` (new)
+- `packages/shopee/src/parser/weightExtractor.ts` (new)
+- `packages/shopee/src/parser/weightExtractor.test.ts` (new)
 - `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
@@ -51,36 +49,37 @@ Build a Shopee shop parser that extracts ShopSnapshot fields from raw HTML/JSON 
 
 ## Input Contract
 
-`parseShop(input: { html?: string; json?: unknown; shopId: string }): ShopSnapshot`
+`extractWeight(input: { text: string; sourceContext?: string }): WeightExtraction`
 
 ## Output Contract
 
-Returns complete ShopSnapshot with each field's source and confidence.
+WeightExtraction { value, unit, rawText, source, confidence }
 
 ## Acceptance Criteria
 
-- [ ] ShopParser class implemented
-- [ ] Parses HTML, JSON, and JSON-LD formats
-- [ ] Extracts: name, rating, responseRate, responseTime, followerCount, productCount, joinedAgeText, location
-- [ ] Normalizes shop status to MALL/OFFICIAL/STAR/STARPLUS/PREFERRED/REGULAR/UNKNOWN
-- [ ] Each field has source and confidence
-- [ ] Missing fields return null with confidence 0
+- [ ] WeightExtractor class implemented
+- [ ] Supports gram, kg, mg, lb, oz units
+- [ ] Multiple patterns: "500g", "1.5 kg", "Berat: 500g", etc.
+- [ ] Source attribution: productSpecification, description, metadata, variant, shipping, aiExtraction
+- [ ] Returns WeightExtraction with all fields populated when found
+- [ ] Returns empty WeightExtraction with confidence 0 when not found
 - [ ] Unit tests pass
 - [ ] All existing tests still pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit test for HTML parsing
-- [ ] Unit test for JSON parsing
-- [ ] Unit test for JSON-LD parsing
-- [ ] Unit test for shop status normalization
-- [ ] Unit test for missing fields (null with confidence 0)
-- [ ] Unit test for malformed input (safe handling)
+- [ ] Unit test for gram extraction
+- [ ] Unit test for kg extraction
+- [ ] Unit test for mg extraction
+- [ ] Unit test for lb/oz extraction
+- [ ] Unit test for source attribution
+- [ ] Unit test for no weight found
+- [ ] Unit test for multiple matches (best confidence wins)
 
 ## Documentation Update
 
-- [ ] Update `packages/shopee/src/index.ts` to export new parser
+- [ ] Update `packages/shopee/src/index.ts` to export new extractor
 
 ## Stop Conditions Check
 

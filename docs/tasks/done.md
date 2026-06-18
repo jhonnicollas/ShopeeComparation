@@ -1632,3 +1632,31 @@ Quality Gate:
 - test: pass (580 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-096: Build feature extractor
+
+Status: DONE
+CompletedAt: 2026-06-19 00:40
+Branch: main
+Commit: d323801
+
+Summary:
+- Created FeatureExtractor in packages/shopee/src/parser/featureExtractor.ts.
+- Extracts from HTML tables (<table><tr><th>Name</th><td>Value</td></tr>).
+- Extracts from HTML lists (<li>Name: Value</li>).
+- Extracts from JSON features array, JSON specifications object, or flat key-value.
+- Extracts from text with colon-separated lines.
+- Extracts from description with "fitur:" pattern.
+- Deduplicates features with same name+value.
+- Each feature has name, value, source (productSpecification/description/metadata/aiExtraction), confidence.
+- Returns empty array when no features found.
+- Added 12 unit tests covering all input formats and edge cases.
+- All 592 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (592 tests)
+- build: pass
+- validation scripts: pass

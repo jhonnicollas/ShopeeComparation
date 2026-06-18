@@ -1115,7 +1115,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 01:13
 Branch: feature/TASK-065-result-page
-Commit: pending
+Commit: 82a4919
 
 Summary:
 - Created packages/db/src/repositories/comparisons.ts with CRUD for comparisons.

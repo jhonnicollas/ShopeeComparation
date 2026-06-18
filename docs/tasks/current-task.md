@@ -1,4 +1,4 @@
-# TASK-040: Build configuration database tables
+# TASK-041: Build app config CRUD API
 
 ## Status
 
@@ -6,14 +6,15 @@ DONE
 
 ## Goal
 
-Create repository/CRUD layer for all configuration database tables: sh_appConfigs, sh_aiProviderConfigs, sh_aiModelConfigs, sh_searchProviderConfigs, sh_scoringConfigs. The DDL tables already exist from TASK-021; this task adds the data access layer.
+Implement REST API endpoints for CRUD operations on sh_appConfigs table: GET /api/config/apps, POST /api/config/apps, PUT /api/config/apps/:id, DELETE /api/config/apps/:id.
 
 ## Required Reading
 
-- `docs/database/schema.md` (config tables)
+- `docs/api/api-contract.md`
+- `docs/database/schema.md` (sh_appConfigs)
 - `docs/configuration/runtime-configuration.md`
-- `docs/shared/enums.md` (config categories, value types, auth types)
-- `docs/architecture/folder-structure.md` (db/repositories)
+- `docs/shared/enums.md` (configValueType, configCategory)
+- `docs/standards/coding-standard.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -21,64 +22,67 @@ Create repository/CRUD layer for all configuration database tables: sh_appConfig
 
 ## Scope
 
-- Create packages/db/src/repositories/appConfigs.ts with CRUD operations.
-- Create packages/db/src/repositories/aiProviderConfigs.ts with CRUD operations.
-- Create packages/db/src/repositories/aiModelConfigs.ts with CRUD operations.
-- Create packages/db/src/repositories/searchProviderConfigs.ts with CRUD operations.
-- Create packages/db/src/repositories/scoringConfigs.ts with CRUD operations.
-- Add unit tests for each repository using mock D1.
-- Re-export all from packages/db/src/index.ts.
+- Add config router at workers/api/src/routes/config.ts.
+- Implement GET /api/config/apps (list all).
+- Implement GET /api/config/apps/public (list public configs).
+- Implement POST /api/config/apps (create).
+- Implement PUT /api/config/apps/:id (update).
+- Implement DELETE /api/config/apps/:id (delete).
+- Validate inputs with Zod schemas.
+- Require authentication (admin only for write operations).
+- Add unit tests for all endpoints.
 
 ## Out of Scope
 
-- Do not create API endpoints (TASK-041 through TASK-045).
-- Do not create frontend CRUD pages (TASK-046).
-- Do not create seed data (later task).
-- Do not create DDL migrations (already done in TASK-021).
+- Do not create AI provider/model CRUD (TASK-042, TASK-043).
+- Do not create search provider CRUD (TASK-044).
+- Do not create scoring CRUD (TASK-045).
+- Do not create frontend CRUD page (TASK-046).
 
 ## Allowed Files
 
-- `packages/db/src/repositories/appConfigs.ts`
-- `packages/db/src/repositories/aiProviderConfigs.ts`
-- `packages/db/src/repositories/aiModelConfigs.ts`
-- `packages/db/src/repositories/searchProviderConfigs.ts`
-- `packages/db/src/repositories/scoringConfigs.ts`
-- `packages/db/src/repositories/*.test.ts`
-- `packages/db/src/index.ts` (re-export)
+- `workers/api/src/routes/config.ts`
+- `workers/api/src/routes/config.test.ts`
+- `workers/api/src/index.ts` (mount router)
+- `packages/shared/src/schemas/config.ts` (new Zod schemas)
+- `packages/shared/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `workers/**`
 - `apps/web/**`
-- `packages/db/migrations/**`
+- `packages/db/**` (repositories done)
 - `.ai/**`
 
 ## Input Contract
 
-D1 database has config tables (sh_appConfigs, sh_aiProviderConfigs, sh_aiModelConfigs, sh_searchProviderConfigs, sh_scoringConfigs). Repository functions accept D1Database and row data.
+Authenticated admin makes HTTP requests to /api/config/apps endpoints with JSON body.
 
 ## Output Contract
 
-Repository functions provide CRUD operations for each config table. All functions return parsed row objects or null.
+Standard JSON responses with config data or standard error format.
 
 ## Acceptance Criteria
 
-- [x] packages/db/src/repositories/appConfigs.ts exists
-- [x] packages/db/src/repositories/aiProviderConfigs.ts exists
-- [x] packages/db/src/repositories/aiModelConfigs.ts exists
-- [x] packages/db/src/repositories/searchProviderConfigs.ts exists
-- [x] packages/db/src/repositories/scoringConfigs.ts exists
-- [x] Each repository has find/list/create/update/delete operations
-- [x] Unit tests pass for all repositories
+- [x] workers/api/src/routes/config.ts exists
+- [x] GET /api/config/apps returns list
+- [x] GET /api/config/apps/public returns public configs only
+- [x] POST /api/config/apps creates new config
+- [x] PUT /api/config/apps/:id updates config
+- [x] DELETE /api/config/apps/:id deletes config
+- [x] All inputs validated with Zod
+- [x] Write operations require admin role
+- [x] Unit tests pass for all endpoints
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass
 - [x] `node scripts/quality-gate.js` passes
 
 ## Test Requirements
 
-- [x] Unit test for create and find operations
-- [x] Unit test for list and update operations
-- [x] Unit test for delete operations
+- [x] Unit test for list configs
+- [x] Unit test for create config
+- [x] Unit test for update config
+- [x] Unit test for delete config
+- [x] Unit test for authorization (non-admin denied)
 - [x] Existing tests still pass
 
 ## Documentation Update

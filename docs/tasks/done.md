@@ -528,3 +528,32 @@ Quality Gate:
 - test: pass (220 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 32 auth, 14 component, 29 config repos, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-041: Build app config CRUD API
+
+Status: DONE
+CompletedAt: 2026-06-17 22:46
+Branch: feature/TASK-041-app-config-api
+Commit: pending
+
+Summary:
+- Created packages/shared/src/schemas/config.ts with Zod schemas for app config.
+- createAppConfigRequestSchema, updateAppConfigRequestSchema, appConfigSchema, response schemas.
+- Created workers/api/src/lib/auth.ts with authenticate(), requireAdmin(), authErrorResponse() helpers.
+- Created workers/api/src/routes/config.ts with config router.
+- Implemented GET /api/config/apps/public (no auth required, returns public+enabled configs).
+- Implemented GET /api/config/apps (admin only, supports ?category= filter).
+- Implemented POST /api/config/apps (admin only, returns 409 on duplicate key).
+- Implemented PUT /api/config/apps/:id (admin only).
+- Implemented DELETE /api/config/apps/:id (admin only).
+- Mounted config router in workers/api/src/index.ts.
+- Created 16 unit tests covering all endpoints and authorization.
+- All 236 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (236 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 48 auth/api, 14 component, 29 config repos, 2 home)
+- build: pass
+- validation scripts: pass

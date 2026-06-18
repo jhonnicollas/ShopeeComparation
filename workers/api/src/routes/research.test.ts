@@ -1,0 +1,230 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { researchRouter } from "./research.js";
+
+interface MockD1PreparedStatement {
+  bind: ReturnType<typeof vi.fn>;
+  first: ReturnType<typeof vi.fn>;
+  run: ReturnType<typeof vi.fn>;
+  all: ReturnType<typeof vi.fn>;
+}
+
+class MockD1Database {
+  public users: Array<Record<string, unknown>> = [];
+  public sessions: Array<Record<string, unknown>> = [];
+  public researchSessions: Array<Record<string, unknown>> = [];
+  public jobs: Array<Record<string, unknown>> = [];
+
+  prepare(query: string) {
+    const stmt: MockD1PreparedStatement = {
+      bind: vi.fn(),
+      first: vi.fn(),
+      run: vi.fn(),
+      all: vi.fn(),
+    };
+    stmt.bind.mockReturnValue(stmt);
+
+    if (query.includes("SELECT * FROM sh_users WHERE id")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.users.find((u) => u.id === args[0]) ?? null;
+      });
+    } else if (query.includes("SELECT * FROM sh_sessions WHERE tokenHash")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.sessions.find((s) => s.tokenHash === args[0]) ?? null;
+      });
+    } else if (query.includes("SELECT * FROM sh_researchSessions WHERE id")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.researchSessions.find((s) => s.id === args[0]) ?? null;
+      });
+    } else if (query.includes("SELECT * FROM sh_jobs WHERE id")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.jobs.find((j) => j.id === args[0]) ?? null;
+      });
+    } else if (query.includes("INSERT INTO sh_researchSessions")) {
+      stmt.run.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const session = {
+          id: args[0],
+          userId: args[1],
+          mode: args[2],
+          keyword: args[3],
+          shippedFrom: args[4],
+          status: args[5],
+          totalProducts: args[6],
+          completedProducts: args[7],
+          createdAt: args[8],
+          updatedAt: args[9],
+        };
+        this.researchSessions.push(session);
+        return { success: true };
+      });
+    } else if (query.includes("INSERT INTO sh_jobs")) {
+      stmt.run.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const job = {
+          id: args[0],
+          userId: args[1],
+          researchSessionId: args[2],
+          type: args[3],
+          status: args[4],
+          progressCurrent: args[5],
+          progressTotal: args[6],
+          payloadJson: args[7],
+          createdAt: args[8],
+          updatedAt: args[9],
+        };
+        this.jobs.push(job);
+        return { success: true };
+      });
+    }
+    return stmt;
+  }
+}
+
+class MockQueue {
+  public sent: Array<{ body: string; contentType: string; messageId: string }> = [];
+  async send(message: { body: string; contentType: string; messageId: string }): Promise<void> {
+    this.sent.push(message);
+  }
+}
+
+function createEnv(db: MockD1Database, queue: MockQueue) {
+  return {
+    DB: db as unknown as D1Database,
+    LOGS: {} as R2Bucket,
+    RESEARCH_QUEUE: queue as unknown as Queue,
+    APP_ENV: "development",
+    APP_NAME: "Test App",
+  };
+}
+
+async function createUserSession(db: MockD1Database) {
+  const sessionVal = `session-${Date.now()}`;
+  const { hashSessionTokenAsync } = await import("@shopee-research/auth");
+  const tokenHash = await hashSessionTokenAsync(sessionVal);
+  db.users.push({
+    id: "usr_test",
+    email: "test@example.com",
+    passwordHash: "h",
+    passwordSalt: "s",
+    name: "Test",
+    role: "user",
+    status: "active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  db.sessions.push({
+    id: "ses_test",
+    userId: "usr_test",
+    tokenHash,
+    userAgentHash: null,
+    ipHash: null,
+    expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    createdAt: new Date().toISOString(),
+    revokedAt: null,
+  });
+  return sessionVal;
+}
+
+describe("POST /api/research/compare-links", () => {
+  let db: MockD1Database;
+  let queue: MockQueue;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+    queue = new MockQueue();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await researchRouter.request(
+      "/compare-links",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ links: ["https://shopee.co.id/p1"] }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 400 for empty links", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/compare-links",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: JSON.stringify({ links: [] }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for too many links", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/compare-links",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: JSON.stringify({
+          links: [
+            "https://shopee.co.id/p1",
+            "https://shopee.co.id/p2",
+            "https://shopee.co.id/p3",
+            "https://shopee.co.id/p4",
+            "https://shopee.co.id/p5",
+            "https://shopee.co.id/p6",
+          ],
+        }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for invalid URL", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/compare-links",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: JSON.stringify({ links: ["not-a-url"] }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("creates session, job, and enqueues message", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/compare-links",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: JSON.stringify({
+          links: ["https://shopee.co.id/p1", "https://shopee.co.id/p2"],
+        }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(202);
+    const body = (await res.json()) as { researchSessionId: string; jobId: string; status: string };
+    expect(body.researchSessionId).toMatch(/^rsr_/);
+    expect(body.jobId).toMatch(/^job_/);
+    expect(body.status).toBe("pending");
+    expect(db.researchSessions).toHaveLength(1);
+    expect(db.jobs).toHaveLength(1);
+    expect(queue.sent).toHaveLength(1);
+    const sentMessage = JSON.parse(queue.sent[0]!.body);
+    expect(sentMessage.mode).toBe("compareLinks");
+    expect(sentMessage.links).toHaveLength(2);
+  });
+});

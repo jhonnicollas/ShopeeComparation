@@ -8,3 +8,5 @@ export * from "./repositories/aiProviderConfigs.js";
 export * from "./repositories/aiModelConfigs.js";
 export * from "./repositories/searchProviderConfigs.js";
 export * from "./repositories/scoringConfigs.js";
+export * from "./repositories/researchSessions.js";
+export * from "./repositories/jobs.js";

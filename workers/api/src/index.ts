@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { D1Database, Queue, R2Bucket } from "@cloudflare/workers-types";
 import { authRouter } from "./routes/auth.js";
 import { configRouter } from "./routes/config.js";
+import { researchRouter } from "./routes/research.js";
 
 export type ApiEnv = {
   Bindings: {
@@ -26,5 +27,6 @@ app.get("/api/health", (c) => {
 
 app.route("/api/auth", authRouter);
 app.route("/api/config", configRouter);
+app.route("/api/research", researchRouter);
 
 export default app;

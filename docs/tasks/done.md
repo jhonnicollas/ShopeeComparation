@@ -864,3 +864,32 @@ Quality Gate:
 - test: pass (331 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 27 shopee fixtures+contracts+extractor, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-055: Build compare links API using mock extractor
+
+Status: DONE
+CompletedAt: 2026-06-18 00:22
+Branch: feature/TASK-055-compare-links-api
+Commit: pending
+
+Summary:
+- Created packages/db/src/repositories/researchSessions.ts with CRUD for research sessions.
+- Created packages/db/src/repositories/jobs.ts with CRUD for jobs.
+- Created workers/api/src/routes/research.ts with research router.
+- Implemented POST /api/research/compare-links.
+- Validates with compareLinksRequestSchema (1-5 URLs).
+- Creates research session in D1 (mode=compareLinks, status=pending).
+- Creates job in D1 with payload.
+- Enqueues message via sendResearchJobMessage.
+- Returns 202 with researchSessionId, jobId, status=pending.
+- Mounted research router in workers/api/src/index.ts.
+- Created 5 unit tests covering all scenarios.
+- All 337 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (337 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 101 auth/api, 17 component, 29 config repos, 27 shopee fixtures+contracts+extractor, 6 research, 2 home)
+- build: pass
+- validation scripts: pass

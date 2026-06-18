@@ -1187,3 +1187,28 @@ Quality Gate:
 - test: pass (422 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-070: Setup Mastra workflow skeleton
+
+Status: DONE
+CompletedAt: 2026-06-18 01:45
+Branch: feature/TASK-070-mastra-skeleton
+Commit: pending
+
+Summary:
+- Created packages/ai package with package.json, tsconfig.json.
+- Created packages/ai/src/workflows/runner.ts with runWorkflowStep and runWorkflowSteps.
+- Steps chain, stop on first failure, return step results with durationMs.
+- Created packages/ai/src/workflows/compareLinks.ts with 5 steps: validate, resolve, extract, score, rank.
+- Workflow runs end-to-end and returns comparisonId and bestProductId.
+- Error in any step bubbles up with original error message.
+- Created runner.test.ts with 7 unit tests.
+- All 429 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (429 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 7 AI, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

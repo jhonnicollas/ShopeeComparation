@@ -1,4 +1,4 @@
-# TASK-067: Build score breakdown UI
+# TASK-070: Setup Mastra workflow skeleton
 
 ## Status
 
@@ -6,44 +6,49 @@ TODO
 
 ## Goal
 
-Create ScoreBreakdown component that displays component scores with reasons and levels.
+Create the Mastra workflow skeleton in packages/ai with workflow orchestration for compare-links and keyword-search modes.
 
 ## Required Reading
 
+- `docs/ai/mastra-orchestrator.md`
+- `docs/architecture/folder-structure.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create ScoreBreakdown component.
-- Display each component with score, weight, contribution.
-- Show reason text per component.
-- Color-code by level (low/medium/high).
-- Add component test.
+- Create packages/ai package.
+- Define workflow steps: resolveUrl, extractProduct, score, generateReport.
+- Create simple workflow runner (can be replaced with full Mastra later).
+- Add unit tests for workflow orchestration.
 
 ## Out of Scope
 
-- Do not change scoring algorithm.
+- Do not implement real Mastra dependency (later).
+- Do not implement individual agents (TASK-072-074).
 
 ## Allowed Files
 
-- `apps/web/src/components/ScoreBreakdown.tsx`
-- `apps/web/src/components/ScoreBreakdown.test.tsx`
+- `packages/ai/package.json`
+- `packages/ai/tsconfig.json`
+- `packages/ai/src/workflows/compareLinks.ts`
+- `packages/ai/src/workflows/compareLinks.test.ts`
+- `packages/ai/src/index.ts`
 - `docs/tasks/**`
 
 ## Input Contract
 
-ScoreBreakdownItem[] from generateScoreBreakdown.
+QueueMessage and DB context.
 
 ## Output Contract
 
-Visual breakdown of scores.
+Workflow execution with step results.
 
 ## Acceptance Criteria
 
-- [ ] ScoreBreakdown exists
-- [ ] All components displayed
-- [ ] Level color coding
-- [ ] Component tests pass
+- [ ] packages/ai exists
+- [ ] Workflow skeleton implemented
+- [ ] Can chain steps
+- [ ] Unit tests pass
 - [ ] Quality gate passes
 
 ## Completion Rule

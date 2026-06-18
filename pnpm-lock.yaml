@@ -82,6 +82,15 @@ importers:
         specifier: ^29.1.1
         version: 29.1.1
 
+  packages/ai:
+    dependencies:
+      '@shopee-research/core':
+        specifier: workspace:*
+        version: link:../core
+      '@shopee-research/shared':
+        specifier: workspace:*
+        version: link:../shared
+
   packages/auth:
     dependencies:
       '@shopee-research/shared':

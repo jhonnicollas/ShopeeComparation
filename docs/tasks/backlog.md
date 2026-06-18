@@ -75,7 +75,7 @@ This backlog is the execution queue for 100% autopilot mode.
 
 ## Phase 7 — Mastra and 9router
 
-- [ ] TASK-070 Setup Mastra workflow skeleton
+- [x] TASK-070 Setup Mastra workflow skeleton
 - [ ] TASK-071 Build 9router client from config table
 - [ ] TASK-072 Build Recommendation Writer Agent
 - [ ] TASK-073 Build Risk Analyzer Agent

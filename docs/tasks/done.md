@@ -823,7 +823,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:15
 Branch: feature/TASK-053-shop-contract
-Commit: pending
+Commit: e912e8c
 
 Summary:
 - Verified ShopSnapshot type exists in shared package.

@@ -1109,3 +1109,29 @@ Quality Gate:
 - test: pass (410 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-065: Build result page
+
+Status: DONE
+CompletedAt: 2026-06-18 01:13
+Branch: feature/TASK-065-result-page
+Commit: pending
+
+Summary:
+- Created packages/db/src/repositories/comparisons.ts with CRUD for comparisons.
+- Added GET /api/research/comparisons/by-session/:sessionId endpoint.
+- Created apps/web/src/pages/ResultPage.tsx with score grid display.
+- Shows ranked comparison items with final, rating, reviews, sold, price, shop scores.
+- Shows pros/cons for each item.
+- Added /results/$researchSessionId route (protected).
+- Added CSS for result grid, rank badge, score items.
+- Created ResultPage.test.tsx with 4 component tests.
+- All 414 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (414 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 25 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

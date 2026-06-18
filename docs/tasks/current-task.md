@@ -1,4 +1,4 @@
-# TASK-064: Build comparison ranking
+# TASK-065: Build result page
 
 ## Status
 
@@ -6,43 +6,50 @@ DONE
 
 ## Goal
 
-Create a function that takes multiple scored products and returns them ranked by score with tiebreakers.
+Create the frontend result page that displays comparison results with scores, pros, cons, and rankings.
 
 ## Required Reading
 
-- `docs/shared/enums.md`
+- `docs/api/api-contract.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create packages/core/src/scoring/ranking.ts.
-- Implement rankProducts() that sorts by score with tiebreakers.
-- Add unit tests.
+- Create ResultPage component.
+- Fetch session and comparison data.
+- Display ranked products with scores.
+- Show pros/cons for each item.
+- Add /results/$researchSessionId route.
+- Add component tests.
 
 ## Out of Scope
 
-- Do not implement ranking UI.
+- Do not implement red flag UI (TASK-066).
 
 ## Allowed Files
 
-- `packages/core/src/scoring/ranking.ts`
-- `packages/core/src/scoring/ranking.test.ts`
-- `packages/core/src/index.ts` (re-export)
+- `apps/web/src/pages/ResultPage.tsx`
+- `apps/web/src/pages/ResultPage.test.tsx`
+- `apps/web/src/app/router.tsx`
+- `apps/web/src/styles/global.css`
+- `packages/db/src/repositories/comparisons.ts`
+- `workers/api/src/routes/research.ts`
 - `docs/tasks/**`
 
 ## Input Contract
 
-Array of ScoredProduct (product + ScoringOutput).
+Research session ID from URL params.
 
 ## Output Contract
 
-Array of ScoredProduct sorted by rank ascending.
+Page shows ranked comparison items with scores.
 
 ## Acceptance Criteria
 
-- [ ] ranking.ts exists
-- [ ] rankProducts implemented
-- [ ] Tiebreakers work (rating, reviews)
+- [ ] ResultPage created
+- [ ] Route added
+- [ ] Comparison endpoint created
+- [ ] Comparison repository created
 - [ ] Unit tests pass
 - [ ] Quality gate passes
 

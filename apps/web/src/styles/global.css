@@ -385,3 +385,92 @@ h2 {
   color: #94a3b8;
   font-size: 12px;
 }
+
+.resultGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.resultCard {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.resultCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rankBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #2b6cb0;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.resultCardHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.scoreGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.scoreItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f6f8fb;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.scoreLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #52606d;
+  font-weight: 600;
+}
+
+.scoreValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2933;
+  margin-top: 2px;
+}
+
+.prosConsSection {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e3e8ef;
+}
+
+.prosConsSection h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #1f2933;
+}
+
+.prosConsSection ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #52606d;
+}

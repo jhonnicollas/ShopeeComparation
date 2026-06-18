@@ -13,6 +13,7 @@ import { HomePage } from "../pages/HomePage";
 import { KeywordSearchPage } from "../pages/KeywordSearchPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
+import { ResultPage } from "../pages/ResultPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { RequireAuth } from "../components/RequireAuth.js";
 import { logout, useAuth } from "../lib/auth.js";
@@ -79,6 +80,16 @@ const configRoute = createRoute({
   ),
 });
 
+const resultRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/results/$researchSessionId",
+  component: () => (
+    <RequireAuth>
+      <ResultPage />
+    </RequireAuth>
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -87,6 +98,7 @@ const routeTree = rootRoute.addChildren([
   keywordSearchRoute,
   settingsRoute,
   configRoute,
+  resultRoute,
 ]);
 
 export const router = createRouter({ routeTree });

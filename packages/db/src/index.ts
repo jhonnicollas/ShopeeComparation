@@ -13,3 +13,4 @@ export * from "./repositories/jobs.js";
 export * from "./repositories/products.js";
 export * from "./repositories/shops.js";
 export * from "./repositories/comparisonItems.js";
+export * from "./repositories/comparisons.js";

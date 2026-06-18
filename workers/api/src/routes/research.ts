@@ -186,3 +186,67 @@ researchRouter.get("/sessions/:id", async (c) => {
     200
   );
 });
+
+researchRouter.get("/comparisons/by-session/:sessionId", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const sessionId = c.req.param("sessionId");
+  const { findComparisonBySession, listComparisonItemsByComparisonDb } = await import("@shopee-research/db");
+  const { findResearchSessionById } = await import("@shopee-research/db");
+
+  const session = await findResearchSessionById(c.env.DB, sessionId);
+  if (!session) {
+    return c.json(
+      { error: { code: "SESSION_NOT_FOUND", message: "Session not found", details: null } },
+      404
+    );
+  }
+
+  if (session.userId !== auth.user.userId) {
+    return c.json(
+      { error: { code: "FORBIDDEN", message: "Cannot access this session", details: null } },
+      403
+    );
+  }
+
+  const comparison = await findComparisonBySession(c.env.DB, sessionId);
+  if (!comparison) {
+    return c.json({ comparison: null, items: [] }, 200);
+  }
+
+  const items = await listComparisonItemsByComparisonDb(c.env.DB, comparison.id);
+  return c.json(
+    {
+      comparison: {
+        id: comparison.id,
+        researchSessionId: comparison.researchSessionId,
+        title: comparison.title,
+        mode: comparison.mode,
+        bestProductId: comparison.bestProductId,
+      },
+      items: items.map((i) => ({
+        id: i.id,
+        rank: i.rank,
+        productId: i.productId,
+        shopId: i.shopId,
+        finalScore: i.finalScore,
+        ratingScore: i.ratingScore,
+        reviewCountScore: i.reviewCountScore,
+        soldCountScore: i.soldCountScore,
+        priceScore: i.priceScore,
+        shopTrustScore: i.shopTrustScore,
+        responseRateScore: i.responseRateScore,
+        featureMatchScore: i.featureMatchScore,
+        riskPenalty: i.riskPenalty,
+        prosJson: i.prosJson ? JSON.parse(i.prosJson) : null,
+        consJson: i.consJson ? JSON.parse(i.consJson) : null,
+        riskJson: i.riskJson ? JSON.parse(i.riskJson) : null,
+      })),
+    },
+    200
+  );
+});

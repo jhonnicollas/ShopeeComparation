@@ -12,6 +12,7 @@ class MockD1Database {
   public users: Array<Record<string, unknown>> = [];
   public sessions: Array<Record<string, unknown>> = [];
   public configs: Array<Record<string, unknown>> = [];
+  public aiProviders: Array<Record<string, unknown>> = [];
 
   prepare(query: string) {
     const stmt: MockD1PreparedStatement = {
@@ -98,6 +99,65 @@ class MockD1Database {
         const args = stmt.bind.mock.calls[0] || [];
         const idx = this.configs.findIndex((c) => c.id === args[0]);
         if (idx >= 0) this.configs.splice(idx, 1);
+        return { success: true };
+      });
+    } else if (query.includes("SELECT * FROM sh_aiProviderConfigs WHERE providerKey")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.aiProviders.find((p) => p.providerKey === args[0]) ?? null;
+      });
+    } else if (query.includes("SELECT * FROM sh_aiProviderConfigs WHERE id")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.aiProviders.find((p) => p.id === args[0]) ?? null;
+      });
+    } else if (query.includes("SELECT * FROM sh_aiProviderConfigs")) {
+      stmt.all.mockImplementation(async () => {
+        return { results: [...this.aiProviders] };
+      });
+    } else if (query.includes("INSERT INTO sh_aiProviderConfigs")) {
+      stmt.run.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const provider = {
+          id: args[0],
+          providerKey: args[1],
+          displayName: args[2],
+          baseUrl: args[3],
+          authType: args[4],
+          secretRef: args[5],
+          timeoutMs: args[6],
+          retryCount: args[7],
+          isEnabled: args[8],
+          lastTestStatus: null,
+          lastTestAt: null,
+          lastTestMessage: null,
+          createdAt: args[9],
+          updatedAt: args[10],
+        };
+        this.aiProviders.push(provider);
+        return { success: true };
+      });
+    } else if (query.includes("UPDATE sh_aiProviderConfigs")) {
+      stmt.run.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const setClause = query.substring(query.indexOf("SET") + 3, query.indexOf("WHERE")).trim();
+        const setCols = setClause.split(",").map((s) => s.trim().split(" = ")[0]);
+        const id = args[args.length - 1];
+        const provider = this.aiProviders.find((p) => p.id === id);
+        if (provider) {
+          setCols.forEach((col, i) => {
+            if (col) {
+              (provider as Record<string, unknown>)[col] = args[i];
+            }
+          });
+        }
+        return { success: true };
+      });
+    } else if (query.includes("DELETE FROM sh_aiProviderConfigs")) {
+      stmt.run.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const idx = this.aiProviders.findIndex((p) => p.id === args[0]);
+        if (idx >= 0) this.aiProviders.splice(idx, 1);
         return { success: true };
       });
     }
@@ -529,6 +589,306 @@ describe("DELETE /api/config/apps/:id", () => {
         method: "DELETE",
         headers: { cookie: `session_token=${token}` },
       },
+      createEnv(db)
+    );
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("GET /api/config/ai-providers", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await configRouter.request(
+      "/ai-providers",
+      { method: "GET" },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 for non-admin", async () => {
+    const token = await createAdminSession(db, "user");
+    const res = await configRouter.request(
+      "/ai-providers",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db)
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("returns providers for admin", async () => {
+    const token = await createAdminSession(db, "admin");
+    db.aiProviders.push({
+      id: "aip_1",
+      providerKey: "test-provider",
+      displayName: "Test",
+      baseUrl: "https://api.test.com",
+      authType: "bearer",
+      secretRef: "TEST_KEY",
+      timeoutMs: 60000,
+      retryCount: 1,
+      isEnabled: 1,
+      lastTestStatus: null,
+      lastTestAt: null,
+      lastTestMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await configRouter.request(
+      "/ai-providers",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { providers: Array<{ providerKey: string }> };
+    expect(body.providers).toHaveLength(1);
+    expect(body.providers[0]?.providerKey).toBe("test-provider");
+  });
+});
+
+describe("POST /api/config/ai-providers", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("returns 403 for non-admin", async () => {
+    const token = await createAdminSession(db, "user");
+    const res = await configRouter.request(
+      "/ai-providers",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({
+          providerKey: "p1",
+          displayName: "P1",
+          baseUrl: "https://api.p1.com",
+          authType: "bearer",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("creates provider as admin", async () => {
+    const token = await createAdminSession(db, "admin");
+    const res = await configRouter.request(
+      "/ai-providers",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({
+          providerKey: "new-provider",
+          displayName: "New Provider",
+          baseUrl: "https://api.new.com",
+          authType: "bearer",
+          secretRef: "NEW_KEY",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { provider: { providerKey: string } };
+    expect(body.provider.providerKey).toBe("new-provider");
+    expect(db.aiProviders).toHaveLength(1);
+  });
+
+  it("returns 409 for duplicate provider key", async () => {
+    const token = await createAdminSession(db, "admin");
+    db.aiProviders.push({
+      id: "aip_1",
+      providerKey: "existing",
+      displayName: "Existing",
+      baseUrl: "https://api.existing.com",
+      authType: "bearer",
+      secretRef: null,
+      timeoutMs: 60000,
+      retryCount: 1,
+      isEnabled: 1,
+      lastTestStatus: null,
+      lastTestAt: null,
+      lastTestMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await configRouter.request(
+      "/ai-providers",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({
+          providerKey: "existing",
+          displayName: "Existing",
+          baseUrl: "https://api.existing.com",
+          authType: "bearer",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(409);
+  });
+
+  it("returns 400 for invalid URL", async () => {
+    const token = await createAdminSession(db, "admin");
+    const res = await configRouter.request(
+      "/ai-providers",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({
+          providerKey: "p1",
+          displayName: "P1",
+          baseUrl: "not-a-url",
+          authType: "bearer",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for invalid authType", async () => {
+    const token = await createAdminSession(db, "admin");
+    const res = await configRouter.request(
+      "/ai-providers",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({
+          providerKey: "p1",
+          displayName: "P1",
+          baseUrl: "https://api.p1.com",
+          authType: "invalid",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("PUT /api/config/ai-providers/:id", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("updates provider as admin", async () => {
+    const token = await createAdminSession(db, "admin");
+    db.aiProviders.push({
+      id: "aip_1",
+      providerKey: "p1",
+      displayName: "Old",
+      baseUrl: "https://api.p1.com",
+      authType: "bearer",
+      secretRef: null,
+      timeoutMs: 60000,
+      retryCount: 1,
+      isEnabled: 1,
+      lastTestStatus: null,
+      lastTestAt: null,
+      lastTestMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await configRouter.request(
+      "/ai-providers/aip_1",
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({ displayName: "Updated", timeoutMs: 120000 }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { provider: { displayName: string; timeoutMs: number } };
+    expect(body.provider.displayName).toBe("Updated");
+    expect(body.provider.timeoutMs).toBe(120000);
+  });
+
+  it("returns 404 for missing provider", async () => {
+    const token = await createAdminSession(db, "admin");
+    const res = await configRouter.request(
+      "/ai-providers/missing",
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({ displayName: "X" }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("DELETE /api/config/ai-providers/:id", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("deletes provider as admin", async () => {
+    const token = await createAdminSession(db, "admin");
+    db.aiProviders.push({
+      id: "aip_1",
+      providerKey: "p1",
+      displayName: "P1",
+      baseUrl: "https://api.p1.com",
+      authType: "bearer",
+      secretRef: null,
+      timeoutMs: 60000,
+      retryCount: 1,
+      isEnabled: 1,
+      lastTestStatus: null,
+      lastTestAt: null,
+      lastTestMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await configRouter.request(
+      "/ai-providers/aip_1",
+      { method: "DELETE", headers: { cookie: `session_token=${token}` } },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+    expect(db.aiProviders).toHaveLength(0);
+  });
+
+  it("returns 403 for non-admin", async () => {
+    const token = await createAdminSession(db, "user");
+    const res = await configRouter.request(
+      "/ai-providers/aip_1",
+      { method: "DELETE", headers: { cookie: `session_token=${token}` } },
       createEnv(db)
     );
     expect(res.status).toBe(403);

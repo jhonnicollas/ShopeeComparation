@@ -557,3 +557,30 @@ Quality Gate:
 - test: pass (236 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 48 auth/api, 14 component, 29 config repos, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-042: Build AI provider config CRUD API
+
+Status: DONE
+CompletedAt: 2026-06-17 22:49
+Branch: feature/TASK-042-ai-provider-api
+Commit: pending
+
+Summary:
+- Added AI provider Zod schemas to packages/shared/src/schemas/config.ts.
+- createAiProviderRequestSchema, updateAiProviderRequestSchema, aiProviderSchema, response schemas.
+- Added AI provider CRUD endpoints to workers/api/src/routes/config.ts.
+- GET /api/config/ai-providers (admin only, list all).
+- POST /api/config/ai-providers (admin only, returns 409 on duplicate key).
+- PUT /api/config/ai-providers/:id (admin only).
+- DELETE /api/config/ai-providers/:id (admin only).
+- Added toAiProviderResponse() helper to convert DB rows to response format.
+- Added 12 unit tests for AI provider endpoints.
+- All 248 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (248 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 60 auth/api, 14 component, 29 config repos, 2 home)
+- build: pass
+- validation scripts: pass

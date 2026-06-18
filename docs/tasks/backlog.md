@@ -41,7 +41,7 @@ This backlog is the execution queue for 100% autopilot mode.
 
 - [x] TASK-040 Build configuration database tables
 - [x] TASK-041 Build app config CRUD API
-- [ ] TASK-042 Build AI provider config CRUD API
+- [x] TASK-042 Build AI provider config CRUD API
 - [ ] TASK-043 Build AI model config CRUD API
 - [ ] TASK-044 Build search provider config CRUD API
 - [ ] TASK-045 Build scoring config CRUD API

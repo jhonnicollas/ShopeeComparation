@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { configValueTypeSchema } from "./enums.js";
+import { authTypeSchema, configValueTypeSchema } from "./enums.js";
 
 export const createAppConfigRequestSchema = z.object({
   key: z.string().min(1).max(100),
@@ -52,3 +52,61 @@ export const deleteAppConfigResponseSchema = z.object({
 export type CreateAppConfigRequest = z.infer<typeof createAppConfigRequestSchema>;
 export type UpdateAppConfigRequest = z.infer<typeof updateAppConfigRequestSchema>;
 export type AppConfigResponse = z.infer<typeof appConfigSchema>;
+
+export const createAiProviderRequestSchema = z.object({
+  providerKey: z.string().min(1).max(100),
+  displayName: z.string().min(1).max(200),
+  baseUrl: z.string().url(),
+  authType: authTypeSchema,
+  secretRef: z.string().max(100).nullable().optional(),
+  timeoutMs: z.number().int().min(1000).max(600000).optional().default(60000),
+  retryCount: z.number().int().min(0).max(10).optional().default(1),
+  isEnabled: z.number().int().min(0).max(1).optional().default(1),
+});
+
+export const updateAiProviderRequestSchema = z.object({
+  displayName: z.string().min(1).max(200).optional(),
+  baseUrl: z.string().url().optional(),
+  authType: authTypeSchema.optional(),
+  secretRef: z.string().max(100).nullable().optional(),
+  timeoutMs: z.number().int().min(1000).max(600000).optional(),
+  retryCount: z.number().int().min(0).max(10).optional(),
+  isEnabled: z.number().int().min(0).max(1).optional(),
+});
+
+export const aiProviderSchema = z.object({
+  id: z.string(),
+  providerKey: z.string(),
+  displayName: z.string(),
+  baseUrl: z.string(),
+  authType: z.string(),
+  secretRef: z.string().nullable(),
+  timeoutMs: z.number(),
+  retryCount: z.number(),
+  isEnabled: z.number(),
+  lastTestStatus: z.string().nullable(),
+  lastTestAt: z.string().nullable(),
+  lastTestMessage: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const listAiProvidersResponseSchema = z.object({
+  providers: z.array(aiProviderSchema),
+});
+
+export const createAiProviderResponseSchema = z.object({
+  provider: aiProviderSchema,
+});
+
+export const updateAiProviderResponseSchema = z.object({
+  provider: aiProviderSchema,
+});
+
+export const deleteAiProviderResponseSchema = z.object({
+  success: z.boolean(),
+});
+
+export type CreateAiProviderRequest = z.infer<typeof createAiProviderRequestSchema>;
+export type UpdateAiProviderRequest = z.infer<typeof updateAiProviderRequestSchema>;
+export type AiProviderResponse = z.infer<typeof aiProviderSchema>;

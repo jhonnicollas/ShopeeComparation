@@ -646,7 +646,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 23:35
 Branch: feature/TASK-045-scoring-api
-Commit: pending
+Commit: 55fb324
 
 Summary:
 - Added scoring config Zod schemas to shared/schemas/config.ts.

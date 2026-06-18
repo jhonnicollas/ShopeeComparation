@@ -1,12 +1,12 @@
-# TASK-091: Build Browser Run adapter interface
+# TASK-092: Build fallback extractor strategy
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a Cloudflare Browser Run adapter interface for Shopee URL resolution. The adapter should implement the `ShopeeExtractor` interface and use Cloudflare Browser Run (via REST API) to render JavaScript-heavy pages and extract product/shop data.
+Build a fallback extractor strategy that chains multiple ShopeeExtractor implementations in priority order, collecting results from each adapter and merging into a single ProductSnapshot/ShopSnapshot. Each adapter's result is recorded for diagnostics. Missing fields stay null with confidence 0. Partial success is allowed.
 
 ## Required Reading
 
@@ -15,9 +15,7 @@ Build a Cloudflare Browser Run adapter interface for Shopee URL resolution. The 
 - `docs/architecture/implementation-stack.md`
 - `docs/shared/enums.md`
 - `docs/database/schema.md`
-- `docs/database/naming-rules.md`
 - `docs/api/api-contract.md`
-- `docs/configuration/runtime-configuration.md`
 - `docs/shopee/search-api-strategy.md`
 - `docs/shopee/extraction-strategy.md`
 - `docs/tasks/autopilot-task-contract.md`
@@ -27,25 +25,25 @@ Build a Cloudflare Browser Run adapter interface for Shopee URL resolution. The 
 
 ## Scope
 
-- Create `packages/shopee/src/adapters/browserRunAdapter.ts` — implements `ShopeeExtractor` interface
-- The adapter uses Cloudflare Browser Run REST API to render pages and extract data
-- Configuration loaded from `sh_searchProviderConfigs` (provider type: `browserRun`)
-- Add `BrowserRunAdapter` class with proper Cloudflare Browser Run integration
-- Add `BrowserRunConfig` interface for configuration
-- Add error handling and timeout
-- Add unit tests with mocked fetch
+- Create `packages/shopee/src/extractors/fallbackExtractor.ts` — FallbackShopeeExtractor class
+- Implements ShopeeExtractor interface and orchestrates multiple adapters
+- For each method, iterates adapters in priority order, calls each, and merges results
+- Tracks per-adapter outcomes for diagnostics
+- Returns partial success when some adapters succeed and others fail
+- Logs to a diagnostics array (no secret leakage)
+- Adapter priority loaded from D1 config (searchProviderConfigs)
+- Add comprehensive unit tests
 
 ## Out of Scope
 
-- Do not create the actual Cloudflare Browser Run binding/wrangler config (deferred to deployment)
 - Do not create API endpoints
 - Do not create frontend UI
-- Do not create D1 schema changes
+- Do not change D1 schema
 
 ## Allowed Files
 
-- `packages/shopee/src/adapters/browserRunAdapter.ts` (new)
-- `packages/shopee/src/adapters/browserRunAdapter.test.ts` (new)
+- `packages/shopee/src/extractors/fallbackExtractor.ts` (new)
+- `packages/shopee/src/extractors/fallbackExtractor.test.ts` (new)
 - `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
@@ -53,43 +51,42 @@ Build a Cloudflare Browser Run adapter interface for Shopee URL resolution. The 
 
 - `apps/**`
 - `workers/**`
-- `packages/db/**` (no DB changes)
+- `packages/db/**`
 - `packages/core/**`
 - `packages/ai/**`
-- `wrangler*.toml` (no config changes)
 
 ## Input Contract
 
-Implements ShopeeExtractor interface with all 4 methods.
+Implements ShopeeExtractor interface. Accepts array of adapters in priority order.
 
 ## Output Contract
 
-All methods return appropriate typed results. Missing data returns `null` with `confidence: 0`.
+Returns merged ProductSnapshot/ShopSnapshot with per-field source and confidence. Missing fields stay null.
 
 ## Acceptance Criteria
 
-- [ ] BrowserRunAdapter class implements ShopeeExtractor interface
-- [ ] Uses Cloudflare Browser Run REST API for fetching
-- [ ] Configuration loaded from D1 search provider configs
-- [ ] All extracted fields include source and confidence
-- [ ] Missing data returns null with confidence 0
-- [ ] Timeout handling implemented
-- [ ] Error handling safe (no secrets in errors)
-- [ ] Unit tests pass with mocked fetch
+- [ ] FallbackShopeeExtractor implements ShopeeExtractor
+- [ ] All 4 methods (resolveUrl, searchProducts, extractProduct, extractShop) supported
+- [ ] Adapters called in priority order
+- [ ] Per-adapter results merged into final result
+- [ ] Missing fields stay null with confidence 0
+- [ ] Diagnostics captured per attempt
+- [ ] Errors do not crash the whole extraction
+- [ ] Unit tests pass
 - [ ] All existing tests still pass
-- [ ] Quality gate passes (lint, typecheck, test, build, quality-gate.js)
+- [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit test for resolveUrl() with mocked Browser Run response
-- [ ] Unit test for extractProduct() with mocked response
-- [ ] Unit test for extractShop() with mocked response
-- [ ] Unit test for timeout handling
-- [ ] Unit test for error handling (no secret leakage)
+- [ ] Unit test for resolveUrl with multiple adapters
+- [ ] Unit test for extractProduct with primary adapter failing
+- [ ] Unit test for extractShop with all adapters failing
+- [ ] Unit test for searchProducts merging results
+- [ ] Unit test for error handling
 
 ## Documentation Update
 
-- [ ] Update `packages/shopee/src/index.ts` to export new adapter
+- [ ] Update `packages/shopee/src/index.ts` to export new extractor
 
 ## Stop Conditions Check
 

@@ -893,3 +893,48 @@ Quality Gate:
 - test: pass (337 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 101 auth/api, 17 component, 29 config repos, 27 shopee fixtures+contracts+extractor, 6 research, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-056: Build research session creation
+
+Status: DONE
+CompletedAt: 2026-06-18 00:24
+Branch: feature/TASK-056-research-session
+Commit: pending
+
+Summary:
+- Research session creation was implemented as part of TASK-055 (compare-links endpoint).
+- The POST /api/research/compare-links endpoint creates research sessions in sh_researchSessions.
+- createResearchSession() repository function is exported from packages/db.
+- Used by both API worker and queue consumer.
+- All 337 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (337 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 101 auth/api, 17 component, 29 config repos, 27 shopee fixtures+contracts+extractor, 6 research, 2 home)
+- build: pass
+- validation scripts: pass
+
+## TASK-057: Build job creation and polling
+
+Status: DONE
+CompletedAt: 2026-06-18 00:24
+Branch: feature/TASK-057-job-polling
+Commit: pending
+
+Summary:
+- Added GET /api/research/jobs/:id endpoint with ownership validation.
+- Added GET /api/research/sessions/:id endpoint with ownership validation.
+- Returns 404 for missing, 403 for non-owner, 401 for unauthenticated.
+- Returns full job/session details with status.
+- Added 7 unit tests for polling endpoints.
+- All 344 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (344 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 17 component, 29 config repos, 27 shopee fixtures+contracts+extractor, 13 research, 2 home)
+- build: pass
+- validation scripts: pass

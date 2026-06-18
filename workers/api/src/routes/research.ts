@@ -103,3 +103,86 @@ researchRouter.post("/compare-links", async (c) => {
     202
   );
 });
+
+researchRouter.get("/jobs/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const { findJobById } = await import("@shopee-research/db");
+  const job = await findJobById(c.env.DB, id);
+  if (!job) {
+    return c.json(
+      { error: { code: "JOB_NOT_FOUND", message: "Job not found", details: null } },
+      404
+    );
+  }
+
+  if (job.userId !== auth.user.userId) {
+    return c.json(
+      { error: { code: "FORBIDDEN", message: "Cannot access this job", details: null } },
+      403
+    );
+  }
+
+  return c.json(
+    {
+      jobId: job.id,
+      researchSessionId: job.researchSessionId,
+      type: job.type,
+      status: job.status,
+      progressCurrent: job.progressCurrent,
+      progressTotal: job.progressTotal,
+      currentStep: job.currentStep,
+      errorMessage: job.errorMessage,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+    },
+    200
+  );
+});
+
+researchRouter.get("/sessions/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const { findResearchSessionById } = await import("@shopee-research/db");
+  const session = await findResearchSessionById(c.env.DB, id);
+  if (!session) {
+    return c.json(
+      { error: { code: "SESSION_NOT_FOUND", message: "Session not found", details: null } },
+      404
+    );
+  }
+
+  if (session.userId !== auth.user.userId) {
+    return c.json(
+      { error: { code: "FORBIDDEN", message: "Cannot access this session", details: null } },
+      403
+    );
+  }
+
+  return c.json(
+    {
+      researchSessionId: session.id,
+      mode: session.mode,
+      keyword: session.keyword,
+      shippedFrom: session.shippedFrom,
+      status: session.status,
+      bestProductId: session.bestProductId,
+      totalProducts: session.totalProducts,
+      completedProducts: session.completedProducts,
+      errorMessage: session.errorMessage,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+    },
+    200
+  );
+});

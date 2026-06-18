@@ -1,4 +1,4 @@
-# TASK-055: Build compare links API using mock extractor
+# TASK-057: Build job creation and polling
 
 ## Status
 
@@ -6,66 +6,48 @@ DONE
 
 ## Goal
 
-Implement POST /api/research/compare-links endpoint that validates auth, creates research session and job, and enqueues queue message for async processing.
+Add GET /api/research/jobs/:id endpoint to poll job status, and GET /api/research/sessions/:id to get research session details.
 
 ## Required Reading
 
-- `docs/api/api-contract.md` (compare-links endpoint)
-- `docs/database/schema.md` (sh_researchSessions, sh_jobs)
-- `docs/architecture/cloudflare-architecture.md`
-- `docs/shared/enums.md` (researchMode, jobType, jobStatus)
+- `docs/api/api-contract.md`
+- `docs/database/schema.md` (sh_jobs, sh_researchSessions)
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Add research router at workers/api/src/routes/research.ts.
-- Implement POST /api/research/compare-links.
-- Validate links with compareLinksRequestSchema.
-- Create research session in D1.
-- Create job in D1.
-- Enqueue message via sendResearchJobMessage.
-- Return researchSessionId and jobId.
+- Add GET /api/research/jobs/:id endpoint.
+- Add GET /api/research/sessions/:id endpoint.
+- Validate ownership (user can only see their own).
+- Return current status.
 - Add unit tests.
 
 ## Out of Scope
 
-- Do not implement keyword search (later).
-- Do not implement job polling (TASK-057).
-- Do not implement actual extraction logic (queue consumer does it).
+- Do not create keyword search endpoint.
+- Do not implement job processing (queue consumer).
 
 ## Allowed Files
 
 - `workers/api/src/routes/research.ts`
 - `workers/api/src/routes/research.test.ts`
-- `workers/api/src/index.ts` (mount router)
 - `docs/tasks/**`
 
 ## Input Contract
 
-Authenticated user POSTs JSON { links: [...] }.
+Authenticated user GETs endpoint with jobId or sessionId.
 
 ## Output Contract
 
-Returns { researchSessionId, jobId, status }.
+Returns job/session data with status.
 
 ## Acceptance Criteria
 
-- [ ] research router exists
-- [ ] POST /api/research/compare-links implemented
-- [ ] Validates with Zod schema
-- [ ] Creates research session in D1
-- [ ] Creates job in D1
-- [ ] Enqueues queue message
-- [ ] Auth required
+- [ ] GET /api/research/jobs/:id implemented
+- [ ] GET /api/research/sessions/:id implemented
+- [ ] Ownership validation
 - [ ] Unit tests pass
 - [ ] Quality gate passes
-
-## Test Requirements
-
-- [ ] Unit test for successful creation
-- [ ] Unit test for empty links
-- [ ] Unit test for too many links
-- [ ] Unit test for unauthenticated
 
 ## Completion Rule
 

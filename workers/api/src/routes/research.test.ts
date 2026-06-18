@@ -228,3 +228,162 @@ describe("POST /api/research/compare-links", () => {
     expect(sentMessage.links).toHaveLength(2);
   });
 });
+
+describe("GET /api/research/jobs/:id", () => {
+  let db: MockD1Database;
+  let queue: MockQueue;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+    queue = new MockQueue();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await researchRouter.request(
+      "/jobs/job_1",
+      { method: "GET" },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 404 for missing job", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/jobs/missing",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 403 for other user's job", async () => {
+    const token = await createUserSession(db);
+    db.jobs.push({
+      id: "job_other",
+      userId: "usr_other",
+      researchSessionId: "rsr_other",
+      type: "compareLinks",
+      status: "pending",
+      progressCurrent: 0,
+      progressTotal: 0,
+      currentStep: null,
+      payloadJson: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await researchRouter.request(
+      "/jobs/job_other",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("returns job for owner", async () => {
+    const token = await createUserSession(db);
+    db.jobs.push({
+      id: "job_1",
+      userId: "usr_test",
+      researchSessionId: "rsr_test",
+      type: "compareLinks",
+      status: "running",
+      progressCurrent: 1,
+      progressTotal: 5,
+      currentStep: "Extracting product 1",
+      payloadJson: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await researchRouter.request(
+      "/jobs/job_1",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { jobId: string; status: string; progressCurrent: number };
+    expect(body.jobId).toBe("job_1");
+    expect(body.status).toBe("running");
+    expect(body.progressCurrent).toBe(1);
+  });
+});
+
+describe("GET /api/research/sessions/:id", () => {
+  let db: MockD1Database;
+  let queue: MockQueue;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+    queue = new MockQueue();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await researchRouter.request(
+      "/sessions/rsr_1",
+      { method: "GET" },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 404 for missing session", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/sessions/missing",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns session for owner", async () => {
+    const token = await createUserSession(db);
+    db.researchSessions.push({
+      id: "rsr_1",
+      userId: "usr_test",
+      mode: "compareLinks",
+      keyword: null,
+      shippedFrom: "DKI Jakarta",
+      status: "running",
+      bestProductId: null,
+      totalProducts: 0,
+      completedProducts: 0,
+      errorMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await researchRouter.request(
+      "/sessions/rsr_1",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { researchSessionId: string; mode: string };
+    expect(body.researchSessionId).toBe("rsr_1");
+    expect(body.mode).toBe("compareLinks");
+  });
+
+  it("returns 403 for other user's session", async () => {
+    const token = await createUserSession(db);
+    db.researchSessions.push({
+      id: "rsr_other",
+      userId: "usr_other",
+      mode: "compareLinks",
+      keyword: null,
+      shippedFrom: "DKI Jakarta",
+      status: "running",
+      bestProductId: null,
+      totalProducts: 0,
+      completedProducts: 0,
+      errorMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await researchRouter.request(
+      "/sessions/rsr_other",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(403);
+  });
+});

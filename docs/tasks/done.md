@@ -613,3 +613,30 @@ Quality Gate:
 - test: pass (260 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 72 auth/api, 14 component, 29 config repos, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-044: Build search provider config CRUD API
+
+Status: DONE
+CompletedAt: 2026-06-17 23:33
+Branch: feature/TASK-044-search-provider-api
+Commit: pending
+
+Summary:
+- Added search provider Zod schemas to shared/schemas/config.ts.
+- createSearchProviderRequestSchema, updateSearchProviderRequestSchema, searchProviderSchema, response schemas.
+- Added search provider CRUD endpoints to workers/api/src/routes/config.ts.
+- GET /api/config/search-providers (admin only, list all).
+- POST /api/config/search-providers (admin only, 409 on duplicate key).
+- PUT /api/config/search-providers/:id (admin only).
+- DELETE /api/config/search-providers/:id (admin only).
+- Added toSearchProviderResponse() helper.
+- Added 9 unit tests for search provider endpoints.
+- All 269 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (269 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 81 auth/api, 14 component, 29 config repos, 2 home)
+- build: pass
+- validation scripts: pass

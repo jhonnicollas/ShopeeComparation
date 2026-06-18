@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { aiModelUsageTypeSchema, authTypeSchema, configValueTypeSchema } from "./enums.js";
+import { aiModelUsageTypeSchema, authTypeSchema, configValueTypeSchema, searchProviderTypeSchema } from "./enums.js";
 
 export const createAppConfigRequestSchema = z.object({
   key: z.string().min(1).max(100),
@@ -182,3 +182,67 @@ export const deleteAiModelResponseSchema = z.object({
 export type CreateAiModelRequest = z.infer<typeof createAiModelRequestSchema>;
 export type UpdateAiModelRequest = z.infer<typeof updateAiModelRequestSchema>;
 export type AiModelResponse = z.infer<typeof aiModelSchema>;
+
+export const createSearchProviderRequestSchema = z.object({
+  providerKey: z.string().min(1).max(100),
+  displayName: z.string().min(1).max(200),
+  providerType: searchProviderTypeSchema,
+  priority: z.number().int().min(0).max(10000).optional().default(100),
+  baseUrl: z.string().url().nullable().optional(),
+  authType: authTypeSchema,
+  secretRef: z.string().max(100).nullable().optional(),
+  timeoutMs: z.number().int().min(1000).max(600000).optional().default(60000),
+  retryCount: z.number().int().min(0).max(10).optional().default(1),
+  isEnabled: z.number().int().min(0).max(1).optional().default(1),
+});
+
+export const updateSearchProviderRequestSchema = z.object({
+  displayName: z.string().min(1).max(200).optional(),
+  providerType: searchProviderTypeSchema.optional(),
+  priority: z.number().int().min(0).max(10000).optional(),
+  baseUrl: z.string().url().nullable().optional(),
+  authType: authTypeSchema.optional(),
+  secretRef: z.string().max(100).nullable().optional(),
+  timeoutMs: z.number().int().min(1000).max(600000).optional(),
+  retryCount: z.number().int().min(0).max(10).optional(),
+  isEnabled: z.number().int().min(0).max(1).optional(),
+});
+
+export const searchProviderSchema = z.object({
+  id: z.string(),
+  providerKey: z.string(),
+  displayName: z.string(),
+  providerType: z.string(),
+  priority: z.number(),
+  baseUrl: z.string().nullable(),
+  authType: z.string(),
+  secretRef: z.string().nullable(),
+  timeoutMs: z.number(),
+  retryCount: z.number(),
+  isEnabled: z.number(),
+  lastTestStatus: z.string().nullable(),
+  lastTestAt: z.string().nullable(),
+  lastTestMessage: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const listSearchProvidersResponseSchema = z.object({
+  providers: z.array(searchProviderSchema),
+});
+
+export const createSearchProviderResponseSchema = z.object({
+  provider: searchProviderSchema,
+});
+
+export const updateSearchProviderResponseSchema = z.object({
+  provider: searchProviderSchema,
+});
+
+export const deleteSearchProviderResponseSchema = z.object({
+  success: z.boolean(),
+});
+
+export type CreateSearchProviderRequest = z.infer<typeof createSearchProviderRequestSchema>;
+export type UpdateSearchProviderRequest = z.infer<typeof updateSearchProviderRequestSchema>;
+export type SearchProviderResponse = z.infer<typeof searchProviderSchema>;

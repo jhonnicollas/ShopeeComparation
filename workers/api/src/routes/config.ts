@@ -18,9 +18,16 @@ import {
   createAiModelResponseSchema,
   updateAiModelResponseSchema,
   deleteAiModelResponseSchema,
+  createSearchProviderRequestSchema,
+  updateSearchProviderRequestSchema,
+  listSearchProvidersResponseSchema,
+  createSearchProviderResponseSchema,
+  updateSearchProviderResponseSchema,
+  deleteSearchProviderResponseSchema,
   type AppConfigResponse,
   type AiProviderResponse,
   type AiModelResponse,
+  type SearchProviderResponse,
 } from "@shopee-research/shared";
 import {
   createAppConfig,
@@ -43,6 +50,12 @@ import {
   listAiModels,
   listAiModelsByProvider,
   updateAiModel,
+  createSearchProvider,
+  deleteSearchProvider,
+  findSearchProviderById,
+  findSearchProviderByKey,
+  listSearchProviders,
+  updateSearchProvider,
 } from "@shopee-research/db";
 import { authenticate, authErrorResponse, requireAdmin } from "../lib/auth.js";
 
@@ -150,6 +163,44 @@ function toAiModelResponse(row: {
     costInput: row.costInput,
     costOutput: row.costOutput,
     isDefault: row.isDefault,
+    isEnabled: row.isEnabled,
+    lastTestStatus: row.lastTestStatus,
+    lastTestAt: row.lastTestAt,
+    lastTestMessage: row.lastTestMessage,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function toSearchProviderResponse(row: {
+  id: string;
+  providerKey: string;
+  displayName: string;
+  providerType: string;
+  priority: number;
+  baseUrl: string | null;
+  authType: string;
+  secretRef: string | null;
+  timeoutMs: number;
+  retryCount: number;
+  isEnabled: number;
+  lastTestStatus: string | null;
+  lastTestAt: string | null;
+  lastTestMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}): SearchProviderResponse {
+  return {
+    id: row.id,
+    providerKey: row.providerKey,
+    displayName: row.displayName,
+    providerType: row.providerType,
+    priority: row.priority,
+    baseUrl: row.baseUrl,
+    authType: row.authType,
+    secretRef: row.secretRef,
+    timeoutMs: row.timeoutMs,
+    retryCount: row.retryCount,
     isEnabled: row.isEnabled,
     lastTestStatus: row.lastTestStatus,
     lastTestAt: row.lastTestAt,
@@ -700,4 +751,173 @@ configRouter.delete("/ai-models/:id", async (c) => {
 
   await deleteAiModel(c.env.DB, id);
   return c.json(deleteAiModelResponseSchema.parse({ success: true }), 200);
+});
+
+configRouter.get("/search-providers", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  if (auth.user.role !== "admin") {
+    return c.json(
+      { error: { code: "FORBIDDEN", message: "Admin role required", details: null } },
+      403
+    );
+  }
+  const rows = await listSearchProviders(c.env.DB);
+  return c.json(listSearchProvidersResponseSchema.parse({ providers: rows.map(toSearchProviderResponse) }), 200);
+});
+
+configRouter.post("/search-providers", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
+      400
+    );
+  }
+
+  const parsed = createSearchProviderRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Invalid search provider input",
+          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+        },
+      },
+      400
+    );
+  }
+
+  const existing = await findSearchProviderByKey(c.env.DB, parsed.data.providerKey);
+  if (existing) {
+    return c.json(
+      { error: { code: "PROVIDER_KEY_EXISTS", message: "A provider with this key already exists", details: null } },
+      409
+    );
+  }
+
+  const created = await createSearchProvider(c.env.DB, {
+    id: generateId("srp"),
+    providerKey: parsed.data.providerKey,
+    displayName: parsed.data.displayName,
+    providerType: parsed.data.providerType,
+    priority: parsed.data.priority ?? 100,
+    baseUrl: parsed.data.baseUrl ?? null,
+    authType: parsed.data.authType,
+    secretRef: parsed.data.secretRef ?? null,
+    timeoutMs: parsed.data.timeoutMs ?? 60000,
+    retryCount: parsed.data.retryCount ?? 1,
+    isEnabled: parsed.data.isEnabled ?? 1,
+  });
+
+  return c.json(createSearchProviderResponseSchema.parse({ provider: toSearchProviderResponse(created) }), 201);
+});
+
+configRouter.put("/search-providers/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const existing = await findSearchProviderById(c.env.DB, id);
+  if (!existing) {
+    return c.json(
+      { error: { code: "PROVIDER_NOT_FOUND", message: "Search provider not found", details: null } },
+      404
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
+      400
+    );
+  }
+
+  const parsed = updateSearchProviderRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Invalid search provider input",
+          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+        },
+      },
+      400
+    );
+  }
+
+  const updated = await updateSearchProvider(c.env.DB, id, {
+    displayName: parsed.data.displayName,
+    providerType: parsed.data.providerType,
+    priority: parsed.data.priority,
+    baseUrl: parsed.data.baseUrl,
+    authType: parsed.data.authType,
+    secretRef: parsed.data.secretRef,
+    timeoutMs: parsed.data.timeoutMs,
+    retryCount: parsed.data.retryCount,
+    isEnabled: parsed.data.isEnabled,
+  });
+
+  if (!updated) {
+    return c.json(
+      { error: { code: "PROVIDER_NOT_FOUND", message: "Search provider not found", details: null } },
+      404
+    );
+  }
+
+  return c.json(updateSearchProviderResponseSchema.parse({ provider: toSearchProviderResponse(updated) }), 200);
+});
+
+configRouter.delete("/search-providers/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const existing = await findSearchProviderById(c.env.DB, id);
+  if (!existing) {
+    return c.json(
+      { error: { code: "PROVIDER_NOT_FOUND", message: "Search provider not found", details: null } },
+      404
+    );
+  }
+
+  await deleteSearchProvider(c.env.DB, id);
+  return c.json(deleteSearchProviderResponseSchema.parse({ success: true }), 200);
 });

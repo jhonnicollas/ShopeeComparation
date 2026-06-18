@@ -1038,3 +1038,27 @@ Quality Gate:
 - test: pass (385 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 22 core, 10 save extracted, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-062: Build risk detection engine
+
+Status: DONE
+CompletedAt: 2026-06-18 00:50
+Branch: feature/TASK-062-risk-engine
+Commit: pending
+
+Summary:
+- Created packages/core/src/risk/engine.ts.
+- Implemented detectRisks() returning RiskItem[].
+- Risk categories: low_rating, few_reviews, shop_unknown, low_response_rate, low_shop_rating, price_missing, suspicious_discount, high_price, low_stock.
+- Severity levels: LOW, MEDIUM, HIGH.
+- Each risk has impact value (0-1).
+- Added 10 unit tests.
+- All 395 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (395 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 27 core, 10 save extracted, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

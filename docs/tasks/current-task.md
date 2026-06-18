@@ -1,4 +1,4 @@
-# TASK-053: Create ShopSnapshot contract
+# TASK-054: Create MockShopeeExtractor
 
 ## Status
 
@@ -6,44 +6,47 @@ DONE
 
 ## Goal
 
-Verify ShopSnapshot contract and add helper functions for shop trust evaluation.
+Create a mock Shopee extractor that returns fixture data for development/testing.
 
 ## Required Reading
 
-- `docs/database/schema.md` (sh_shops)
+- `docs/database/schema.md`
 - `docs/shopee/extraction-strategy.md`
 - `docs/shared/enums.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Verify ShopSnapshot type.
-- Add isValidShopSnapshot type guard.
-- Add getShopTrustLevel helper.
+- Implement mockExtractProduct using fixtures.
+- Implement mockExtractShop using fixtures.
+- Implement mockExtractByUrl combined helper.
+- Add unit tests.
 
 ## Out of Scope
 
-- Do not modify shared types.
+- Do not create real HTTP-based extractor (later).
+- Do not create keyword search (later).
 
 ## Allowed Files
 
-- `packages/shopee/src/contracts/shops.ts`
-- `packages/shopee/src/contracts/shops.test.ts`
-- `packages/shopee/src/contracts/index.ts`
+- `packages/shopee/src/extractors/mockExtractor.ts`
+- `packages/shopee/src/extractors/mockExtractor.test.ts`
+- `packages/shopee/src/index.ts`
 - `docs/tasks/**`
 
 ## Input Contract
 
-ShopSnapshot type exists in shared.
+ExtractProductInput / ExtractShopInput from shared package.
 
 ## Output Contract
 
-Contract helpers exported from packages/shopee.
+ProductSnapshot / ShopSnapshot from shared package.
 
 ## Acceptance Criteria
 
-- [ ] Shop contract exists
-- [ ] Helpers implemented
+- [ ] mockExtractProduct implemented
+- [ ] mockExtractShop implemented
+- [ ] mockExtractByUrl implemented
 - [ ] Unit tests pass
 - [ ] Quality gate passes
 

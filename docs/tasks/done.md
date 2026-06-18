@@ -840,3 +840,27 @@ Quality Gate:
 - test: pass (324 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 20 shopee fixtures, 17 shopee contracts, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-054: Create MockShopeeExtractor
+
+Status: DONE
+CompletedAt: 2026-06-18 00:18
+Branch: feature/TASK-054-mock-extractor
+Commit: pending
+
+Summary:
+- Created packages/shopee/src/extractors/mockExtractor.ts.
+- Implemented mockExtractProduct(input) using product fixtures.
+- Implemented mockExtractShop(input) using shop fixtures.
+- Implemented mockExtractByUrl(url) combined helper that returns product+shop.
+- Uses fixtures from TASK-050 and TASK-051.
+- Created mockExtractor.test.ts with 7 unit tests.
+- All 331 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (331 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 27 shopee fixtures+contracts+extractor, 2 home)
+- build: pass
+- validation scripts: pass

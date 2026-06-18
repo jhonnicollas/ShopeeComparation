@@ -55,7 +55,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-051 Create Shopee shop fixture data
 - [x] TASK-052 Create ProductSnapshot contract
 - [x] TASK-053 Create ShopSnapshot contract
-- [ ] TASK-054 Create MockShopeeExtractor
+- [x] TASK-054 Create MockShopeeExtractor
 - [ ] TASK-055 Build compare links API using mock extractor
 - [ ] TASK-056 Build research session creation
 - [ ] TASK-057 Build job creation and polling

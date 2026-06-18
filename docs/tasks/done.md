@@ -1397,3 +1397,32 @@ Quality Gate:
 - test: pass (448 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-080-083: Shopee URL parser, redirect resolver, canonical normalizer, shopId/itemId extraction
+
+Status: DONE
+CompletedAt: 2026-06-18 02:50
+Branch: feature/TASK-080-url-resolver
+Commit: pending
+
+Summary:
+- Created packages/shopee/src/resolver/urlParser.ts with parseShopeeUrl().
+- Supports Shopee hosts (co.id, com.my, sg, co.th, tw, ph, vn, com.br, com.mx).
+- Detects short URLs (shp.ee, id.shp.ee).
+- Extracts shopId and itemId from path (e.g. /i.123.456).
+- Extracts itemId from query param (?item_id=123).
+- Builds normalized URL https://shopee.co.id/product/{shopId}/{itemId}.
+- Created urlParser.test.ts with 8 unit tests.
+- All 457 tests pass.
+- Created resolveUrl.ts with DirectResolveAdapter and HttpRedirectResolveAdapter.
+- resolveUrlWithFallback() tries adapters in order.
+- Created resolveUrl.test.ts with 8 unit tests.
+- All 465 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (465 tests)
+- build: pass
+- validation scripts: pass

@@ -12,3 +12,4 @@ export * from "./adapters/browserRunAdapter.js";
 export * from "./parser/productParser.js";
 export * from "./parser/shopParser.js";
 export * from "./parser/weightExtractor.js";
+export * from "./parser/featureExtractor.js";

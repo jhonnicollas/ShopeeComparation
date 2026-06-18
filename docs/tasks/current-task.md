@@ -1,12 +1,12 @@
-# TASK-095: Build product weight extractor
+# TASK-096: Build feature extractor
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a Shopee product weight extractor that extracts WeightExtraction from raw text/HTML/JSON. Supports multiple weight units (gram, kg, mg, lb, oz), sources from specifications, description, metadata, variants, and shipping info. Each extraction has source and confidence.
+Build a Shopee product feature extractor that extracts ProductFeatureItem[] from raw HTML/JSON/text. Each feature has name, value, source, and confidence. Missing features return empty array (no fabrication).
 
 ## Required Reading
 
@@ -19,11 +19,10 @@ Build a Shopee product weight extractor that extracts WeightExtraction from raw 
 
 ## Scope
 
-- Create `packages/shopee/src/parser/weightExtractor.ts` — WeightExtractor class
-- Extracts weight from text with multiple patterns
-- Supports units: gram, kg, mg, lb, oz
-- Source attribution (productSpecification, description, metadata, variant, shipping, aiExtraction)
-- Returns WeightExtraction type with value, unit, rawText, source, confidence
+- Create `packages/shopee/src/parser/featureExtractor.ts` — FeatureExtractor class
+- Extracts product features from specifications, description, and metadata
+- Returns ProductFeatureItem[] with name, value, source, confidence
+- Supports multiple input formats (HTML tables, JSON specs, text patterns)
 - Add comprehensive unit tests
 
 ## Out of Scope
@@ -34,8 +33,8 @@ Build a Shopee product weight extractor that extracts WeightExtraction from raw 
 
 ## Allowed Files
 
-- `packages/shopee/src/parser/weightExtractor.ts` (new)
-- `packages/shopee/src/parser/weightExtractor.test.ts` (new)
+- `packages/shopee/src/parser/featureExtractor.ts` (new)
+- `packages/shopee/src/parser/featureExtractor.test.ts` (new)
 - `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
@@ -49,33 +48,31 @@ Build a Shopee product weight extractor that extracts WeightExtraction from raw 
 
 ## Input Contract
 
-`extractWeight(input: { text: string; sourceContext?: string }): WeightExtraction`
+`extractFeatures(input: { html?: string; json?: unknown; text?: string }): ProductFeatureItem[]`
 
 ## Output Contract
 
-WeightExtraction { value, unit, rawText, source, confidence }
+ProductFeatureItem[] with name, value, source, confidence.
 
 ## Acceptance Criteria
 
-- [ ] WeightExtractor class implemented
-- [ ] Supports gram, kg, mg, lb, oz units
-- [ ] Multiple patterns: "500g", "1.5 kg", "Berat: 500g", etc.
-- [ ] Source attribution: productSpecification, description, metadata, variant, shipping, aiExtraction
-- [ ] Returns WeightExtraction with all fields populated when found
-- [ ] Returns empty WeightExtraction with confidence 0 when not found
+- [ ] FeatureExtractor class implemented
+- [ ] Extracts from HTML specifications
+- [ ] Extracts from JSON specs
+- [ ] Extracts from text patterns
+- [ ] Each feature has source and confidence
+- [ ] Returns empty array when no features found
 - [ ] Unit tests pass
 - [ ] All existing tests still pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit test for gram extraction
-- [ ] Unit test for kg extraction
-- [ ] Unit test for mg extraction
-- [ ] Unit test for lb/oz extraction
+- [ ] Unit test for HTML table extraction
+- [ ] Unit test for JSON specs extraction
+- [ ] Unit test for text pattern extraction
+- [ ] Unit test for empty input
 - [ ] Unit test for source attribution
-- [ ] Unit test for no weight found
-- [ ] Unit test for multiple matches (best confidence wins)
 
 ## Documentation Update
 

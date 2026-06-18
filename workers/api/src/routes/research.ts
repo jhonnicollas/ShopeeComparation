@@ -250,3 +250,49 @@ researchRouter.get("/comparisons/by-session/:sessionId", async (c) => {
     200
   );
 });
+
+researchRouter.get("/comparisons/:comparisonId/ai-report", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const comparisonId = c.req.param("comparisonId");
+  const { findComparisonById, findAiReportByComparison } = await import("@shopee-research/db");
+
+  const comparison = await findComparisonById(c.env.DB, comparisonId);
+  if (!comparison) {
+    return c.json(
+      { error: { code: "COMPARISON_NOT_FOUND", message: "Comparison not found", details: null } },
+      404
+    );
+  }
+
+  if (comparison.userId !== auth.user.userId) {
+    return c.json(
+      { error: { code: "FORBIDDEN", message: "Cannot access this comparison", details: null } },
+      403
+    );
+  }
+
+  const report = await findAiReportByComparison(c.env.DB, comparisonId);
+  if (!report) {
+    return c.json({ report: null, rawText: null }, 200);
+  }
+
+  let parsedReport = null;
+  try {
+    parsedReport = report.reportJson ? JSON.parse(report.reportJson) : null;
+  } catch {
+    parsedReport = null;
+  }
+
+  return c.json(
+    {
+      report: parsedReport,
+      rawText: report.reportText ?? null,
+    },
+    200
+  );
+});

@@ -1372,3 +1372,28 @@ Quality Gate:
 - test: pass (445 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-078: Render AI report in frontend
+
+Status: DONE
+CompletedAt: 2026-06-18 02:35
+Branch: feature/TASK-078-ai-report-view
+Commit: pending
+
+Summary:
+- Created apps/web/src/components/AiReportView.tsx.
+- Displays AI recommendation report: best product, confidence, ranking, pros/cons, red flags, missing notes.
+- Shows raw response in expandable section.
+- Uses TanStack Query for fetching.
+- Added GET /api/research/comparisons/:comparisonId/ai-report endpoint.
+- Added CSS for report sections.
+- Created AiReportView.test.tsx with 3 component tests.
+- All 448 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (448 tests)
+- build: pass
+- validation scripts: pass

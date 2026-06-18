@@ -746,3 +746,27 @@ Quality Gate:
 - test: pass (287 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-050: Create Shopee product fixture data
+
+Status: DONE
+CompletedAt: 2026-06-18 00:10
+Branch: feature/TASK-050-product-fixtures
+Commit: pending
+
+Summary:
+- Created packages/shopee package with package.json, tsconfig.json.
+- Created packages/shopee/src/fixtures/products.ts with 5 diverse product fixtures.
+- Products have varying prices (65k-480k), ratings (4.2-4.9), shops, weights, and features.
+- All products have shippedFrom "DKI Jakarta" per source-of-truth.
+- Added findFixtureByItemId() and findFixtureByUrl() helpers.
+- Created products.test.ts with 9 unit tests for fixture structure.
+- All 298 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (298 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 11 shopee fixtures, 2 home)
+- build: pass
+- validation scripts: pass

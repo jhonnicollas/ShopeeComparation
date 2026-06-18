@@ -51,7 +51,7 @@ This backlog is the execution queue for 100% autopilot mode.
 
 ## Phase 5 — Mock Shopee Flow
 
-- [ ] TASK-050 Create Shopee product fixture data
+- [x] TASK-050 Create Shopee product fixture data
 - [ ] TASK-051 Create Shopee shop fixture data
 - [ ] TASK-052 Create ProductSnapshot contract
 - [ ] TASK-053 Create ShopSnapshot contract

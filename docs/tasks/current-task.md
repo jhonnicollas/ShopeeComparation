@@ -1,4 +1,4 @@
-# TASK-048: Build 9router model test frontend
+# TASK-050: Create Shopee product fixture data
 
 ## Status
 
@@ -6,51 +6,52 @@ DONE
 
 ## Goal
 
-Add a Test button to the AI Models tab in ConfigPage that calls the test endpoint and shows the result.
+Create fixture data for Shopee products that will be used by the mock extractor for development and testing.
 
 ## Required Reading
 
-- `docs/api/api-contract.md`
-- `docs/ai/9router-configuration.md`
-- `docs/configuration/runtime-configuration.md`
+- `docs/database/schema.md` (sh_products, sh_productWeights, sh_productFeatures)
+- `docs/shopee/extraction-strategy.md`
+- `docs/shared/enums.md` (product fields)
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Add testModel function to apps/web/src/lib/config.ts.
-- Add Test button to AI Models tab in ConfigPage.
-- Show test result inline.
-- Add component tests.
+- Create packages/shopee package.
+- Create fixture data file with sample products.
+- Include diverse price ranges, ratings, and feature sets.
+- Add unit tests verifying fixture structure.
 
 ## Out of Scope
 
-- Do not create separate test console page.
+- Do not create shop fixtures (TASK-051).
+- Do not create real extractor (TASK-054).
+- Do not write fixtures to D1.
 
 ## Allowed Files
 
-- `apps/web/src/lib/config.ts`
-- `apps/web/src/pages/ConfigPage.tsx`
-- `apps/web/src/pages/ConfigPage.test.tsx`
+- `packages/shopee/**`
 - `docs/tasks/**`
 
 ## Input Contract
 
-Admin clicks Test button on an AI model row.
+N/A - static fixture data.
 
 ## Output Contract
 
-Test result shown below the row with status, latency, and message.
+Export array of sample product data objects.
 
 ## Acceptance Criteria
 
-- [ ] testModel function exists
-- [ ] Test button exists on AI Models tab
-- [ ] Shows test result
-- [ ] Component tests pass
+- [ ] packages/shopee directory exists
+- [ ] Fixture data exported
+- [ ] Includes 5+ sample products
+- [ ] Unit tests pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
+- [ ] Fixture structure tests
 - [ ] Existing tests still pass
 
 ## Completion Rule

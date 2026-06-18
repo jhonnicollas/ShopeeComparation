@@ -776,7 +776,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:12
 Branch: feature/TASK-051-shop-fixtures
-Commit: pending
+Commit: 25aa5da
 
 Summary:
 - Created packages/shopee/src/fixtures/shops.ts with 4 diverse shop fixtures.

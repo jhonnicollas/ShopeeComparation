@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DirectResolveAdapter,
   HttpRedirectResolveAdapter,
+  WebFetchResolveAdapter,
+  BrowserRunResolveAdapter,
   resolveUrlWithFallback,
 } from "./resolveUrl.js";
 
@@ -61,6 +63,26 @@ describe("HttpRedirectResolveAdapter", () => {
   });
 });
 
+describe("WebFetchResolveAdapter", () => {
+  it("returns failed with not implemented message", async () => {
+    const adapter = new WebFetchResolveAdapter();
+    const result = await adapter.resolve({ url: "https://id.shp.ee/abc" });
+    expect(result.status).toBe("failed");
+    expect(result.resolveMethod).toBe("webFetch");
+    expect(result.errorMessage).toContain("TASK-090");
+  });
+});
+
+describe("BrowserRunResolveAdapter", () => {
+  it("returns failed with not implemented message", async () => {
+    const adapter = new BrowserRunResolveAdapter();
+    const result = await adapter.resolve({ url: "https://id.shp.ee/abc" });
+    expect(result.status).toBe("failed");
+    expect(result.resolveMethod).toBe("browserRun");
+    expect(result.errorMessage).toContain("TASK-091");
+  });
+});
+
 describe("resolveUrlWithFallback", () => {
   it("uses first successful adapter", async () => {
     const result = await resolveUrlWithFallback({
@@ -103,5 +125,15 @@ describe("resolveUrlWithFallback", () => {
       ]
     );
     expect(result.status).toBe("failed");
+  });
+
+  it("includes webFetch and browserRun in default fallback chain", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("boom"));
+    const result = await resolveUrlWithFallback({ url: "https://id.shp.ee/abc" });
+    expect(result.status).toBe("failed");
+    expect(result.errorMessage).toContain("webFetch");
+    expect(result.errorMessage).toContain("browserRun");
+    expect(result.errorMessage).toContain("TASK-090");
+    expect(result.errorMessage).toContain("TASK-091");
   });
 });

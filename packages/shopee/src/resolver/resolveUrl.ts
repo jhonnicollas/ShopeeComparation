@@ -1,5 +1,10 @@
 import type { ResolveUrlInput, ResolveUrlResult } from "@shopee-research/shared";
 import { parseShopeeUrl } from "./urlParser.js";
+import { WebFetchResolveAdapter } from "./webFetchAdapter.js";
+import { BrowserRunResolveAdapter } from "./browserRunAdapter.js";
+
+export { WebFetchResolveAdapter } from "./webFetchAdapter.js";
+export { BrowserRunResolveAdapter } from "./browserRunAdapter.js";
 
 export interface ResolveUrlAdapter {
   name: string;
@@ -88,7 +93,12 @@ export class HttpRedirectResolveAdapter implements ResolveUrlAdapter {
 
 export async function resolveUrlWithFallback(
   input: ResolveUrlInput,
-  adapters: ResolveUrlAdapter[] = [new DirectResolveAdapter(), new HttpRedirectResolveAdapter()]
+  adapters: ResolveUrlAdapter[] = [
+    new DirectResolveAdapter(),
+    new HttpRedirectResolveAdapter(),
+    new WebFetchResolveAdapter(),
+    new BrowserRunResolveAdapter(),
+  ]
 ): Promise<ResolveUrlResult & { adapterUsed: string }> {
   const errors: string[] = [];
   for (const adapter of adapters) {

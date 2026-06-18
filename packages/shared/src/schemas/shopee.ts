@@ -180,3 +180,10 @@ export const fieldEvidenceSchema = z.object({
   status: fieldAvailabilityStatusSchema,
   rawSnapshotR2Key: z.string().nullable(),
 });
+
+export const resolveFallbackConfigSchema = z.object({
+  adapters: z.array(z.string()).min(1),
+  timeoutMs: z.number().int().positive(),
+  retryCount: z.number().int().min(0),
+  retryDelayMs: z.number().int().min(0),
+});

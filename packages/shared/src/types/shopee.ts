@@ -229,6 +229,13 @@ export interface QueueMessage {
   storeStatus?: string[] | null;
 }
 
+export interface ResolveFallbackConfig {
+  adapters: string[];
+  timeoutMs: number;
+  retryCount: number;
+  retryDelayMs: number;
+}
+
 export interface RuntimeConfigSnapshot {
   appConfig: Record<string, unknown>;
   aiProvider: {

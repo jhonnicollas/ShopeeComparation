@@ -4,3 +4,5 @@ export * from "./contracts/index.js";
 export * from "./extractors/mockExtractor.js";
 export * from "./resolver/urlParser.js";
 export * from "./resolver/resolveUrl.js";
+export * from "./resolver/webFetchAdapter.js";
+export * from "./resolver/browserRunAdapter.js";

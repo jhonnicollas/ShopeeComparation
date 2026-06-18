@@ -1,12 +1,12 @@
-# TASK-093: Build product parser
+# TASK-094: Build shop parser
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a Shopee product parser that extracts ProductSnapshot fields from raw HTML/JSON content. Each field must include source and confidence, missing fields return null with confidence 0.
+Build a Shopee shop parser that extracts ShopSnapshot fields from raw HTML/JSON content. Each field must include source and confidence, missing fields return null with confidence 0. Shop status is normalized to canonical enum values (MALL, OFFICIAL, STAR, STARPLUS, PREFERRED, REGULAR, UNKNOWN).
 
 ## Required Reading
 
@@ -20,10 +20,11 @@ Build a Shopee product parser that extracts ProductSnapshot fields from raw HTML
 
 ## Scope
 
-- Create `packages/shopee/src/parser/productParser.ts` — ProductParser class
-- Parses raw HTML/JSON to extract ProductSnapshot fields
+- Create `packages/shopee/src/parser/shopParser.ts` — ShopParser class
+- Parses raw HTML/JSON to extract ShopSnapshot fields
 - Each field has source and confidence score
 - Missing fields return null with confidence 0 (no fabrication)
+- Shop status normalized to canonical enum
 - Support multiple input formats (HTML, JSON, JSON-LD)
 - Add comprehensive unit tests
 
@@ -35,8 +36,8 @@ Build a Shopee product parser that extracts ProductSnapshot fields from raw HTML
 
 ## Allowed Files
 
-- `packages/shopee/src/parser/productParser.ts` (new)
-- `packages/shopee/src/parser/productParser.test.ts` (new)
+- `packages/shopee/src/parser/shopParser.ts` (new)
+- `packages/shopee/src/parser/shopParser.test.ts` (new)
 - `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
@@ -50,17 +51,18 @@ Build a Shopee product parser that extracts ProductSnapshot fields from raw HTML
 
 ## Input Contract
 
-`parseProduct(input: { html?: string; json?: unknown; shopId: string; itemId: string; canonicalUrl: string }): ProductSnapshot`
+`parseShop(input: { html?: string; json?: unknown; shopId: string }): ShopSnapshot`
 
 ## Output Contract
 
-Returns complete ProductSnapshot with each field's source and confidence.
+Returns complete ShopSnapshot with each field's source and confidence.
 
 ## Acceptance Criteria
 
-- [ ] ProductParser class implemented
+- [ ] ShopParser class implemented
 - [ ] Parses HTML, JSON, and JSON-LD formats
-- [ ] Extracts: title, priceMin, priceMax, rating, reviewCount, soldCount, brand, category, description, stock
+- [ ] Extracts: name, rating, responseRate, responseTime, followerCount, productCount, joinedAgeText, location
+- [ ] Normalizes shop status to MALL/OFFICIAL/STAR/STARPLUS/PREFERRED/REGULAR/UNKNOWN
 - [ ] Each field has source and confidence
 - [ ] Missing fields return null with confidence 0
 - [ ] Unit tests pass
@@ -72,6 +74,7 @@ Returns complete ProductSnapshot with each field's source and confidence.
 - [ ] Unit test for HTML parsing
 - [ ] Unit test for JSON parsing
 - [ ] Unit test for JSON-LD parsing
+- [ ] Unit test for shop status normalization
 - [ ] Unit test for missing fields (null with confidence 0)
 - [ ] Unit test for malformed input (safe handling)
 

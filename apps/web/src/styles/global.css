@@ -548,3 +548,74 @@ h2 {
   text-transform: capitalize;
   font-weight: 600;
 }
+
+.scoreBreakdown {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.scoreBreakdown h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.breakdownGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.breakdownItem {
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid #cbd2d9;
+  background: #f6f8fb;
+}
+
+.breakdownLevelHigh {
+  border-left-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.breakdownLevelMedium {
+  border-left-color: #ca8a04;
+  background: #fefce8;
+}
+
+.breakdownLevelLow {
+  border-left-color: #b91c1c;
+  background: #fef2f2;
+}
+
+.breakdownHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.breakdownComponent {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: #1f2933;
+}
+
+.breakdownScore {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2b6cb0;
+}
+
+.breakdownMeta {
+  font-size: 11px;
+  color: #52606d;
+  margin-bottom: 4px;
+}
+
+.breakdownReason {
+  font-size: 12px;
+  color: #1f2933;
+}

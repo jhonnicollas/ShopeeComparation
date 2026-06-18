@@ -1,4 +1,4 @@
-# TASK-066: Build red flag UI
+# TASK-067: Build score breakdown UI
 
 ## Status
 
@@ -6,43 +6,43 @@ TODO
 
 ## Goal
 
-Add red flag UI component that displays risks from RiskItem[] in a visually distinct manner.
+Create ScoreBreakdown component that displays component scores with reasons and levels.
 
 ## Required Reading
 
-- `docs/shared/enums.md` (riskSeverity)
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create RedFlagList component.
-- Display severity badges (HIGH/MEDIUM/LOW) with colors.
-- Show risk messages grouped by severity.
+- Create ScoreBreakdown component.
+- Display each component with score, weight, contribution.
+- Show reason text per component.
+- Color-code by level (low/medium/high).
 - Add component test.
 
 ## Out of Scope
 
-- Do not change risk detection logic.
+- Do not change scoring algorithm.
 
 ## Allowed Files
 
-- `apps/web/src/components/RedFlagList.tsx`
-- `apps/web/src/components/RedFlagList.test.tsx`
+- `apps/web/src/components/ScoreBreakdown.tsx`
+- `apps/web/src/components/ScoreBreakdown.test.tsx`
 - `docs/tasks/**`
 
 ## Input Contract
 
-RiskItem[].
+ScoreBreakdownItem[] from generateScoreBreakdown.
 
 ## Output Contract
 
-Visual list of risks with severity indicators.
+Visual breakdown of scores.
 
 ## Acceptance Criteria
 
-- [ ] RedFlagList exists
-- [ ] Severity color coding
-- [ ] Grouped by severity
+- [ ] ScoreBreakdown exists
+- [ ] All components displayed
+- [ ] Level color coding
 - [ ] Component tests pass
 - [ ] Quality gate passes
 

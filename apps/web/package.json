@@ -12,6 +12,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@shopee-research/core": "workspace:*",
     "@shopee-research/shared": "workspace:*",
     "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-router": "^1.139.3",

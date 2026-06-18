@@ -1161,3 +1161,29 @@ Quality Gate:
 - test: pass (418 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 29 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-067: Build score breakdown UI
+
+Status: DONE
+CompletedAt: 2026-06-18 01:22
+Branch: feature/TASK-067-score-breakdown-ui
+Commit: pending
+
+Summary:
+- Created apps/web/src/components/ScoreBreakdown.tsx.
+- Displays ScoreBreakdownItem[] with score, weight, contribution, reason.
+- Color-coded by level (low=red, medium=yellow, high=green).
+- Format weights as percentages.
+- Human-readable component names (camelCase to spaces).
+- Added @shopee-research/core as web dependency.
+- Added CSS for breakdown grid, level colors.
+- Created ScoreBreakdown.test.tsx with 4 component tests.
+- All 422 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (422 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

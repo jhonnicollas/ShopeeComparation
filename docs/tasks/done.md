@@ -846,7 +846,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:18
 Branch: feature/TASK-054-mock-extractor
-Commit: pending
+Commit: e6b6f27
 
 Summary:
 - Created packages/shopee/src/extractors/mockExtractor.ts.

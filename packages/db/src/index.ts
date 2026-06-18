@@ -14,3 +14,4 @@ export * from "./repositories/products.js";
 export * from "./repositories/shops.js";
 export * from "./repositories/comparisonItems.js";
 export * from "./repositories/comparisons.js";
+export * from "./repositories/aiReports.js";

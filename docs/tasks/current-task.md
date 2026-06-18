@@ -1,4 +1,4 @@
-# TASK-072: Build Recommendation Writer Agent
+# TASK-076: Save AI report to D1
 
 ## Status
 
@@ -6,49 +6,43 @@ TODO
 
 ## Goal
 
-Create an AI agent that generates product recommendation reports using 9router.
+Create repository function to save AI reports to sh_aiReports table in D1.
 
 ## Required Reading
 
-- `docs/ai/mastra-orchestrator.md`
-- `docs/ai/9router-configuration.md`
-- `docs/shared/enums.md` (AiReportStructured)
+- `docs/database/schema.md` (sh_aiReports)
+- `docs/shared/enums.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create packages/ai/src/agents/recommendationWriter.ts.
-- Build prompt from products and user query.
-- Call 9router with jsonMode.
-- Parse response to AiReportStructured.
+- Add upsertAiReport() to packages/db/src/repositories/aiReports.ts.
 - Add unit tests.
+- Re-export from index.
 
 ## Out of Scope
 
-- Do not implement Risk Analyzer (TASK-073).
+- Do not implement R2 storage (TASK-077).
 
 ## Allowed Files
 
-- `packages/ai/src/agents/recommendationWriter.ts`
-- `packages/ai/src/agents/recommendationWriter.test.ts`
-- `packages/ai/src/index.ts` (re-export)
+- `packages/db/src/repositories/aiReports.ts`
+- `packages/db/src/repositories/aiReports.test.ts`
+- `packages/db/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Input Contract
 
-RecommendationInput with products and user query.
+AiReportStructured + comparisonId + userId.
 
 ## Output Contract
 
-RecommendationOutput with parsed report.
+Saved AiReportRow with id.
 
 ## Acceptance Criteria
 
-- [ ] Agent file exists
-- [ ] Builds prompt correctly
-- [ ] Calls 9router via chat helper
-- [ ] Parses JSON response
-- [ ] Handles invalid JSON gracefully
+- [ ] aiReports.ts exists
+- [ ] upsertAiReport implemented
 - [ ] Unit tests pass
 - [ ] Quality gate passes
 

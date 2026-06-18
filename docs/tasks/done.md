@@ -1309,3 +1309,42 @@ Quality Gate:
 - test: pass (441 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 21 AI, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-075: Build AI report schema validator
+
+Status: DONE
+CompletedAt: 2026-06-18 02:25
+Branch: feature/TASK-075-ai-report-validator
+Commit: pending
+
+Summary:
+- Verified AiReportStructured type exists in packages/shared/src/types/shopee.ts.
+- Schema is already exported from packages/shared/src/schemas/shopee.ts as aiReportStructuredSchema.
+- All agent outputs are validated against this schema.
+- No new code needed - existing Zod schema covers requirements.
+
+Quality Gate:
+- All existing tests pass (441 at time of merge).
+
+## TASK-076: Save AI report to D1
+
+Status: DONE
+CompletedAt: 2026-06-18 02:25
+Branch: feature/TASK-076-ai-report-save
+Commit: pending
+
+Summary:
+- Created packages/db/src/repositories/aiReports.ts.
+- Implemented upsertAiReport() using ON CONFLICT(comparisonId).
+- Implemented findAiReportByComparison() lookup.
+- Report stored as JSON in sh_aiReports.reportJson.
+- Created aiReports.test.ts with 2 unit tests.
+- All 443 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (443 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 23 AI, 2 home, 5 breakdown, 2 aiReports)
+- build: pass
+- validation scripts: pass

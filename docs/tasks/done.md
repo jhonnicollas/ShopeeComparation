@@ -584,3 +584,32 @@ Quality Gate:
 - test: pass (248 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 60 auth/api, 14 component, 29 config repos, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-043: Build AI model config CRUD API
+
+Status: DONE
+CompletedAt: 2026-06-17 23:31
+Branch: feature/TASK-043-ai-model-api
+Commit: pending
+
+Summary:
+- Added aiModelUsageType enum to shared/constants/enums.ts.
+- Added aiModelUsageTypeSchema to shared/schemas/enums.ts.
+- Added AI model Zod schemas to shared/schemas/config.ts.
+- createAiModelRequestSchema, updateAiModelRequestSchema, aiModelSchema, response schemas.
+- Added AI model CRUD endpoints to workers/api/src/routes/config.ts.
+- GET /api/config/ai-models (admin only, supports ?providerKey= filter).
+- POST /api/config/ai-models (admin only, returns 404 if provider not found).
+- PUT /api/config/ai-models/:id (admin only).
+- DELETE /api/config/ai-models/:id (admin only).
+- Added toAiModelResponse() helper.
+- Added 12 unit tests for AI model endpoints.
+- All 260 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (260 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 72 auth/api, 14 component, 29 config repos, 2 home)
+- build: pass
+- validation scripts: pass

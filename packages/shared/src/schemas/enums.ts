@@ -48,3 +48,5 @@ export const riskSeveritySchema = z.enum(["LOW", "MEDIUM", "HIGH"]);
 export const fieldAvailabilityStatusSchema = z.enum(["available", "unavailable", "partial"]);
 export const logLevelSchema = z.enum(["info", "warn", "error"]);
 export const ownerTypeSchema = z.enum(["product", "shop", "weight", "feature", "resolver", "ai", "report"]);
+
+export const aiModelUsageTypeSchema = z.enum(["reasoning", "extraction", "fallback", "vision", "test"]);

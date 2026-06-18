@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { authTypeSchema, configValueTypeSchema } from "./enums.js";
+import { aiModelUsageTypeSchema, authTypeSchema, configValueTypeSchema } from "./enums.js";
 
 export const createAppConfigRequestSchema = z.object({
   key: z.string().min(1).max(100),
@@ -110,3 +110,75 @@ export const deleteAiProviderResponseSchema = z.object({
 export type CreateAiProviderRequest = z.infer<typeof createAiProviderRequestSchema>;
 export type UpdateAiProviderRequest = z.infer<typeof updateAiProviderRequestSchema>;
 export type AiProviderResponse = z.infer<typeof aiProviderSchema>;
+
+export const createAiModelRequestSchema = z.object({
+  providerKey: z.string().min(1).max(100),
+  modelKey: z.string().min(1).max(100),
+  modelName: z.string().min(1).max(200),
+  displayName: z.string().max(200).nullable().optional(),
+  usageType: aiModelUsageTypeSchema,
+  contextWindow: z.number().int().min(1).nullable().optional(),
+  supportsJson: z.number().int().min(0).max(1).optional().default(0),
+  supportsTools: z.number().int().min(0).max(1).optional().default(0),
+  supportsVision: z.number().int().min(0).max(1).optional().default(0),
+  costInput: z.number().nullable().optional(),
+  costOutput: z.number().nullable().optional(),
+  isDefault: z.number().int().min(0).max(1).optional().default(0),
+  isEnabled: z.number().int().min(0).max(1).optional().default(1),
+});
+
+export const updateAiModelRequestSchema = z.object({
+  modelName: z.string().min(1).max(200).optional(),
+  displayName: z.string().max(200).nullable().optional(),
+  usageType: aiModelUsageTypeSchema.optional(),
+  contextWindow: z.number().int().min(1).nullable().optional(),
+  supportsJson: z.number().int().min(0).max(1).optional(),
+  supportsTools: z.number().int().min(0).max(1).optional(),
+  supportsVision: z.number().int().min(0).max(1).optional(),
+  costInput: z.number().nullable().optional(),
+  costOutput: z.number().nullable().optional(),
+  isDefault: z.number().int().min(0).max(1).optional(),
+  isEnabled: z.number().int().min(0).max(1).optional(),
+});
+
+export const aiModelSchema = z.object({
+  id: z.string(),
+  providerKey: z.string(),
+  modelKey: z.string(),
+  modelName: z.string(),
+  displayName: z.string().nullable(),
+  usageType: z.string(),
+  contextWindow: z.number().nullable(),
+  supportsJson: z.number(),
+  supportsTools: z.number(),
+  supportsVision: z.number(),
+  costInput: z.number().nullable(),
+  costOutput: z.number().nullable(),
+  isDefault: z.number(),
+  isEnabled: z.number(),
+  lastTestStatus: z.string().nullable(),
+  lastTestAt: z.string().nullable(),
+  lastTestMessage: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const listAiModelsResponseSchema = z.object({
+  models: z.array(aiModelSchema),
+});
+
+export const createAiModelResponseSchema = z.object({
+  model: aiModelSchema,
+});
+
+export const updateAiModelResponseSchema = z.object({
+  model: aiModelSchema,
+});
+
+export const deleteAiModelResponseSchema = z.object({
+  success: z.boolean(),
+});
+
+export type CreateAiModelRequest = z.infer<typeof createAiModelRequestSchema>;
+export type UpdateAiModelRequest = z.infer<typeof updateAiModelRequestSchema>;
+export type AiModelResponse = z.infer<typeof aiModelSchema>;

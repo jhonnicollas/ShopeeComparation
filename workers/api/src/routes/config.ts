@@ -12,8 +12,15 @@ import {
   createAiProviderResponseSchema,
   updateAiProviderResponseSchema,
   deleteAiProviderResponseSchema,
+  createAiModelRequestSchema,
+  updateAiModelRequestSchema,
+  listAiModelsResponseSchema,
+  createAiModelResponseSchema,
+  updateAiModelResponseSchema,
+  deleteAiModelResponseSchema,
   type AppConfigResponse,
   type AiProviderResponse,
+  type AiModelResponse,
 } from "@shopee-research/shared";
 import {
   createAppConfig,
@@ -30,6 +37,12 @@ import {
   findAiProviderByKey,
   listAiProviders,
   updateAiProvider,
+  createAiModel,
+  deleteAiModel,
+  findAiModelById,
+  listAiModels,
+  listAiModelsByProvider,
+  updateAiModel,
 } from "@shopee-research/db";
 import { authenticate, authErrorResponse, requireAdmin } from "../lib/auth.js";
 
@@ -93,6 +106,50 @@ function toAiProviderResponse(row: {
     secretRef: row.secretRef,
     timeoutMs: row.timeoutMs,
     retryCount: row.retryCount,
+    isEnabled: row.isEnabled,
+    lastTestStatus: row.lastTestStatus,
+    lastTestAt: row.lastTestAt,
+    lastTestMessage: row.lastTestMessage,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function toAiModelResponse(row: {
+  id: string;
+  providerKey: string;
+  modelKey: string;
+  modelName: string;
+  displayName: string | null;
+  usageType: string;
+  contextWindow: number | null;
+  supportsJson: number;
+  supportsTools: number;
+  supportsVision: number;
+  costInput: number | null;
+  costOutput: number | null;
+  isDefault: number;
+  isEnabled: number;
+  lastTestStatus: string | null;
+  lastTestAt: string | null;
+  lastTestMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}): AiModelResponse {
+  return {
+    id: row.id,
+    providerKey: row.providerKey,
+    modelKey: row.modelKey,
+    modelName: row.modelName,
+    displayName: row.displayName,
+    usageType: row.usageType,
+    contextWindow: row.contextWindow,
+    supportsJson: row.supportsJson,
+    supportsTools: row.supportsTools,
+    supportsVision: row.supportsVision,
+    costInput: row.costInput,
+    costOutput: row.costOutput,
+    isDefault: row.isDefault,
     isEnabled: row.isEnabled,
     lastTestStatus: row.lastTestStatus,
     lastTestAt: row.lastTestAt,
@@ -466,4 +523,181 @@ configRouter.delete("/ai-providers/:id", async (c) => {
 
   await deleteAiProvider(c.env.DB, id);
   return c.json(deleteAiProviderResponseSchema.parse({ success: true }), 200);
+});
+
+configRouter.get("/ai-models", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  if (auth.user.role !== "admin") {
+    return c.json(
+      { error: { code: "FORBIDDEN", message: "Admin role required", details: null } },
+      403
+    );
+  }
+  const providerKey = c.req.query("providerKey");
+  const rows = providerKey
+    ? await listAiModelsByProvider(c.env.DB, providerKey)
+    : await listAiModels(c.env.DB);
+  return c.json(listAiModelsResponseSchema.parse({ models: rows.map(toAiModelResponse) }), 200);
+});
+
+configRouter.post("/ai-models", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
+      400
+    );
+  }
+
+  const parsed = createAiModelRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Invalid AI model input",
+          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+        },
+      },
+      400
+    );
+  }
+
+  const provider = await findAiProviderByKey(c.env.DB, parsed.data.providerKey);
+  if (!provider) {
+    return c.json(
+      { error: { code: "PROVIDER_NOT_FOUND", message: "Provider not found", details: null } },
+      404
+    );
+  }
+
+  const created = await createAiModel(c.env.DB, {
+    id: generateId("aim"),
+    providerKey: parsed.data.providerKey,
+    modelKey: parsed.data.modelKey,
+    modelName: parsed.data.modelName,
+    displayName: parsed.data.displayName ?? null,
+    usageType: parsed.data.usageType,
+    contextWindow: parsed.data.contextWindow ?? null,
+    supportsJson: parsed.data.supportsJson ?? 0,
+    supportsTools: parsed.data.supportsTools ?? 0,
+    supportsVision: parsed.data.supportsVision ?? 0,
+    costInput: parsed.data.costInput ?? null,
+    costOutput: parsed.data.costOutput ?? null,
+    isDefault: parsed.data.isDefault ?? 0,
+    isEnabled: parsed.data.isEnabled ?? 1,
+  });
+
+  return c.json(createAiModelResponseSchema.parse({ model: toAiModelResponse(created) }), 201);
+});
+
+configRouter.put("/ai-models/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const existing = await findAiModelById(c.env.DB, id);
+  if (!existing) {
+    return c.json(
+      { error: { code: "MODEL_NOT_FOUND", message: "AI model not found", details: null } },
+      404
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
+      400
+    );
+  }
+
+  const parsed = updateAiModelRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Invalid AI model input",
+          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+        },
+      },
+      400
+    );
+  }
+
+  const updated = await updateAiModel(c.env.DB, id, {
+    modelName: parsed.data.modelName,
+    displayName: parsed.data.displayName,
+    usageType: parsed.data.usageType,
+    contextWindow: parsed.data.contextWindow,
+    supportsJson: parsed.data.supportsJson,
+    supportsTools: parsed.data.supportsTools,
+    supportsVision: parsed.data.supportsVision,
+    costInput: parsed.data.costInput,
+    costOutput: parsed.data.costOutput,
+    isDefault: parsed.data.isDefault,
+    isEnabled: parsed.data.isEnabled,
+  });
+
+  if (!updated) {
+    return c.json(
+      { error: { code: "MODEL_NOT_FOUND", message: "AI model not found", details: null } },
+      404
+    );
+  }
+
+  return c.json(updateAiModelResponseSchema.parse({ model: toAiModelResponse(updated) }), 200);
+});
+
+configRouter.delete("/ai-models/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const existing = await findAiModelById(c.env.DB, id);
+  if (!existing) {
+    return c.json(
+      { error: { code: "MODEL_NOT_FOUND", message: "AI model not found", details: null } },
+      404
+    );
+  }
+
+  await deleteAiModel(c.env.DB, id);
+  return c.json(deleteAiModelResponseSchema.parse({ success: true }), 200);
 });

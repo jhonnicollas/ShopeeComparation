@@ -173,3 +173,13 @@ export const ownerType = {
 } as const;
 
 export type OwnerType = (typeof ownerType)[keyof typeof ownerType];
+
+export const aiModelUsageType = {
+  reasoning: "reasoning",
+  extraction: "extraction",
+  fallback: "fallback",
+  vision: "vision",
+  test: "test",
+} as const;
+
+export type AiModelUsageType = (typeof aiModelUsageType)[keyof typeof aiModelUsageType];

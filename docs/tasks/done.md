@@ -1315,7 +1315,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 02:25
 Branch: feature/TASK-075-ai-report-validator
-Commit: pending
+Commit: 596bb65
 
 Summary:
 - Verified AiReportStructured type exists in packages/shared/src/types/shopee.ts.
@@ -1331,7 +1331,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 02:25
 Branch: feature/TASK-076-ai-report-save
-Commit: pending
+Commit: 596bb65
 
 Summary:
 - Created packages/db/src/repositories/aiReports.ts.

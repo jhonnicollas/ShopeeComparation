@@ -770,3 +770,27 @@ Quality Gate:
 - test: pass (298 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 11 shopee fixtures, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-051: Create Shopee shop fixture data
+
+Status: DONE
+CompletedAt: 2026-06-18 00:12
+Branch: feature/TASK-051-shop-fixtures
+Commit: pending
+
+Summary:
+- Created packages/shopee/src/fixtures/shops.ts with 4 diverse shop fixtures.
+- Shops have varying primary statuses (MALL, STARPLUS, STAR, PREFERRED).
+- All shops have rating >= 4.5 and responseRate >= 88.
+- All shops in DKI Jakarta.
+- Added findShopFixtureById() and findShopFixtureByShopeeId() helpers.
+- Created shops.test.ts with 9 unit tests.
+- All 307 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (307 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 20 shopee fixtures, 2 home)
+- build: pass
+- validation scripts: pass

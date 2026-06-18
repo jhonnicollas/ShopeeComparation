@@ -1,4 +1,4 @@
-# TASK-050: Create Shopee product fixture data
+# TASK-051: Create Shopee shop fixture data
 
 ## Status
 
@@ -6,31 +6,30 @@ DONE
 
 ## Goal
 
-Create fixture data for Shopee products that will be used by the mock extractor for development and testing.
+Create fixture data for Shopee shops that will be used by the mock extractor.
 
 ## Required Reading
 
-- `docs/database/schema.md` (sh_products, sh_productWeights, sh_productFeatures)
+- `docs/database/schema.md` (sh_shops)
 - `docs/shopee/extraction-strategy.md`
-- `docs/shared/enums.md` (product fields)
+- `docs/shared/enums.md` (shop status)
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create packages/shopee package.
-- Create fixture data file with sample products.
-- Include diverse price ranges, ratings, and feature sets.
-- Add unit tests verifying fixture structure.
+- Create shop fixtures with diverse statuses.
+- Include trust metrics (rating, response rate).
+- Add unit tests.
 
 ## Out of Scope
 
-- Do not create shop fixtures (TASK-051).
 - Do not create real extractor (TASK-054).
-- Do not write fixtures to D1.
 
 ## Allowed Files
 
-- `packages/shopee/**`
+- `packages/shopee/src/fixtures/shops.ts`
+- `packages/shopee/src/fixtures/shops.test.ts`
+- `packages/shopee/src/index.ts`
 - `docs/tasks/**`
 
 ## Input Contract
@@ -39,13 +38,12 @@ N/A - static fixture data.
 
 ## Output Contract
 
-Export array of sample product data objects.
+Export array of sample shop data objects.
 
 ## Acceptance Criteria
 
-- [ ] packages/shopee directory exists
-- [ ] Fixture data exported
-- [ ] Includes 5+ sample products
+- [ ] shopFixtures exported
+- [ ] Includes 4+ sample shops
 - [ ] Unit tests pass
 - [ ] Quality gate passes
 

@@ -667,3 +667,31 @@ Quality Gate:
 - test: pass (278 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 90 auth/api, 14 component, 29 config repos, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-046: Build frontend configuration CRUD page
+
+Status: DONE
+CompletedAt: 2026-06-17 23:57
+Branch: feature/TASK-046-config-page
+Commit: pending
+
+Summary:
+- Created apps/web/src/lib/config.ts with API client functions for all config types.
+- list/delete for appConfigs, aiProviders, aiModels, searchProviders, scoringConfigs.
+- Created apps/web/src/pages/ConfigPage.tsx with tabbed interface.
+- 5 tabs: App Configs, AI Providers, AI Models, Search Providers, Scoring Configs.
+- Each tab shows table with delete buttons.
+- Uses TanStack Query for data fetching and mutations.
+- Shows loading/error states.
+- Added /settings/config route (protected by RequireAuth).
+- Added CSS for tabs, panels, tables, danger buttons.
+- Created ConfigPage.test.tsx with 3 component tests.
+- All 281 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (281 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 90 auth/api, 17 component, 29 config repos, 2 home)
+- build: pass
+- validation scripts: pass

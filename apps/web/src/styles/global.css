@@ -288,3 +288,75 @@ h2 {
   border: 1px solid #e3e8ef;
   border-radius: 12px;
 }
+
+.configTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.configTab {
+  background: #ffffff;
+  color: #52606d;
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.configTabActive {
+  background: #2b6cb0;
+  color: #ffffff;
+  border-color: #2b6cb0;
+}
+
+.configPanel {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.configTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.configTable th,
+.configTable td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #e3e8ef;
+}
+
+.configTable th {
+  color: #52606d;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.dangerButton {
+  background: transparent;
+  color: #b91c1c;
+  border: 1px solid #f5c6c6;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dangerButton:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.dangerButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

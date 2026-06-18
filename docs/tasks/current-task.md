@@ -1,4 +1,4 @@
-# TASK-045: Build scoring config CRUD API
+# TASK-046: Build frontend configuration CRUD page
 
 ## Status
 
@@ -6,55 +6,67 @@ DONE
 
 ## Goal
 
-Implement REST API endpoints for CRUD operations on sh_scoringConfigs table.
+Create a frontend configuration CRUD page that allows admin users to manage app configs, AI providers, AI models, search providers, and scoring configs.
 
 ## Required Reading
 
+- `docs/ui/configuration-crud.md`
 - `docs/api/api-contract.md`
-- `docs/database/schema.md` (sh_scoringConfigs)
 - `docs/configuration/runtime-configuration.md`
-- `docs/shared/enums.md`
+- `docs/architecture/implementation-stack.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Add scoring Zod schemas.
-- Add scoring endpoints to config router.
-- GET/POST/PUT/DELETE /api/config/scoring-configs.
-- Admin only for write ops.
-- Add unit tests.
+- Create apps/web/src/lib/config.ts with API client functions.
+- Create ConfigPage with tabs for each config type.
+- Use TanStack Query for data fetching and mutations.
+- Show loading/error states.
+- Add component tests.
 
 ## Out of Scope
 
-- Do not create frontend (TASK-046).
+- Do not implement actual edit dialogs (list/create/delete only).
+- Do not implement test console (TASK-048).
 
 ## Allowed Files
 
-- `packages/shared/src/schemas/config.ts`
-- `workers/api/src/routes/config.ts`
-- `workers/api/src/routes/config.test.ts`
+- `apps/web/src/lib/config.ts`
+- `apps/web/src/pages/ConfigPage.tsx`
+- `apps/web/src/pages/ConfigPage.test.tsx`
+- `apps/web/src/app/router.tsx`
+- `apps/web/src/styles/global.css`
 - `docs/tasks/**`
+
+## Forbidden Files
+
+- `workers/**`
+- `packages/**`
+- `.ai/**`
 
 ## Input Contract
 
-Admin HTTP requests to /api/config/scoring-configs.
+Admin user navigates to /settings/config and sees tabs for each config type.
 
 ## Output Contract
 
-Standard JSON responses with scoring config data.
+Page shows list of configs with create/delete buttons. On submit, calls API and refreshes.
 
 ## Acceptance Criteria
 
-- [ ] Scoring schemas exist
-- [ ] GET/POST/PUT/DELETE endpoints implemented
-- [ ] All inputs validated
-- [ ] Admin only for write ops
-- [ ] Unit tests pass
+- [ ] ConfigPage component exists
+- [ ] /settings/config route exists
+- [ ] Tabs for each config type
+- [ ] List view with create/delete
+- [ ] API client functions exist
+- [ ] Loading/error states shown
+- [ ] Component tests pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit tests for all CRUD operations
+- [ ] ConfigPage renders
+- [ ] Tabs render
 - [ ] Existing tests still pass
 
 ## Completion Rule

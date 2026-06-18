@@ -8,6 +8,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ComparePage } from "../pages/ComparePage";
+import { ConfigPage } from "../pages/ConfigPage";
 import { HomePage } from "../pages/HomePage";
 import { KeywordSearchPage } from "../pages/KeywordSearchPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -68,6 +69,16 @@ const settingsRoute = createRoute({
   ),
 });
 
+const configRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings/config",
+  component: () => (
+    <RequireAuth>
+      <ConfigPage />
+    </RequireAuth>
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -75,6 +86,7 @@ const routeTree = rootRoute.addChildren([
   compareRoute,
   keywordSearchRoute,
   settingsRoute,
+  configRoute,
 ]);
 
 export const router = createRouter({ routeTree });

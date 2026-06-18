@@ -1477,3 +1477,29 @@ Quality Gate:
 - test: pass (485 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-090: Build 9router web fetch adapter
+
+Status: DONE
+CompletedAt: 2026-06-18 23:30
+Branch: main
+Commit: bfc5db8
+
+Summary:
+- Created NineRouterFetchAdapter in packages/shopee/src/adapters/nineRouterFetchAdapter.ts.
+- Implements ShopeeExtractor interface (resolveUrl, searchProducts, extractProduct, extractShop).
+- Uses 9router chat/completions with web_fetch tool to fetch Shopee product pages.
+- Configuration loaded from D1 sh_searchProviderConfigs via loadSearchProviderConfig().
+- All error messages sanitized with sanitizeForLog() to prevent secret leakage.
+- Returns ProductSnapshot/ShopSnapshot with confidence scores; missing data = null with confidence 0.
+- Added @shopee-research/db dependency to packages/shopee.
+- Added 14 unit tests (resolveUrl, extractProduct, extractShop, searchProducts, error safety, config loading).
+- All 499 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (499 tests)
+- build: pass
+- validation scripts: pass

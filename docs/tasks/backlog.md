@@ -96,7 +96,7 @@ This backlog is the execution queue for 100% autopilot mode.
 
 ## Phase 9 — Real Shopee Extraction
 
-- [ ] TASK-090 Build 9router web fetch adapter
+- [x] TASK-090 Build 9router web fetch adapter
 - [ ] TASK-091 Build Browser Run adapter interface
 - [ ] TASK-092 Build fallback extractor strategy
 - [ ] TASK-093 Build product parser

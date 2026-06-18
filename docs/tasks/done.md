@@ -1581,3 +1581,28 @@ Quality Gate:
 - test: pass (544 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-094: Build shop parser
+
+Status: DONE
+CompletedAt: 2026-06-19 00:25
+Branch: main
+Commit: 933b107
+
+Summary:
+- Created ShopParser in packages/shopee/src/parser/shopParser.ts.
+- Parses HTML, JSON-LD (Schema.org Store/Organization), and plain JSON formats.
+- Extracts: name, rating, ratingCount, responseRate, responseTime, followerCount, productCount, joinedAgeText, location.
+- Shop status normalized to canonical enum (MALL/STARPLUS/STAR/OFFICIAL/PREFERRED/UNKNOWN).
+- Each field has source attribution and confidence.
+- Missing fields return null with confidence 0 (no fabrication).
+- Added 16 unit tests covering HTML, JSON-LD, plain JSON, status normalization, and edge cases.
+- All 560 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (560 tests)
+- build: pass
+- validation scripts: pass

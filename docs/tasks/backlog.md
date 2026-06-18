@@ -100,7 +100,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-091 Build Browser Run adapter interface
 - [x] TASK-092 Build fallback extractor strategy
 - [x] TASK-093 Build product parser
-- [ ] TASK-094 Build shop parser
+- [x] TASK-094 Build shop parser
 - [ ] TASK-095 Build product weight extractor
 - [ ] TASK-096 Build feature extractor
 - [ ] TASK-097 Save raw product snapshot to R2

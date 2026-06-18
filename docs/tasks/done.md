@@ -944,7 +944,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:33
 Branch: feature/TASK-058-save-extracted
-Commit: pending
+Commit: de0bba0
 
 Summary:
 - Created packages/db/src/repositories/products.ts with upsertProduct() using ON CONFLICT.

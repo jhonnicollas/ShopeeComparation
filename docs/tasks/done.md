@@ -1092,7 +1092,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 01:00
 Branch: feature/TASK-064-comparison-ranking
-Commit: pending
+Commit: de4047a
 
 Summary:
 - Created packages/core/src/scoring/ranking.ts.

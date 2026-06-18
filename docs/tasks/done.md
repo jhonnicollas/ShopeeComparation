@@ -1660,3 +1660,28 @@ Quality Gate:
 - test: pass (592 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-097: Save raw product snapshot to R2
+
+Status: DONE
+CompletedAt: 2026-06-19 00:50
+Branch: main
+Commit: 11a6b66
+
+Summary:
+- Added rawSnapshots repository in packages/db (createRawSnapshot, findRawSnapshotsByOwner, findRawSnapshotById).
+- Added fieldEvidence repository in packages/db (createFieldEvidence, findFieldEvidenceByOwner).
+- Added saveRawSnapshot helper in packages/shopee that uses putSnapshot and records in sh_rawSnapshots.
+- Added saveRawProductSnapshot that saves product raw content to R2 and creates field evidence rows for title, priceMin, priceMax, rating, reviewCount, soldCount, brand, category.
+- Added saveRawShopSnapshot that saves shop raw content to R2 and creates field evidence rows for name, rating, responseRate, followerCount, primaryStatus.
+- Missing fields marked as unavailable with confidence 0.
+- Added 8 unit tests covering snapshot saving, product/shop evidence creation, and error handling.
+- All 600 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (600 tests)
+- build: pass
+- validation scripts: pass

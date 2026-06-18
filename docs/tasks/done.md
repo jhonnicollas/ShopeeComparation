@@ -1685,3 +1685,27 @@ Quality Gate:
 - test: pass (600 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-098: Add partial success handling
+
+Status: DONE
+CompletedAt: 2026-06-19 01:00
+Branch: main
+Commit: a2db333
+
+Summary:
+- Added partialSuccess.ts in packages/ai.
+- processItemsWithPartialSuccess processes items and captures per-item failures.
+- summarizeAttempts returns status: completed (all success), partialSuccess (some success), or failed (all failure).
+- ItemAttempt tracks per-item status, result, error, and duration.
+- isPartialSuccess helper to check status.
+- Added 11 unit tests covering all scenarios (all success, partial success, all failure, non-Error throws, duration tracking).
+- All 613 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (613 tests)
+- build: pass
+- validation scripts: pass

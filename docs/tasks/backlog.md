@@ -104,7 +104,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-095 Build product weight extractor
 - [x] TASK-096 Build feature extractor
 - [x] TASK-097 Save raw product snapshot to R2
-- [ ] TASK-098 Add partial success handling
+- [x] TASK-098 Add partial success handling
 
 ## Phase 10 — Keyword Search Top 10
 

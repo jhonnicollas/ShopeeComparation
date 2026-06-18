@@ -1556,3 +1556,28 @@ Quality Gate:
 - test: pass (530 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-093: Build product parser
+
+Status: DONE
+CompletedAt: 2026-06-19 00:20
+Branch: main
+Commit: 0e1f49f
+
+Summary:
+- Created ProductParser in packages/shopee/src/parser/productParser.ts.
+- Parses HTML, JSON-LD (Schema.org Product), and plain JSON formats.
+- Extracts: title, priceMin, priceMax, rating, reviewCount, soldCount, brand, category, description, imageUrl, stock, shippedFrom.
+- Each field has source attribution and confidence.
+- Missing fields return null with confidence 0 (no fabrication).
+- Handles malformed input gracefully.
+- Added 14 unit tests covering HTML, JSON-LD, plain JSON, malformed input, and edge cases.
+- All 544 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (544 tests)
+- build: pass
+- validation scripts: pass

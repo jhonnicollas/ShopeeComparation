@@ -1,12 +1,12 @@
-# TASK-090: Build 9router web fetch adapter
+# TASK-091: Build Browser Run adapter interface
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a 9router web fetch adapter for Shopee URL resolution that implements the `ShopeeExtractor` interface. The adapter should use 9router's web fetch capability to resolve short Shopee URLs and extract basic product/shop data, falling back gracefully when the fetch fails.
+Build a Cloudflare Browser Run adapter interface for Shopee URL resolution. The adapter should implement the `ShopeeExtractor` interface and use Cloudflare Browser Run (via REST API) to render JavaScript-heavy pages and extract product/shop data.
 
 ## Required Reading
 
@@ -18,7 +18,6 @@ Build a 9router web fetch adapter for Shopee URL resolution that implements the 
 - `docs/database/naming-rules.md`
 - `docs/api/api-contract.md`
 - `docs/configuration/runtime-configuration.md`
-- `docs/ai/9router-configuration.md`
 - `docs/shopee/search-api-strategy.md`
 - `docs/shopee/extraction-strategy.md`
 - `docs/tasks/autopilot-task-contract.md`
@@ -28,27 +27,25 @@ Build a 9router web fetch adapter for Shopee URL resolution that implements the 
 
 ## Scope
 
-- Create `packages/shopee/src/adapters/nineRouterFetchAdapter.ts` — implements `ShopeeExtractor` interface
-- The adapter uses 9router web fetch (via chat/completions with web fetch tools) to resolve short URLs and fetch product/shop data
-- Configuration loaded from `sh_searchProviderConfigs` table via D1 (not hardcoded)
-- Add `extractProduct()` and `extractShop()` methods that return ProductSnapshot/ShopSnapshot with confidence scores
-- Add proper source attribution and confidence for each extracted field
-- Add comprehensive error handling and timeout
+- Create `packages/shopee/src/adapters/browserRunAdapter.ts` — implements `ShopeeExtractor` interface
+- The adapter uses Cloudflare Browser Run REST API to render pages and extract data
+- Configuration loaded from `sh_searchProviderConfigs` (provider type: `browserRun`)
+- Add `BrowserRunAdapter` class with proper Cloudflare Browser Run integration
+- Add `BrowserRunConfig` interface for configuration
+- Add error handling and timeout
 - Add unit tests with mocked fetch
-- Add integration with the existing `webFetchAdapter.ts` resolver adapter
 
 ## Out of Scope
 
-- Do not implement actual HTML/JSON parsing logic (that's TASK-093/094)
-- Do not create API endpoints (resolver is already done)
-- Do not create frontend UI (already done in TASK-085)
+- Do not create the actual Cloudflare Browser Run binding/wrangler config (deferred to deployment)
+- Do not create API endpoints
+- Do not create frontend UI
 - Do not create D1 schema changes
 
 ## Allowed Files
 
-- `packages/shopee/src/adapters/**` (new directory)
-- `packages/shopee/src/adapters/nineRouterFetchAdapter.ts` (new)
-- `packages/shopee/src/adapters/nineRouterFetchAdapter.test.ts` (new)
+- `packages/shopee/src/adapters/browserRunAdapter.ts` (new)
+- `packages/shopee/src/adapters/browserRunAdapter.test.ts` (new)
 - `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
@@ -58,32 +55,24 @@ Build a 9router web fetch adapter for Shopee URL resolution that implements the 
 - `workers/**`
 - `packages/db/**` (no DB changes)
 - `packages/core/**`
-- `packages/ai/**` (separate AI package)
+- `packages/ai/**`
+- `wrangler*.toml` (no config changes)
 
 ## Input Contract
 
-Implements ShopeeExtractor interface with:
-- `resolveUrl(input: ResolveUrlInput): Promise<ResolveUrlResult>`
-- `searchProducts(input: SearchInput): Promise<SearchResultCandidate[]>`
-- `extractProduct(input: ExtractProductInput): Promise<ProductSnapshot>`
-- `extractShop(input: ExtractShopInput): Promise<ShopSnapshot>`
-
-Configuration loaded from D1 search provider config.
+Implements ShopeeExtractor interface with all 4 methods.
 
 ## Output Contract
 
-All methods return appropriate typed results. Missing data returns `null` with `confidence: 0` per source-of-truth rules.
+All methods return appropriate typed results. Missing data returns `null` with `confidence: 0`.
 
 ## Acceptance Criteria
 
-- [ ] NineRouterFetchAdapter class implements ShopeeExtractor interface
-- [ ] resolveUrl() uses 9router to fetch and parse Shopee short URLs
-- [ ] extractProduct() returns ProductSnapshot with all required fields
-- [ ] extractShop() returns ShopSnapshot with all required fields
-- [ ] searchProducts() returns SearchResultCandidate[] (basic stub OK)
+- [ ] BrowserRunAdapter class implements ShopeeExtractor interface
+- [ ] Uses Cloudflare Browser Run REST API for fetching
+- [ ] Configuration loaded from D1 search provider configs
 - [ ] All extracted fields include source and confidence
-- [ ] Missing data returns null with confidence 0 (no fabrication)
-- [ ] Configuration loaded from D1 (not hardcoded)
+- [ ] Missing data returns null with confidence 0
 - [ ] Timeout handling implemented
 - [ ] Error handling safe (no secrets in errors)
 - [ ] Unit tests pass with mocked fetch
@@ -92,7 +81,7 @@ All methods return appropriate typed results. Missing data returns `null` with `
 
 ## Test Requirements
 
-- [ ] Unit test for resolveUrl() with mocked 9router response
+- [ ] Unit test for resolveUrl() with mocked Browser Run response
 - [ ] Unit test for extractProduct() with mocked response
 - [ ] Unit test for extractShop() with mocked response
 - [ ] Unit test for timeout handling

@@ -870,7 +870,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:22
 Branch: feature/TASK-055-compare-links-api
-Commit: pending
+Commit: fdb48a4
 
 Summary:
 - Created packages/db/src/repositories/researchSessions.ts with CRUD for research sessions.

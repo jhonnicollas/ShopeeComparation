@@ -68,7 +68,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-061 Build score breakdown
 - [x] TASK-062 Build risk detection engine
 - [x] TASK-063 Build data quality checker
-- [ ] TASK-064 Build comparison ranking
+- [x] TASK-064 Build comparison ranking
 - [ ] TASK-065 Build result page
 - [ ] TASK-066 Build red flag UI
 - [ ] TASK-067 Build score breakdown UI

@@ -1086,3 +1086,26 @@ Quality Gate:
 - test: pass (403 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 35 core, 10 save extracted, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-064: Build comparison ranking
+
+Status: DONE
+CompletedAt: 2026-06-18 01:00
+Branch: feature/TASK-064-comparison-ranking
+Commit: pending
+
+Summary:
+- Created packages/core/src/scoring/ranking.ts.
+- Implemented rankProducts() returning RankedProduct[] with rank field.
+- Implements compareRankedProducts() with tiebreakers: score → rating → reviewCount → itemId.
+- Deterministic ordering.
+- Added 7 unit tests.
+- All 410 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (410 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

@@ -1529,3 +1529,30 @@ Quality Gate:
 - test: pass (515 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-092: Build fallback extractor strategy
+
+Status: DONE
+CompletedAt: 2026-06-18 23:55
+Branch: main
+Commit: a0f55b2
+
+Summary:
+- Created FallbackShopeeExtractor in packages/shopee/src/extractors/fallbackExtractor.ts.
+- Implements ShopeeExtractor interface (resolveUrl, searchProducts, extractProduct, extractShop).
+- Chains adapters in priority order, calls each, merges results.
+- For extractProduct/extractShop: merges fields from all adapters, missing stays null.
+- Captures per-adapter diagnostics (attempts with adapter name, status, duration, sanitized errors).
+- partialSuccess flag indicates whether any adapter returned data.
+- All error messages sanitized to prevent secret leakage.
+- Exported mergeProduct, mergeShop, mergeWeight, emptyProduct, emptyShop helpers.
+- Added 15 unit tests (resolveUrl, searchProducts, extractProduct, extractShop, merge functions, error safety).
+- All 530 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (530 tests)
+- build: pass
+- validation scripts: pass

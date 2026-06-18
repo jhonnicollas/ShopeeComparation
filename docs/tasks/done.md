@@ -938,3 +938,26 @@ Quality Gate:
 - test: pass (344 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 17 component, 29 config repos, 27 shopee fixtures+contracts+extractor, 13 research, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-058: Save products, shops, weights, and comparison items to D1
+
+Status: DONE
+CompletedAt: 2026-06-18 00:33
+Branch: feature/TASK-058-save-extracted
+Commit: pending
+
+Summary:
+- Created packages/db/src/repositories/products.ts with upsertProduct() using ON CONFLICT.
+- Created packages/db/src/repositories/shops.ts with upsertShop() using ON CONFLICT.
+- Created packages/db/src/repositories/comparisonItems.ts with saveProductWeight, saveProductFeatures, createComparisonItem.
+- Added snapshotToUpsertProduct() and snapshotToUpsertShop() helpers.
+- Created products-shops-items.test.ts with 10 unit tests.
+- All 354 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (354 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 17 component, 29 config repos, 27 shopee, 10 save extracted, 2 home)
+- build: pass
+- validation scripts: pass

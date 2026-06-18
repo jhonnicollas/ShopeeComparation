@@ -1,4 +1,4 @@
-# TASK-057: Build job creation and polling
+# TASK-058: Save products, shops, weights, and comparison items to D1
 
 ## Status
 
@@ -6,46 +6,51 @@ DONE
 
 ## Goal
 
-Add GET /api/research/jobs/:id endpoint to poll job status, and GET /api/research/sessions/:id to get research session details.
+Create repository functions to save extracted products, shops, weights, features, and comparison items to D1 from the queue consumer.
 
 ## Required Reading
 
-- `docs/api/api-contract.md`
-- `docs/database/schema.md` (sh_jobs, sh_researchSessions)
+- `docs/database/schema.md` (sh_products, sh_shops, sh_productWeights, sh_productFeatures, sh_comparisonItems)
+- `docs/shared/enums.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Add GET /api/research/jobs/:id endpoint.
-- Add GET /api/research/sessions/:id endpoint.
-- Validate ownership (user can only see their own).
-- Return current status.
+- Add upsert functions for products, shops, weights, features.
+- Add createComparisonItem function.
+- Use prefixed IDs (prd_, shp_, wgt_, fea_, cim_).
+- Handle duplicate inserts (UPSERT pattern).
 - Add unit tests.
 
 ## Out of Scope
 
-- Do not create keyword search endpoint.
-- Do not implement job processing (queue consumer).
+- Do not implement actual extraction logic.
+- Do not implement scoring calculation.
 
 ## Allowed Files
 
-- `workers/api/src/routes/research.ts`
-- `workers/api/src/routes/research.test.ts`
+- `packages/db/src/repositories/products.ts`
+- `packages/db/src/repositories/shops.ts`
+- `packages/db/src/repositories/comparisonItems.ts`
+- `packages/db/src/repositories/*.test.ts`
+- `packages/db/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Input Contract
 
-Authenticated user GETs endpoint with jobId or sessionId.
+ProductSnapshot, ShopSnapshot, and comparison data from extraction.
 
 ## Output Contract
 
-Returns job/session data with status.
+Saved rows in D1, returned with IDs.
 
 ## Acceptance Criteria
 
-- [ ] GET /api/research/jobs/:id implemented
-- [ ] GET /api/research/sessions/:id implemented
-- [ ] Ownership validation
+- [ ] upsertProduct implemented
+- [ ] upsertShop implemented
+- [ ] saveProductWeight implemented
+- [ ] saveProductFeatures implemented
+- [ ] createComparisonItem implemented
 - [ ] Unit tests pass
 - [ ] Quality gate passes
 

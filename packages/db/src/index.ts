@@ -10,3 +10,6 @@ export * from "./repositories/searchProviderConfigs.js";
 export * from "./repositories/scoringConfigs.js";
 export * from "./repositories/researchSessions.js";
 export * from "./repositories/jobs.js";
+export * from "./repositories/products.js";
+export * from "./repositories/shops.js";
+export * from "./repositories/comparisonItems.js";

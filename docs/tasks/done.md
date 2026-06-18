@@ -967,7 +967,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:35
 Branch: feature/TASK-059-compare-frontend
-Commit: pending
+Commit: ffe9392
 
 Summary:
 - Updated ComparePage with full form for adding/removing up to 5 links.

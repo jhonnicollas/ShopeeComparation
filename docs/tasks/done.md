@@ -71,7 +71,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 21:15
 Branch: feature/TASK-013-shared-types
-Commit: pending
+Commit: 46592ac
 
 Summary:
 - Created `packages/shared` package with package.json, tsconfig.json, and src/ structure.
@@ -1018,7 +1018,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 00:45
 Branch: feature/TASK-061-score-breakdown
-Commit: pending
+Commit: 46592ac
 
 Summary:
 - Created packages/core/src/scoring/breakdown.ts.

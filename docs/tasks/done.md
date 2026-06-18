@@ -1403,7 +1403,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 02:50
 Branch: feature/TASK-080-url-resolver
-Commit: pending
+Commit: 05b80df
 
 Summary:
 - Created packages/shopee/src/resolver/urlParser.ts with parseShopeeUrl().

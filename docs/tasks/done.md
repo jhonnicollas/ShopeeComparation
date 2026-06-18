@@ -1378,7 +1378,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 02:35
 Branch: feature/TASK-078-ai-report-view
-Commit: pending
+Commit: f8eb327
 
 Summary:
 - Created apps/web/src/components/AiReportView.tsx.

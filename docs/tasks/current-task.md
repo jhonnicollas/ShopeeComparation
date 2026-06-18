@@ -1,4 +1,4 @@
-# TASK-084: Add resolver fallback interface
+# TASK-085: Add resolver diagnostics UI
 
 ## Status
 
@@ -6,7 +6,7 @@ TODO
 
 ## Goal
 
-Extend the Shopee URL resolver with additional fallback adapters: WebFetch (via 9router web fetch) and BrowserRun (stub for Cloudflare Browser Run). The fallback chain should be configurable via D1 search provider config and gracefully handle partial failures.
+Build a resolver diagnostics UI that shows per-URL adapter attempt history from the resolveUrlWithFallback chain. The UI must not expose secrets, must show which adapter was used, and must be integrated into the compare links flow.
 
 ## Required Reading
 
@@ -27,75 +27,95 @@ Extend the Shopee URL resolver with additional fallback adapters: WebFetch (via 
 
 ## Scope
 
-- Create `packages/shopee/src/resolver/webFetchAdapter.ts` — implements `ResolveUrlAdapter` using 9router web fetch to resolve short URLs when HTTP redirect fails
-- Create `packages/shopee/src/resolver/browserRunAdapter.ts` — implements `ResolveUrlAdapter` as a stub for Cloudflare Browser Run (returns failed status with message indicating Browser Run not available)
-- Update `packages/shopee/src/resolver/resolveUrl.ts` to include these adapters in the default fallback chain: `[DirectResolveAdapter, HttpRedirectResolveAdapter, WebFetchResolveAdapter, BrowserRunResolveAdapter]`
-- Add `ResolveFallbackConfig` type in `packages/shared/src/types/shopee.ts` with adapter ordering, timeout, retry options
-- Add Zod schema for `ResolveFallbackConfig` in `packages/shared/src/schemas/shopee.ts`
-- Add unit tests for each new adapter and the extended fallback chain
-- Ensure all files follow naming conventions (no underscores in column names, sh_ prefix for tables)
+- Add `POST /api/shopee/resolve-url` endpoint in `workers/api/src/routes/shopee.ts` that calls `resolveUrlWithFallback` and returns the result with adapter attempts.
+- Add `ResolveUrlDiagnostics` type in `packages/shared/src/types/shopee.ts` to capture adapter attempt history.
+- Create `apps/web/src/components/ResolverDiagnostics.tsx` — React component that displays per-URL resolve status, adapter used, errors.
+- Add `resolveUrlByApi()` function to `apps/web/src/lib/api.ts` (or a new shopee.ts lib) for calling the new endpoint.
+- Wire ResolverDiagnostics into ComparePage or create a standalone panel accessible from compare flow.
+- Add CSS for diagnostics display.
+- Add unit tests for the new API endpoint and React component.
 
 ## Out of Scope
 
-- Do not implement actual 9router web fetch call (that's TASK-090)
-- Do not implement actual Cloudflare Browser Run call (that's TASK-091)
-- Do not create API endpoints (that's TASK-085)
-- Do not create frontend UI (that's TASK-085)
-- Do not modify D1 schema (existing sh_resolvedUrls table is sufficient)
+- Do not create new D1 tables (no DB changes needed; diagnostics are per-request)
+- Do not implement actual 9router or Browser Run calls (TASK-090, TASK-091)
+- Do not change auth flow (use existing `authenticate` helper)
 
 ## Allowed Files
 
-- `packages/shopee/src/resolver/**`
+- `workers/api/src/routes/shopee.ts` (new)
+- `workers/api/src/routes/shopee.test.ts` (new)
+- `workers/api/src/index.ts` (mount shopee router)
 - `packages/shared/src/types/shopee.ts`
 - `packages/shared/src/schemas/shopee.ts`
-- `packages/shared/src/index.ts` (re-export)
-- `packages/shopee/src/index.ts` (re-export)
+- `apps/web/src/components/ResolverDiagnostics.tsx` (new)
+- `apps/web/src/components/ResolverDiagnostics.test.tsx` (new)
+- `apps/web/src/lib/shopee.ts` (new) or `apps/web/src/lib/api.ts` (add)
+- `apps/web/src/pages/ComparePage.tsx`
+- `apps/web/src/styles/global.css`
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `apps/**`
-- `workers/**`
 - `packages/db/**` (no DB changes needed)
 - `packages/core/**`
 - `packages/ai/**`
+- `workers/queueConsumer/**` (no queue changes needed)
 
 ## Input Contract
 
-ResolveUrlInput from shared types:
+ResolveUrlRequest from API contract:
 ```ts
 { url: string }
 ```
 
 ## Output Contract
 
-ResolveUrlResult with adapterUsed field:
+ResolveUrlResponse with diagnostics:
 ```ts
-ResolveUrlResult & { adapterUsed: string }
+{
+  originalUrl: string;
+  finalUrl: string | null;
+  canonicalUrl: string | null;
+  shopId: string | null;
+  itemId: string | null;
+  resolveMethod: ResolveMethod | null;
+  status: ResolveStatus;
+  diagnostics: {
+    adapterUsed: string;
+    attempts: Array<{
+      adapter: string;
+      method: ResolveMethod;
+      status: ResolveStatus;
+      errorMessage?: string;
+    }>;
+  };
+}
 ```
 
 ## Acceptance Criteria
 
-- [ ] webFetchAdapter.ts exists and implements ResolveUrlAdapter interface
-- [ ] browserRunAdapter.ts exists and implements ResolveUrlAdapter interface
-- [ ] resolveUrl.ts updated with new adapters in fallback chain
-- [ ] ResolveFallbackConfig type added to shared types
-- [ ] ResolveFallbackConfig Zod schema added to shared schemas
-- [ ] Unit tests pass for new adapters
+- [ ] POST /api/shopee/resolve-url endpoint exists
+- [ ] ResolverDiagnostics type added to shared
+- [ ] ResolverDiagnostics component created
+- [ ] Component shows adapter attempts, status, errors per URL
+- [ ] Component does not expose secrets
+- [ ] Wired into ComparePage or accessible from compare flow
+- [ ] Unit tests pass for new endpoint
+- [ ] Unit tests pass for new component
 - [ ] All existing tests still pass
 - [ ] Quality gate passes (lint, typecheck, test, build, quality-gate.js)
 
 ## Test Requirements
 
-- [ ] Unit test for WebFetchResolveAdapter (mock 9router call)
-- [ ] Unit test for BrowserRunResolveAdapter (returns failed with expected message)
-- [ ] Unit test for resolveUrlWithFallback with all 4 adapters in chain
-- [ ] Unit test that fallback works when earlier adapters fail
+- [ ] Unit test for POST /api/shopee/resolve-url endpoint
+- [ ] Unit test for ResolverDiagnostics component
+- [ ] Unit test that diagnostics do not expose secrets
 
 ## Documentation Update
 
-- [ ] Update `packages/shared/src/index.ts` to export new types/schemas
-- [ ] Update `packages/shopee/src/index.ts` to export new adapters
+- [ ] Update `packages/shared/src/index.ts` to export new types
+- [ ] No public docs changes needed (internal API)
 
 ## Stop Conditions Check
 

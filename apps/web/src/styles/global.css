@@ -723,3 +723,141 @@ h2 {
   white-space: pre-wrap;
   margin-top: 12px;
 }
+
+.resolverDiagnostics {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f6f8fb;
+  border: 1px solid #e1e6ee;
+  border-radius: 6px;
+}
+
+.resolverLoading {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.resolverStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.resolverAdapter {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.resolverDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.resolverField {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.resolverLabel {
+  font-weight: 600;
+  color: #1f2933;
+  min-width: 100px;
+}
+
+.resolverValue {
+  color: #4b5563;
+  word-break: break-all;
+}
+
+.resolverUrl {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.resolverError {
+  margin: 8px 0;
+}
+
+.resolverErrorMessage {
+  color: #b91c1c;
+  font-size: 14px;
+  margin: 0;
+}
+
+.resolverAttempts {
+  margin-top: 8px;
+  border-top: 1px solid #e1e6ee;
+  padding-top: 8px;
+}
+
+.resolverAttempts summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #4b5563;
+  user-select: none;
+}
+
+.resolverAttemptList {
+  margin: 8px 0 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resolverAttempt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #ffffff;
+  border: 1px solid #e1e6ee;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.resolverAttemptAdapter {
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.resolverAttemptMethod {
+  color: #6b7280;
+  font-family: monospace;
+}
+
+.resolverAttemptDuration {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.resolverAttemptError {
+  width: 100%;
+  color: #b91c1c;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statusBadgeOk {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusBadgeFailed {
+  background: #fee2e2;
+  color: #991b1b;
+}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ApiClientError } from "../lib/api.js";
+import { ResolverDiagnostics } from "../components/ResolverDiagnostics.js";
 
 interface CompareLinksResponse {
   researchSessionId: string;
@@ -167,7 +168,7 @@ export function ComparePage() {
           </p>
           {jobQuery.data.progressTotal > 0 && (
             <p>
-              Progress: {jobQuery.data.progressCurrent} / {jobQuery.data.progressTotal}
+              Progress: {jobQuery.data.jobId ? jobQuery.data.progressCurrent : 0} / {jobQuery.data.progressTotal}
             </p>
           )}
           {jobQuery.data.currentStep && <p>Step: {jobQuery.data.currentStep}</p>}
@@ -185,6 +186,23 @@ export function ComparePage() {
           )}
         </div>
       )}
+      <div className="formPanel">
+        <h2>URL Resolver Diagnostics</h2>
+        <p className="lede">
+          Test a Shopee URL to see which resolver adapter succeeds. Short URLs like
+          <code>id.shp.ee/...</code> are tried against direct parsing, HTTP redirect, 9router web fetch,
+          and Browser Run in that order.
+        </p>
+        <input
+          id="resolver-test-url"
+          type="url"
+          value={links[0] ?? ""}
+          onChange={(e) => updateLink(0, e.target.value)}
+          placeholder="https://shopee.co.id/product/... or https://id.shp.ee/..."
+          style={{ width: "100%", marginBottom: "12px" }}
+        />
+        <ResolverDiagnostics url={links[0] ?? ""} />
+      </div>
     </section>
   );
 }

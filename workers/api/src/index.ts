@@ -3,6 +3,7 @@ import type { D1Database, Queue, R2Bucket } from "@cloudflare/workers-types";
 import { authRouter } from "./routes/auth.js";
 import { configRouter } from "./routes/config.js";
 import { researchRouter } from "./routes/research.js";
+import { shopeeRouter } from "./routes/shopee.js";
 
 export type ApiEnv = {
   Bindings: {
@@ -28,5 +29,6 @@ app.get("/api/health", (c) => {
 app.route("/api/auth", authRouter);
 app.route("/api/config", configRouter);
 app.route("/api/research", researchRouter);
+app.route("/api/shopee", shopeeRouter);
 
 export default app;

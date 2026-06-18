@@ -91,7 +91,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-081 Build short URL redirect resolver
 - [x] TASK-082 Build canonical URL normalizer
 - [x] TASK-083 Extract shopId and itemId
-- [ ] TASK-084 Add resolver fallback interface
+- [x] TASK-084 Add resolver fallback interface
 - [ ] TASK-085 Add resolver diagnostics UI
 
 ## Phase 9 — Real Shopee Extraction

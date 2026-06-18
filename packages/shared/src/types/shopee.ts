@@ -236,6 +236,19 @@ export interface ResolveFallbackConfig {
   retryDelayMs: number;
 }
 
+export interface ResolveUrlAttempt {
+  adapter: string;
+  resolveMethod: ResolveMethod;
+  status: ResolveStatus;
+  errorMessage?: string;
+  durationMs?: number;
+}
+
+export interface ResolveUrlDiagnostics {
+  adapterUsed: string;
+  attempts: ResolveUrlAttempt[];
+}
+
 export interface RuntimeConfigSnapshot {
   appConfig: Record<string, unknown>;
   aiProvider: {

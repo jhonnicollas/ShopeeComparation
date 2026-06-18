@@ -142,6 +142,9 @@ importers:
       '@shopee-research/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@shopee-research/shopee':
+        specifier: workspace:*
+        version: link:../../packages/shopee
       hono:
         specifier: ^4.10.7
         version: 4.12.25

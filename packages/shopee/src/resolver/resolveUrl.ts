@@ -1,4 +1,4 @@
-import type { ResolveUrlInput, ResolveUrlResult } from "@shopee-research/shared";
+import type { ResolveUrlInput, ResolveUrlResult, ResolveUrlDiagnostics, ResolveUrlAttempt } from "@shopee-research/shared";
 import { parseShopeeUrl } from "./urlParser.js";
 import { WebFetchResolveAdapter } from "./webFetchAdapter.js";
 import { BrowserRunResolveAdapter } from "./browserRunAdapter.js";
@@ -122,5 +122,67 @@ export async function resolveUrlWithFallback(
     status: "failed",
     errorMessage: `All adapters failed: ${errors.join("; ")}`,
     adapterUsed: "none",
+  };
+}
+
+export async function resolveUrlWithDiagnostics(
+  input: ResolveUrlInput,
+  adapters: ResolveUrlAdapter[] = [
+    new DirectResolveAdapter(),
+    new HttpRedirectResolveAdapter(),
+    new WebFetchResolveAdapter(),
+    new BrowserRunResolveAdapter(),
+  ]
+): Promise<ResolveUrlResult & { diagnostics: ResolveUrlDiagnostics }> {
+  const attempts: ResolveUrlAttempt[] = [];
+  const errors: string[] = [];
+  for (const adapter of adapters) {
+    const start = Date.now();
+    try {
+      const result = await adapter.resolve(input);
+      const durationMs = Date.now() - start;
+      attempts.push({
+        adapter: adapter.name,
+        resolveMethod: result.resolveMethod,
+        status: result.status,
+        ...(result.errorMessage ? { errorMessage: result.errorMessage } : {}),
+        durationMs,
+      });
+      if (result.status === "resolved") {
+        return {
+          ...result,
+          diagnostics: {
+            adapterUsed: adapter.name,
+            attempts,
+          },
+        };
+      }
+      errors.push(`${adapter.name}: ${result.errorMessage ?? "failed"}`);
+    } catch (error) {
+      const durationMs = Date.now() - start;
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      attempts.push({
+        adapter: adapter.name,
+        resolveMethod: "manual",
+        status: "failed",
+        errorMessage: msg.slice(0, 200),
+        durationMs,
+      });
+      errors.push(`${adapter.name}: ${msg}`);
+    }
+  }
+  return {
+    originalUrl: input.url,
+    finalUrl: null,
+    canonicalUrl: null,
+    shopId: null,
+    itemId: null,
+    resolveMethod: "manual",
+    status: "failed",
+    errorMessage: `All adapters failed: ${errors.join("; ")}`,
+    diagnostics: {
+      adapterUsed: "none",
+      attempts,
+    },
   };
 }

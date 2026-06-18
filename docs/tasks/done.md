@@ -1426,3 +1426,27 @@ Quality Gate:
 - test: pass (465 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-084: Add resolver fallback interface
+
+Status: DONE
+CompletedAt: 2026-06-18 22:35
+Branch: main
+Commit: 3a7ba50
+
+Summary:
+- Created WebFetchResolveAdapter in packages/shopee/src/resolver/webFetchAdapter.ts (stub for 9router web fetch, TASK-090).
+- Created BrowserRunResolveAdapter in packages/shopee/src/resolver/browserRunAdapter.ts (stub for Cloudflare Browser Run, TASK-091).
+- Updated resolveUrlWithFallback default chain: [DirectResolveAdapter, HttpRedirectResolveAdapter, WebFetchResolveAdapter, BrowserRunResolveAdapter].
+- Added ResolveFallbackConfig type to packages/shared/src/types/shopee.ts.
+- Added resolveFallbackConfigSchema Zod schema to packages/shared/src/schemas/shopee.ts.
+- Added unit tests for new adapters and extended fallback chain (11 tests total in resolveUrl.test.ts).
+- All 468 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (468 tests)
+- build: pass
+- validation scripts: pass

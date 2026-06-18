@@ -5,6 +5,7 @@ import {
   WebFetchResolveAdapter,
   BrowserRunResolveAdapter,
   resolveUrlWithFallback,
+  resolveUrlWithDiagnostics,
 } from "./resolveUrl.js";
 
 const originalFetch = globalThis.fetch;
@@ -135,5 +136,59 @@ describe("resolveUrlWithFallback", () => {
     expect(result.errorMessage).toContain("browserRun");
     expect(result.errorMessage).toContain("TASK-090");
     expect(result.errorMessage).toContain("TASK-091");
+  });
+});
+
+describe("resolveUrlWithDiagnostics", () => {
+  it("returns diagnostics with successful adapter", async () => {
+    const result = await resolveUrlWithDiagnostics({
+      url: "https://shopee.co.id/Test-i.123.456",
+    });
+    expect(result.status).toBe("resolved");
+    expect(result.diagnostics.adapterUsed).toBe("direct");
+    expect(result.diagnostics.attempts).toHaveLength(1);
+    expect(result.diagnostics.attempts[0]?.adapter).toBe("direct");
+    expect(result.diagnostics.attempts[0]?.status).toBe("resolved");
+  });
+
+  it("records all failed attempts in diagnostics", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("boom"));
+    const result = await resolveUrlWithDiagnostics({ url: "https://id.shp.ee/abc" });
+    expect(result.status).toBe("failed");
+    expect(result.diagnostics.adapterUsed).toBe("none");
+    expect(result.diagnostics.attempts.length).toBeGreaterThanOrEqual(4);
+    const adapters = result.diagnostics.attempts.map((a) => a.adapter);
+    expect(adapters).toContain("direct");
+    expect(adapters).toContain("redirect");
+    expect(adapters).toContain("webFetch");
+    expect(adapters).toContain("browserRun");
+    for (const attempt of result.diagnostics.attempts) {
+      expect(attempt.status).toBe("failed");
+      expect(attempt.errorMessage).toBeDefined();
+    }
+  });
+
+  it("records duration for each attempt", async () => {
+    const result = await resolveUrlWithDiagnostics({
+      url: "https://shopee.co.id/Test-i.123.456",
+    });
+    expect(result.diagnostics.attempts[0]?.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("captures diagnostics when earlier adapter fails and later succeeds", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 200,
+        headers: { "location": "https://shopee.co.id/Test-i.123.456" },
+      })
+    );
+    const result = await resolveUrlWithDiagnostics({ url: "https://id.shp.ee/abc" });
+    expect(result.status).toBe("resolved");
+    expect(result.diagnostics.adapterUsed).toBe("redirect");
+    expect(result.diagnostics.attempts.length).toBeGreaterThanOrEqual(2);
+    const directAttempt = result.diagnostics.attempts.find((a) => a.adapter === "direct");
+    const redirectAttempt = result.diagnostics.attempts.find((a) => a.adapter === "redirect");
+    expect(directAttempt?.status).toBe("failed");
+    expect(redirectAttempt?.status).toBe("resolved");
   });
 });

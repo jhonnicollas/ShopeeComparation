@@ -187,3 +187,16 @@ export const resolveFallbackConfigSchema = z.object({
   retryCount: z.number().int().min(0),
   retryDelayMs: z.number().int().min(0),
 });
+
+export const resolveUrlAttemptSchema = z.object({
+  adapter: z.string(),
+  resolveMethod: resolveMethodSchema,
+  status: resolveStatusSchema,
+  errorMessage: z.string().optional(),
+  durationMs: z.number().optional(),
+});
+
+export const resolveUrlDiagnosticsSchema = z.object({
+  adapterUsed: z.string(),
+  attempts: z.array(resolveUrlAttemptSchema),
+});

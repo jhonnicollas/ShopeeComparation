@@ -87,6 +87,9 @@ importers:
       '@shopee-research/core':
         specifier: workspace:*
         version: link:../core
+      '@shopee-research/db':
+        specifier: workspace:*
+        version: link:../db
       '@shopee-research/shared':
         specifier: workspace:*
         version: link:../shared

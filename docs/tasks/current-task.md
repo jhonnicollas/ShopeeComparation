@@ -1,4 +1,4 @@
-# TASK-070: Setup Mastra workflow skeleton
+# TASK-071: Build 9router client from config table
 
 ## Status
 
@@ -6,48 +6,47 @@ TODO
 
 ## Goal
 
-Create the Mastra workflow skeleton in packages/ai with workflow orchestration for compare-links and keyword-search modes.
+Create 9router client that loads provider/model config from D1 at runtime.
 
 ## Required Reading
 
-- `docs/ai/mastra-orchestrator.md`
-- `docs/architecture/folder-structure.md`
+- `docs/ai/9router-configuration.md`
+- `docs/configuration/runtime-configuration.md`
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create packages/ai package.
-- Define workflow steps: resolveUrl, extractProduct, score, generateReport.
-- Create simple workflow runner (can be replaced with full Mastra later).
-- Add unit tests for workflow orchestration.
+- Create packages/ai/src/nineRouter/client.ts.
+- Load provider config from D1 (sh_aiProviderConfigs).
+- Resolve secret from env via secretRef.
+- Call 9router /chat/completions endpoint.
+- Add unit tests.
 
 ## Out of Scope
 
-- Do not implement real Mastra dependency (later).
-- Do not implement individual agents (TASK-072-074).
+- Do not implement agent prompts (later).
 
 ## Allowed Files
 
-- `packages/ai/package.json`
-- `packages/ai/tsconfig.json`
-- `packages/ai/src/workflows/compareLinks.ts`
-- `packages/ai/src/workflows/compareLinks.test.ts`
-- `packages/ai/src/index.ts`
+- `packages/ai/src/nineRouter/client.ts`
+- `packages/ai/src/nineRouter/client.test.ts`
+- `packages/ai/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Input Contract
 
-QueueMessage and DB context.
+DB context and chat request.
 
 ## Output Contract
 
-Workflow execution with step results.
+Chat response with text.
 
 ## Acceptance Criteria
 
-- [ ] packages/ai exists
-- [ ] Workflow skeleton implemented
-- [ ] Can chain steps
+- [ ] client.ts exists
+- [ ] Loads config from D1
+- [ ] Resolves secret via env
+- [ ] Calls 9router endpoint
 - [ ] Unit tests pass
 - [ ] Quality gate passes
 

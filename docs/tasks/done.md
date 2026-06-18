@@ -1212,3 +1212,28 @@ Quality Gate:
 - test: pass (429 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 7 AI, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-071: Build 9router client from config table
+
+Status: DONE
+CompletedAt: 2026-06-18 02:00
+Branch: feature/TASK-071-nine-router-client
+Commit: pending
+
+Summary:
+- Created packages/ai/src/nineRouter/client.ts.
+- Implemented loadNineRouterConfig() reading from sh_aiProviderConfigs and sh_aiModelConfigs.
+- Resolves secret from env via secretRef.
+- Implemented callNineRouter() with /chat/completions endpoint.
+- Supports temperature, maxTokens, jsonMode options.
+- Added @shopee-research/db dependency.
+- Created client.test.ts with 6 unit tests.
+- All 435 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (435 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 13 AI, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

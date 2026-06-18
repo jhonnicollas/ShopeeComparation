@@ -673,7 +673,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 23:57
 Branch: feature/TASK-046-config-page
-Commit: pending
+Commit: 6cd1398
 
 Summary:
 - Created apps/web/src/lib/config.ts with API client functions for all config types.

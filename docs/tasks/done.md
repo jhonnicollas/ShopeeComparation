@@ -1348,3 +1348,27 @@ Quality Gate:
 - test: pass (443 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 23 AI, 2 home, 5 breakdown, 2 aiReports)
 - build: pass
 - validation scripts: pass
+
+## TASK-077: Save raw AI response to R2
+
+Status: DONE
+CompletedAt: 2026-06-18 02:30
+Branch: feature/TASK-077-r2-ai-response
+Commit: pending
+
+Summary:
+- Created packages/db/src/aiResponseStorage.ts.
+- saveRawAiResponse() saves raw AI response to R2 under snapshots/ai/{comparisonId}/ path.
+- Uses existing putSnapshot from r2.ts.
+- Includes metadata with comparisonId and model.
+- getRawAiResponseKey() helper for direct key construction.
+- Created aiResponseStorage.test.ts with 2 unit tests using mock R2Bucket.
+- All 445 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (445 tests)
+- build: pass
+- validation scripts: pass

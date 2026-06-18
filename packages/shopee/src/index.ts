@@ -9,3 +9,4 @@ export * from "./resolver/webFetchAdapter.js";
 export * from "./resolver/browserRunAdapter.js";
 export * from "./adapters/nineRouterFetchAdapter.js";
 export * from "./adapters/browserRunAdapter.js";
+export * from "./parser/productParser.js";

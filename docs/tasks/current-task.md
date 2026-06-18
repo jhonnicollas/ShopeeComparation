@@ -1,37 +1,30 @@
-# TASK-092: Build fallback extractor strategy
+# TASK-093: Build product parser
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a fallback extractor strategy that chains multiple ShopeeExtractor implementations in priority order, collecting results from each adapter and merging into a single ProductSnapshot/ShopSnapshot. Each adapter's result is recorded for diagnostics. Missing fields stay null with confidence 0. Partial success is allowed.
+Build a Shopee product parser that extracts ProductSnapshot fields from raw HTML/JSON content. Each field must include source and confidence, missing fields return null with confidence 0.
 
 ## Required Reading
 
 - `docs/prd/prd.md`
 - `docs/architecture/technical-decisions.md`
-- `docs/architecture/implementation-stack.md`
 - `docs/shared/enums.md`
 - `docs/database/schema.md`
-- `docs/api/api-contract.md`
-- `docs/shopee/search-api-strategy.md`
 - `docs/shopee/extraction-strategy.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
-- `.ai/autopilot-policy.md`
-- `.ai/stop-conditions.md`
 
 ## Scope
 
-- Create `packages/shopee/src/extractors/fallbackExtractor.ts` — FallbackShopeeExtractor class
-- Implements ShopeeExtractor interface and orchestrates multiple adapters
-- For each method, iterates adapters in priority order, calls each, and merges results
-- Tracks per-adapter outcomes for diagnostics
-- Returns partial success when some adapters succeed and others fail
-- Logs to a diagnostics array (no secret leakage)
-- Adapter priority loaded from D1 config (searchProviderConfigs)
+- Create `packages/shopee/src/parser/productParser.ts` — ProductParser class
+- Parses raw HTML/JSON to extract ProductSnapshot fields
+- Each field has source and confidence score
+- Missing fields return null with confidence 0 (no fabrication)
+- Support multiple input formats (HTML, JSON, JSON-LD)
 - Add comprehensive unit tests
 
 ## Out of Scope
@@ -42,8 +35,8 @@ Build a fallback extractor strategy that chains multiple ShopeeExtractor impleme
 
 ## Allowed Files
 
-- `packages/shopee/src/extractors/fallbackExtractor.ts` (new)
-- `packages/shopee/src/extractors/fallbackExtractor.test.ts` (new)
+- `packages/shopee/src/parser/productParser.ts` (new)
+- `packages/shopee/src/parser/productParser.test.ts` (new)
 - `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
@@ -57,36 +50,34 @@ Build a fallback extractor strategy that chains multiple ShopeeExtractor impleme
 
 ## Input Contract
 
-Implements ShopeeExtractor interface. Accepts array of adapters in priority order.
+`parseProduct(input: { html?: string; json?: unknown; shopId: string; itemId: string; canonicalUrl: string }): ProductSnapshot`
 
 ## Output Contract
 
-Returns merged ProductSnapshot/ShopSnapshot with per-field source and confidence. Missing fields stay null.
+Returns complete ProductSnapshot with each field's source and confidence.
 
 ## Acceptance Criteria
 
-- [ ] FallbackShopeeExtractor implements ShopeeExtractor
-- [ ] All 4 methods (resolveUrl, searchProducts, extractProduct, extractShop) supported
-- [ ] Adapters called in priority order
-- [ ] Per-adapter results merged into final result
-- [ ] Missing fields stay null with confidence 0
-- [ ] Diagnostics captured per attempt
-- [ ] Errors do not crash the whole extraction
+- [ ] ProductParser class implemented
+- [ ] Parses HTML, JSON, and JSON-LD formats
+- [ ] Extracts: title, priceMin, priceMax, rating, reviewCount, soldCount, brand, category, description, stock
+- [ ] Each field has source and confidence
+- [ ] Missing fields return null with confidence 0
 - [ ] Unit tests pass
 - [ ] All existing tests still pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit test for resolveUrl with multiple adapters
-- [ ] Unit test for extractProduct with primary adapter failing
-- [ ] Unit test for extractShop with all adapters failing
-- [ ] Unit test for searchProducts merging results
-- [ ] Unit test for error handling
+- [ ] Unit test for HTML parsing
+- [ ] Unit test for JSON parsing
+- [ ] Unit test for JSON-LD parsing
+- [ ] Unit test for missing fields (null with confidence 0)
+- [ ] Unit test for malformed input (safe handling)
 
 ## Documentation Update
 
-- [ ] Update `packages/shopee/src/index.ts` to export new extractor
+- [ ] Update `packages/shopee/src/index.ts` to export new parser
 
 ## Stop Conditions Check
 

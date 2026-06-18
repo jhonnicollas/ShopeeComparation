@@ -534,7 +534,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 22:46
 Branch: feature/TASK-041-app-config-api
-Commit: pending
+Commit: 08f366a
 
 Summary:
 - Created packages/shared/src/schemas/config.ts with Zod schemas for app config.

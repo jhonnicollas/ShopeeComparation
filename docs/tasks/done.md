@@ -590,7 +590,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 23:31
 Branch: feature/TASK-043-ai-model-api
-Commit: pending
+Commit: bc5c58b
 
 Summary:
 - Added aiModelUsageType enum to shared/constants/enums.ts.

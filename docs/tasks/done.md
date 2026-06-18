@@ -1261,3 +1261,51 @@ Quality Gate:
 - test: pass (437 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 15 AI, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-073: Build Risk Analyzer Agent
+
+Status: DONE
+CompletedAt: 2026-06-18 02:20
+Branch: feature/TASK-073-risk-analyzer
+Commit: pending
+
+Summary:
+- Created packages/ai/src/agents/riskAnalyzer.ts.
+- Combines traditional detectRisks from core with AI-based risk analysis.
+- Calls 9router with jsonMode for additional AI risks.
+- Graceful fallback if AI fails.
+- Returns traditionalRisks, aiRisks, and combined allRisks.
+- Created riskAnalyzer.test.ts with 2 unit tests.
+- All 441 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (441 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 19 AI, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass
+
+## TASK-074: Build Data Quality Agent
+
+Status: DONE
+CompletedAt: 2026-06-18 02:20
+Branch: feature/TASK-074-data-quality-agent
+Commit: pending
+
+Summary:
+- Created packages/ai/src/agents/dataQualityAgent.ts.
+- Combines checkDataQuality from core with AI-based missing notes.
+- Calls 9router with jsonMode for additional missing field notes.
+- Returns traditionalFields and aiMissingNotes.
+- Graceful fallback if AI fails.
+- Created dataQualityAgent.test.ts with 2 unit tests.
+- All 441 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (441 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 21 AI, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

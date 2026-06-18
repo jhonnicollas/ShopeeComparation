@@ -506,7 +506,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-17 22:14
 Branch: feature/TASK-040-config-tables
-Commit: pending
+Commit: 2069bd3
 
 Summary:
 - Created packages/db/src/repositories/appConfigs.ts with CRUD for sh_appConfigs.

@@ -1167,7 +1167,7 @@ Quality Gate:
 Status: DONE
 CompletedAt: 2026-06-18 01:22
 Branch: feature/TASK-067-score-breakdown-ui
-Commit: pending
+Commit: 2a7e550
 
 Summary:
 - Created apps/web/src/components/ScoreBreakdown.tsx.

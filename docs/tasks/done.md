@@ -1237,3 +1237,27 @@ Quality Gate:
 - test: pass (435 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 13 AI, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-072: Build Recommendation Writer Agent
+
+Status: DONE
+CompletedAt: 2026-06-18 02:15
+Branch: feature/TASK-072-recommendation-agent
+Commit: pending
+
+Summary:
+- Created packages/ai/src/agents/recommendationWriter.ts.
+- Implemented buildPrompt() with structured JSON output format.
+- Implemented generateRecommendation() calling 9router with jsonMode.
+- Parses AI response to AiReportStructured.
+- Graceful fallback on invalid JSON with ranking fallback.
+- Created recommendationWriter.test.ts with 2 unit tests.
+- All 437 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (437 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 33 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 15 AI, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

@@ -1,4 +1,4 @@
-# TASK-071: Build 9router client from config table
+# TASK-072: Build Recommendation Writer Agent
 
 ## Status
 
@@ -6,47 +6,49 @@ TODO
 
 ## Goal
 
-Create 9router client that loads provider/model config from D1 at runtime.
+Create an AI agent that generates product recommendation reports using 9router.
 
 ## Required Reading
 
+- `docs/ai/mastra-orchestrator.md`
 - `docs/ai/9router-configuration.md`
-- `docs/configuration/runtime-configuration.md`
+- `docs/shared/enums.md` (AiReportStructured)
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create packages/ai/src/nineRouter/client.ts.
-- Load provider config from D1 (sh_aiProviderConfigs).
-- Resolve secret from env via secretRef.
-- Call 9router /chat/completions endpoint.
+- Create packages/ai/src/agents/recommendationWriter.ts.
+- Build prompt from products and user query.
+- Call 9router with jsonMode.
+- Parse response to AiReportStructured.
 - Add unit tests.
 
 ## Out of Scope
 
-- Do not implement agent prompts (later).
+- Do not implement Risk Analyzer (TASK-073).
 
 ## Allowed Files
 
-- `packages/ai/src/nineRouter/client.ts`
-- `packages/ai/src/nineRouter/client.test.ts`
+- `packages/ai/src/agents/recommendationWriter.ts`
+- `packages/ai/src/agents/recommendationWriter.test.ts`
 - `packages/ai/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Input Contract
 
-DB context and chat request.
+RecommendationInput with products and user query.
 
 ## Output Contract
 
-Chat response with text.
+RecommendationOutput with parsed report.
 
 ## Acceptance Criteria
 
-- [ ] client.ts exists
-- [ ] Loads config from D1
-- [ ] Resolves secret via env
-- [ ] Calls 9router endpoint
+- [ ] Agent file exists
+- [ ] Builds prompt correctly
+- [ ] Calls 9router via chat helper
+- [ ] Parses JSON response
+- [ ] Handles invalid JSON gracefully
 - [ ] Unit tests pass
 - [ ] Quality gate passes
 

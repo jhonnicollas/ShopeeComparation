@@ -15,6 +15,7 @@ class MockD1Database {
   public aiProviders: Array<Record<string, unknown>> = [];
   public aiModels: Array<Record<string, unknown>> = [];
   public searchProviders: Array<Record<string, unknown>> = [];
+  public scoringConfigs: Array<Record<string, unknown>> = [];
 
   prepare(query: string) {
     const stmt: MockD1PreparedStatement = {
@@ -285,6 +286,60 @@ class MockD1Database {
         const args = stmt.bind.mock.calls[0] || [];
         const idx = this.searchProviders.findIndex((p) => p.id === args[0]);
         if (idx >= 0) this.searchProviders.splice(idx, 1);
+        return { success: true };
+      });
+    } else if (query.includes("SELECT * FROM sh_scoringConfigs WHERE configKey")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.scoringConfigs.find((c) => c.configKey === args[0]) ?? null;
+      });
+    } else if (query.includes("SELECT * FROM sh_scoringConfigs WHERE id")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.scoringConfigs.find((c) => c.id === args[0]) ?? null;
+      });
+    } else if (query.includes("SELECT * FROM sh_scoringConfigs")) {
+      stmt.all.mockImplementation(async () => {
+        return { results: [...this.scoringConfigs] };
+      });
+    } else if (query.includes("INSERT INTO sh_scoringConfigs")) {
+      stmt.run.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const config = {
+          id: args[0],
+          configKey: args[1],
+          displayName: args[2],
+          category: args[3],
+          weightsJson: args[4],
+          isDefault: args[5],
+          isEnabled: args[6],
+          createdAt: args[7],
+          updatedAt: args[8],
+        };
+        this.scoringConfigs.push(config);
+        return { success: true };
+      });
+    } else if (query.includes("UPDATE sh_scoringConfigs")) {
+      stmt.run.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const setClause = query.substring(query.indexOf("SET") + 3, query.indexOf("WHERE")).trim();
+        const setCols = setClause.split(",").map((s) => s.trim().split(" = ")[0]);
+        const id = args[args.length - 1];
+        const config = this.scoringConfigs.find((c) => c.id === id);
+        if (config) {
+          setCols.forEach((col, i) => {
+            if (col) {
+              (config as Record<string, unknown>)[col] = args[i];
+            }
+          });
+        }
+        return { success: true };
+      });
+    } else if (query.includes("DELETE FROM sh_scoringConfigs")) {
+      stmt.run.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const idx = this.scoringConfigs.findIndex((c) => c.id === args[0]);
+        if (idx >= 0) this.scoringConfigs.splice(idx, 1);
         return { success: true };
       });
     }
@@ -1632,5 +1687,224 @@ describe("DELETE /api/config/search-providers/:id", () => {
     );
     expect(res.status).toBe(200);
     expect(db.searchProviders).toHaveLength(0);
+  });
+});
+
+describe("GET /api/config/scoring-configs", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await configRouter.request(
+      "/scoring-configs",
+      { method: "GET" },
+      createEnv(db)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 for non-admin", async () => {
+    const token = await createAdminSession(db, "user");
+    const res = await configRouter.request(
+      "/scoring-configs",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db)
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("returns configs for admin", async () => {
+    const token = await createAdminSession(db, "admin");
+    db.scoringConfigs.push({
+      id: "sco_1",
+      configKey: "default",
+      displayName: "Default",
+      category: "default",
+      weightsJson: "{}",
+      isDefault: 1,
+      isEnabled: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await configRouter.request(
+      "/scoring-configs",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { configs: Array<{ configKey: string }> };
+    expect(body.configs).toHaveLength(1);
+  });
+});
+
+describe("POST /api/config/scoring-configs", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("creates config as admin", async () => {
+    const token = await createAdminSession(db, "admin");
+    const res = await configRouter.request(
+      "/scoring-configs",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({
+          configKey: "default",
+          displayName: "Default Scoring",
+          weightsJson: '{"rating":0.3}',
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(201);
+    expect(db.scoringConfigs).toHaveLength(1);
+  });
+
+  it("returns 400 for invalid weightsJson", async () => {
+    const token = await createAdminSession(db, "admin");
+    const res = await configRouter.request(
+      "/scoring-configs",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({
+          configKey: "default",
+          displayName: "Default",
+          weightsJson: "not json",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 409 for duplicate key", async () => {
+    const token = await createAdminSession(db, "admin");
+    db.scoringConfigs.push({
+      id: "sco_1",
+      configKey: "existing",
+      displayName: "E",
+      category: "default",
+      weightsJson: "{}",
+      isDefault: 0,
+      isEnabled: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await configRouter.request(
+      "/scoring-configs",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({
+          configKey: "existing",
+          displayName: "E",
+          weightsJson: "{}",
+        }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(409);
+  });
+});
+
+describe("PUT /api/config/scoring-configs/:id", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("updates config as admin", async () => {
+    const token = await createAdminSession(db, "admin");
+    db.scoringConfigs.push({
+      id: "sco_1",
+      configKey: "default",
+      displayName: "Old",
+      category: "default",
+      weightsJson: "{}",
+      isDefault: 0,
+      isEnabled: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await configRouter.request(
+      "/scoring-configs/sco_1",
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({ displayName: "Updated", isDefault: 1 }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { config: { displayName: string; isDefault: number } };
+    expect(body.config.displayName).toBe("Updated");
+    expect(body.config.isDefault).toBe(1);
+  });
+
+  it("returns 404 for missing config", async () => {
+    const token = await createAdminSession(db, "admin");
+    const res = await configRouter.request(
+      "/scoring-configs/missing",
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          cookie: `session_token=${token}`,
+        },
+        body: JSON.stringify({ displayName: "X" }),
+      },
+      createEnv(db)
+    );
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("DELETE /api/config/scoring-configs/:id", () => {
+  let db: MockD1Database;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+  });
+
+  it("deletes config as admin", async () => {
+    const token = await createAdminSession(db, "admin");
+    db.scoringConfigs.push({
+      id: "sco_1",
+      configKey: "default",
+      displayName: "Default",
+      category: "default",
+      weightsJson: "{}",
+      isDefault: 1,
+      isEnabled: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    const res = await configRouter.request(
+      "/scoring-configs/sco_1",
+      { method: "DELETE", headers: { cookie: `session_token=${token}` } },
+      createEnv(db)
+    );
+    expect(res.status).toBe(200);
+    expect(db.scoringConfigs).toHaveLength(0);
   });
 });

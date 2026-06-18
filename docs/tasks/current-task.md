@@ -1,4 +1,4 @@
-# TASK-044: Build search provider config CRUD API
+# TASK-045: Build scoring config CRUD API
 
 ## Status
 
@@ -6,29 +6,26 @@ DONE
 
 ## Goal
 
-Implement REST API endpoints for CRUD operations on sh_searchProviderConfigs table.
+Implement REST API endpoints for CRUD operations on sh_scoringConfigs table.
 
 ## Required Reading
 
 - `docs/api/api-contract.md`
-- `docs/database/schema.md` (sh_searchProviderConfigs)
+- `docs/database/schema.md` (sh_scoringConfigs)
 - `docs/configuration/runtime-configuration.md`
-- `docs/shared/enums.md` (searchProviderType)
+- `docs/shared/enums.md`
 - `docs/tasks/autopilot-task-contract.md`
-- `.ai/agent-rules.md`
-- `.ai/autopilot-policy.md`
 
 ## Scope
 
-- Add search provider Zod schemas.
-- Add search provider endpoints to config router.
-- GET/POST/PUT/DELETE /api/config/search-providers.
+- Add scoring Zod schemas.
+- Add scoring endpoints to config router.
+- GET/POST/PUT/DELETE /api/config/scoring-configs.
 - Admin only for write ops.
 - Add unit tests.
 
 ## Out of Scope
 
-- Do not create scoring CRUD (TASK-045).
 - Do not create frontend (TASK-046).
 
 ## Allowed Files
@@ -40,15 +37,15 @@ Implement REST API endpoints for CRUD operations on sh_searchProviderConfigs tab
 
 ## Input Contract
 
-Admin HTTP requests to /api/config/search-providers endpoints.
+Admin HTTP requests to /api/config/scoring-configs.
 
 ## Output Contract
 
-Standard JSON responses with search provider data.
+Standard JSON responses with scoring config data.
 
 ## Acceptance Criteria
 
-- [ ] Search provider schemas exist
+- [ ] Scoring schemas exist
 - [ ] GET/POST/PUT/DELETE endpoints implemented
 - [ ] All inputs validated
 - [ ] Admin only for write ops

@@ -640,3 +640,30 @@ Quality Gate:
 - test: pass (269 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 81 auth/api, 14 component, 29 config repos, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-045: Build scoring config CRUD API
+
+Status: DONE
+CompletedAt: 2026-06-17 23:35
+Branch: feature/TASK-045-scoring-api
+Commit: pending
+
+Summary:
+- Added scoring config Zod schemas to shared/schemas/config.ts.
+- createScoringConfigRequestSchema, updateScoringConfigRequestSchema, scoringConfigSchema, response schemas.
+- Added scoring CRUD endpoints to workers/api/src/routes/config.ts.
+- GET /api/config/scoring-configs (admin only).
+- POST /api/config/scoring-configs (admin only, validates weightsJson is valid JSON, 409 on duplicate key).
+- PUT /api/config/scoring-configs/:id (admin only).
+- DELETE /api/config/scoring-configs/:id (admin only).
+- Added toScoringConfigResponse() helper.
+- Added 9 unit tests for scoring config endpoints.
+- All 278 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (278 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 90 auth/api, 14 component, 29 config repos, 2 home)
+- build: pass
+- validation scripts: pass

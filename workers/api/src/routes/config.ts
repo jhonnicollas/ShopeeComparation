@@ -24,10 +24,17 @@ import {
   createSearchProviderResponseSchema,
   updateSearchProviderResponseSchema,
   deleteSearchProviderResponseSchema,
+  createScoringConfigRequestSchema,
+  updateScoringConfigRequestSchema,
+  listScoringConfigsResponseSchema,
+  createScoringConfigResponseSchema,
+  updateScoringConfigResponseSchema,
+  deleteScoringConfigResponseSchema,
   type AppConfigResponse,
   type AiProviderResponse,
   type AiModelResponse,
   type SearchProviderResponse,
+  type ScoringConfigResponse,
 } from "@shopee-research/shared";
 import {
   createAppConfig,
@@ -56,6 +63,12 @@ import {
   findSearchProviderByKey,
   listSearchProviders,
   updateSearchProvider,
+  createScoringConfig,
+  deleteScoringConfig,
+  findScoringConfigById,
+  findScoringConfigByKey,
+  listScoringConfigs,
+  updateScoringConfig,
 } from "@shopee-research/db";
 import { authenticate, authErrorResponse, requireAdmin } from "../lib/auth.js";
 
@@ -205,6 +218,30 @@ function toSearchProviderResponse(row: {
     lastTestStatus: row.lastTestStatus,
     lastTestAt: row.lastTestAt,
     lastTestMessage: row.lastTestMessage,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function toScoringConfigResponse(row: {
+  id: string;
+  configKey: string;
+  displayName: string;
+  category: string;
+  weightsJson: string;
+  isDefault: number;
+  isEnabled: number;
+  createdAt: string;
+  updatedAt: string;
+}): ScoringConfigResponse {
+  return {
+    id: row.id,
+    configKey: row.configKey,
+    displayName: row.displayName,
+    category: row.category,
+    weightsJson: row.weightsJson,
+    isDefault: row.isDefault,
+    isEnabled: row.isEnabled,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -920,4 +957,185 @@ configRouter.delete("/search-providers/:id", async (c) => {
 
   await deleteSearchProvider(c.env.DB, id);
   return c.json(deleteSearchProviderResponseSchema.parse({ success: true }), 200);
+});
+
+configRouter.get("/scoring-configs", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  if (auth.user.role !== "admin") {
+    return c.json(
+      { error: { code: "FORBIDDEN", message: "Admin role required", details: null } },
+      403
+    );
+  }
+  const rows = await listScoringConfigs(c.env.DB);
+  return c.json(listScoringConfigsResponseSchema.parse({ configs: rows.map(toScoringConfigResponse) }), 200);
+});
+
+configRouter.post("/scoring-configs", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
+      400
+    );
+  }
+
+  const parsed = createScoringConfigRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Invalid scoring config input",
+          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+        },
+      },
+      400
+    );
+  }
+
+  try {
+    JSON.parse(parsed.data.weightsJson);
+  } catch {
+    return c.json(
+      { error: { code: "INVALID_WEIGHTS_JSON", message: "weightsJson must be valid JSON", details: null } },
+      400
+    );
+  }
+
+  const existing = await findScoringConfigByKey(c.env.DB, parsed.data.configKey);
+  if (existing) {
+    return c.json(
+      { error: { code: "SCORING_KEY_EXISTS", message: "A scoring config with this key already exists", details: null } },
+      409
+    );
+  }
+
+  const created = await createScoringConfig(c.env.DB, {
+    id: generateId("sco"),
+    configKey: parsed.data.configKey,
+    displayName: parsed.data.displayName,
+    category: parsed.data.category ?? "default",
+    weightsJson: parsed.data.weightsJson,
+    isDefault: parsed.data.isDefault ?? 0,
+    isEnabled: parsed.data.isEnabled ?? 1,
+  });
+
+  return c.json(createScoringConfigResponseSchema.parse({ config: toScoringConfigResponse(created) }), 201);
+});
+
+configRouter.put("/scoring-configs/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const existing = await findScoringConfigById(c.env.DB, id);
+  if (!existing) {
+    return c.json(
+      { error: { code: "SCORING_NOT_FOUND", message: "Scoring config not found", details: null } },
+      404
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
+      400
+    );
+  }
+
+  const parsed = updateScoringConfigRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Invalid scoring config input",
+          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+        },
+      },
+      400
+    );
+  }
+
+  if (parsed.data.weightsJson) {
+    try {
+      JSON.parse(parsed.data.weightsJson);
+    } catch {
+      return c.json(
+        { error: { code: "INVALID_WEIGHTS_JSON", message: "weightsJson must be valid JSON", details: null } },
+        400
+      );
+    }
+  }
+
+  const updated = await updateScoringConfig(c.env.DB, id, {
+    displayName: parsed.data.displayName,
+    category: parsed.data.category,
+    weightsJson: parsed.data.weightsJson,
+    isDefault: parsed.data.isDefault,
+    isEnabled: parsed.data.isEnabled,
+  });
+
+  if (!updated) {
+    return c.json(
+      { error: { code: "SCORING_NOT_FOUND", message: "Scoring config not found", details: null } },
+      404
+    );
+  }
+
+  return c.json(updateScoringConfigResponseSchema.parse({ config: toScoringConfigResponse(updated) }), 200);
+});
+
+configRouter.delete("/scoring-configs/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const existing = await findScoringConfigById(c.env.DB, id);
+  if (!existing) {
+    return c.json(
+      { error: { code: "SCORING_NOT_FOUND", message: "Scoring config not found", details: null } },
+      404
+    );
+  }
+
+  await deleteScoringConfig(c.env.DB, id);
+  return c.json(deleteScoringConfigResponseSchema.parse({ success: true }), 200);
 });

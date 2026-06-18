@@ -246,3 +246,52 @@ export const deleteSearchProviderResponseSchema = z.object({
 export type CreateSearchProviderRequest = z.infer<typeof createSearchProviderRequestSchema>;
 export type UpdateSearchProviderRequest = z.infer<typeof updateSearchProviderRequestSchema>;
 export type SearchProviderResponse = z.infer<typeof searchProviderSchema>;
+
+export const createScoringConfigRequestSchema = z.object({
+  configKey: z.string().min(1).max(100),
+  displayName: z.string().min(1).max(200),
+  category: z.string().min(1).max(50).optional().default("default"),
+  weightsJson: z.string().min(2),
+  isDefault: z.number().int().min(0).max(1).optional().default(0),
+  isEnabled: z.number().int().min(0).max(1).optional().default(1),
+});
+
+export const updateScoringConfigRequestSchema = z.object({
+  displayName: z.string().min(1).max(200).optional(),
+  category: z.string().min(1).max(50).optional(),
+  weightsJson: z.string().min(2).optional(),
+  isDefault: z.number().int().min(0).max(1).optional(),
+  isEnabled: z.number().int().min(0).max(1).optional(),
+});
+
+export const scoringConfigSchema = z.object({
+  id: z.string(),
+  configKey: z.string(),
+  displayName: z.string(),
+  category: z.string(),
+  weightsJson: z.string(),
+  isDefault: z.number(),
+  isEnabled: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const listScoringConfigsResponseSchema = z.object({
+  configs: z.array(scoringConfigSchema),
+});
+
+export const createScoringConfigResponseSchema = z.object({
+  config: scoringConfigSchema,
+});
+
+export const updateScoringConfigResponseSchema = z.object({
+  config: scoringConfigSchema,
+});
+
+export const deleteScoringConfigResponseSchema = z.object({
+  success: z.boolean(),
+});
+
+export type CreateScoringConfigRequest = z.infer<typeof createScoringConfigRequestSchema>;
+export type UpdateScoringConfigRequest = z.infer<typeof updateScoringConfigRequestSchema>;
+export type ScoringConfigResponse = z.infer<typeof scoringConfigSchema>;

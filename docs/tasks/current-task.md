@@ -1,56 +1,49 @@
-# TASK-065: Build result page
+# TASK-066: Build red flag UI
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Create the frontend result page that displays comparison results with scores, pros, cons, and rankings.
+Add red flag UI component that displays risks from RiskItem[] in a visually distinct manner.
 
 ## Required Reading
 
-- `docs/api/api-contract.md`
+- `docs/shared/enums.md` (riskSeverity)
 - `docs/tasks/autopilot-task-contract.md`
 
 ## Scope
 
-- Create ResultPage component.
-- Fetch session and comparison data.
-- Display ranked products with scores.
-- Show pros/cons for each item.
-- Add /results/$researchSessionId route.
-- Add component tests.
+- Create RedFlagList component.
+- Display severity badges (HIGH/MEDIUM/LOW) with colors.
+- Show risk messages grouped by severity.
+- Add component test.
 
 ## Out of Scope
 
-- Do not implement red flag UI (TASK-066).
+- Do not change risk detection logic.
 
 ## Allowed Files
 
-- `apps/web/src/pages/ResultPage.tsx`
-- `apps/web/src/pages/ResultPage.test.tsx`
-- `apps/web/src/app/router.tsx`
-- `apps/web/src/styles/global.css`
-- `packages/db/src/repositories/comparisons.ts`
-- `workers/api/src/routes/research.ts`
+- `apps/web/src/components/RedFlagList.tsx`
+- `apps/web/src/components/RedFlagList.test.tsx`
 - `docs/tasks/**`
 
 ## Input Contract
 
-Research session ID from URL params.
+RiskItem[].
 
 ## Output Contract
 
-Page shows ranked comparison items with scores.
+Visual list of risks with severity indicators.
 
 ## Acceptance Criteria
 
-- [ ] ResultPage created
-- [ ] Route added
-- [ ] Comparison endpoint created
-- [ ] Comparison repository created
-- [ ] Unit tests pass
+- [ ] RedFlagList exists
+- [ ] Severity color coding
+- [ ] Grouped by severity
+- [ ] Component tests pass
 - [ ] Quality gate passes
 
 ## Completion Rule

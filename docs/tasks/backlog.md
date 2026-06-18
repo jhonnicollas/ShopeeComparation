@@ -70,7 +70,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-063 Build data quality checker
 - [x] TASK-064 Build comparison ranking
 - [x] TASK-065 Build result page
-- [ ] TASK-066 Build red flag UI
+- [x] TASK-066 Build red flag UI
 - [ ] TASK-067 Build score breakdown UI
 
 ## Phase 7 — Mastra and 9router

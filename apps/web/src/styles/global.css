@@ -474,3 +474,77 @@ h2 {
   font-size: 13px;
   color: #52606d;
 }
+
+.redFlagList {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.redFlagEmpty {
+  background: #f6f8fb;
+  border-radius: 8px;
+  padding: 12px;
+  color: #52606d;
+  font-size: 14px;
+  text-align: center;
+}
+
+.redFlagList h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.redFlagGroup {
+  margin-bottom: 12px;
+}
+
+.redFlagGroup h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.redFlagSeverityHigh {
+  color: #b91c1c;
+}
+
+.redFlagSeverityMedium {
+  color: #b45309;
+}
+
+.redFlagSeverityLow {
+  color: #4b5563;
+}
+
+.redFlagItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.redFlagItemHigh {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.redFlagItemMedium {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.redFlagItemLow {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.redFlagType {
+  text-transform: capitalize;
+  font-weight: 600;
+}

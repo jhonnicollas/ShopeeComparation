@@ -1135,3 +1135,29 @@ Quality Gate:
 - test: pass (414 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 25 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-066: Build red flag UI
+
+Status: DONE
+CompletedAt: 2026-06-18 01:18
+Branch: feature/TASK-066-red-flag-ui
+Commit: pending
+
+Summary:
+- Created apps/web/src/components/RedFlagList.tsx.
+- Displays RiskItem[] grouped by severity (HIGH/MEDIUM/LOW).
+- Sorted with HIGH first.
+- Empty state when no risks.
+- Human-readable type names (low_rating → low rating).
+- Added CSS for red flag items with color coding.
+- Created RedFlagList.test.tsx with 4 component tests.
+- Added @shopee-research/shared as web dependency.
+- All 418 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (418 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 29 component, 29 config repos, 27 shopee, 42 core, 10 save extracted, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

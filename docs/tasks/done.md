@@ -1450,3 +1450,30 @@ Quality Gate:
 - test: pass (468 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-085: Add resolver diagnostics UI
+
+Status: DONE
+CompletedAt: 2026-06-18 23:18
+Branch: main
+Commit: 475b58d
+
+Summary:
+- Added ResolveUrlAttempt and ResolveUrlDiagnostics types to packages/shared/src/types/shopee.ts.
+- Added resolveUrlAttemptSchema and resolveUrlDiagnosticsSchema Zod schemas.
+- Added resolveUrlWithDiagnostics() function to packages/shopee/src/resolver/resolveUrl.ts.
+- Added POST /api/shopee/resolve-url endpoint in workers/api/src/routes/shopee.ts with auth and secret sanitization.
+- Added ResolverDiagnostics React component in apps/web/src/components/ResolverDiagnostics.tsx.
+- Added resolveShopeeUrl() API client in apps/web/src/lib/shopee.ts.
+- Wired into ComparePage with URL resolver diagnostics section.
+- Added CSS for diagnostics display.
+- Added 6 endpoint tests and 6 component tests (12 new tests, 485 total).
+- All 485 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (485 tests)
+- build: pass
+- validation scripts: pass

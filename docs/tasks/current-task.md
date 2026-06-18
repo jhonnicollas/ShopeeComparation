@@ -1,12 +1,12 @@
-# TASK-085: Add resolver diagnostics UI
+# TASK-090: Build 9router web fetch adapter
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a resolver diagnostics UI that shows per-URL adapter attempt history from the resolveUrlWithFallback chain. The UI must not expose secrets, must show which adapter was used, and must be integrated into the compare links flow.
+Build a 9router web fetch adapter for Shopee URL resolution that implements the `ShopeeExtractor` interface. The adapter should use 9router's web fetch capability to resolve short Shopee URLs and extract basic product/shop data, falling back gracefully when the fetch fails.
 
 ## Required Reading
 
@@ -18,104 +18,89 @@ Build a resolver diagnostics UI that shows per-URL adapter attempt history from 
 - `docs/database/naming-rules.md`
 - `docs/api/api-contract.md`
 - `docs/configuration/runtime-configuration.md`
+- `docs/ai/9router-configuration.md`
+- `docs/shopee/search-api-strategy.md`
+- `docs/shopee/extraction-strategy.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
 - `.ai/stop-conditions.md`
-- `docs/shopee/search-api-strategy.md`
-- `docs/shopee/extraction-strategy.md`
 
 ## Scope
 
-- Add `POST /api/shopee/resolve-url` endpoint in `workers/api/src/routes/shopee.ts` that calls `resolveUrlWithFallback` and returns the result with adapter attempts.
-- Add `ResolveUrlDiagnostics` type in `packages/shared/src/types/shopee.ts` to capture adapter attempt history.
-- Create `apps/web/src/components/ResolverDiagnostics.tsx` — React component that displays per-URL resolve status, adapter used, errors.
-- Add `resolveUrlByApi()` function to `apps/web/src/lib/api.ts` (or a new shopee.ts lib) for calling the new endpoint.
-- Wire ResolverDiagnostics into ComparePage or create a standalone panel accessible from compare flow.
-- Add CSS for diagnostics display.
-- Add unit tests for the new API endpoint and React component.
+- Create `packages/shopee/src/adapters/nineRouterFetchAdapter.ts` — implements `ShopeeExtractor` interface
+- The adapter uses 9router web fetch (via chat/completions with web fetch tools) to resolve short URLs and fetch product/shop data
+- Configuration loaded from `sh_searchProviderConfigs` table via D1 (not hardcoded)
+- Add `extractProduct()` and `extractShop()` methods that return ProductSnapshot/ShopSnapshot with confidence scores
+- Add proper source attribution and confidence for each extracted field
+- Add comprehensive error handling and timeout
+- Add unit tests with mocked fetch
+- Add integration with the existing `webFetchAdapter.ts` resolver adapter
 
 ## Out of Scope
 
-- Do not create new D1 tables (no DB changes needed; diagnostics are per-request)
-- Do not implement actual 9router or Browser Run calls (TASK-090, TASK-091)
-- Do not change auth flow (use existing `authenticate` helper)
+- Do not implement actual HTML/JSON parsing logic (that's TASK-093/094)
+- Do not create API endpoints (resolver is already done)
+- Do not create frontend UI (already done in TASK-085)
+- Do not create D1 schema changes
 
 ## Allowed Files
 
-- `workers/api/src/routes/shopee.ts` (new)
-- `workers/api/src/routes/shopee.test.ts` (new)
-- `workers/api/src/index.ts` (mount shopee router)
-- `packages/shared/src/types/shopee.ts`
-- `packages/shared/src/schemas/shopee.ts`
-- `apps/web/src/components/ResolverDiagnostics.tsx` (new)
-- `apps/web/src/components/ResolverDiagnostics.test.tsx` (new)
-- `apps/web/src/lib/shopee.ts` (new) or `apps/web/src/lib/api.ts` (add)
-- `apps/web/src/pages/ComparePage.tsx`
-- `apps/web/src/styles/global.css`
+- `packages/shopee/src/adapters/**` (new directory)
+- `packages/shopee/src/adapters/nineRouterFetchAdapter.ts` (new)
+- `packages/shopee/src/adapters/nineRouterFetchAdapter.test.ts` (new)
+- `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `packages/db/**` (no DB changes needed)
+- `apps/**`
+- `workers/**`
+- `packages/db/**` (no DB changes)
 - `packages/core/**`
-- `packages/ai/**`
-- `workers/queueConsumer/**` (no queue changes needed)
+- `packages/ai/**` (separate AI package)
 
 ## Input Contract
 
-ResolveUrlRequest from API contract:
-```ts
-{ url: string }
-```
+Implements ShopeeExtractor interface with:
+- `resolveUrl(input: ResolveUrlInput): Promise<ResolveUrlResult>`
+- `searchProducts(input: SearchInput): Promise<SearchResultCandidate[]>`
+- `extractProduct(input: ExtractProductInput): Promise<ProductSnapshot>`
+- `extractShop(input: ExtractShopInput): Promise<ShopSnapshot>`
+
+Configuration loaded from D1 search provider config.
 
 ## Output Contract
 
-ResolveUrlResponse with diagnostics:
-```ts
-{
-  originalUrl: string;
-  finalUrl: string | null;
-  canonicalUrl: string | null;
-  shopId: string | null;
-  itemId: string | null;
-  resolveMethod: ResolveMethod | null;
-  status: ResolveStatus;
-  diagnostics: {
-    adapterUsed: string;
-    attempts: Array<{
-      adapter: string;
-      method: ResolveMethod;
-      status: ResolveStatus;
-      errorMessage?: string;
-    }>;
-  };
-}
-```
+All methods return appropriate typed results. Missing data returns `null` with `confidence: 0` per source-of-truth rules.
 
 ## Acceptance Criteria
 
-- [ ] POST /api/shopee/resolve-url endpoint exists
-- [ ] ResolverDiagnostics type added to shared
-- [ ] ResolverDiagnostics component created
-- [ ] Component shows adapter attempts, status, errors per URL
-- [ ] Component does not expose secrets
-- [ ] Wired into ComparePage or accessible from compare flow
-- [ ] Unit tests pass for new endpoint
-- [ ] Unit tests pass for new component
+- [ ] NineRouterFetchAdapter class implements ShopeeExtractor interface
+- [ ] resolveUrl() uses 9router to fetch and parse Shopee short URLs
+- [ ] extractProduct() returns ProductSnapshot with all required fields
+- [ ] extractShop() returns ShopSnapshot with all required fields
+- [ ] searchProducts() returns SearchResultCandidate[] (basic stub OK)
+- [ ] All extracted fields include source and confidence
+- [ ] Missing data returns null with confidence 0 (no fabrication)
+- [ ] Configuration loaded from D1 (not hardcoded)
+- [ ] Timeout handling implemented
+- [ ] Error handling safe (no secrets in errors)
+- [ ] Unit tests pass with mocked fetch
 - [ ] All existing tests still pass
 - [ ] Quality gate passes (lint, typecheck, test, build, quality-gate.js)
 
 ## Test Requirements
 
-- [ ] Unit test for POST /api/shopee/resolve-url endpoint
-- [ ] Unit test for ResolverDiagnostics component
-- [ ] Unit test that diagnostics do not expose secrets
+- [ ] Unit test for resolveUrl() with mocked 9router response
+- [ ] Unit test for extractProduct() with mocked response
+- [ ] Unit test for extractShop() with mocked response
+- [ ] Unit test for timeout handling
+- [ ] Unit test for error handling (no secret leakage)
 
 ## Documentation Update
 
-- [ ] Update `packages/shared/src/index.ts` to export new types
-- [ ] No public docs changes needed (internal API)
+- [ ] Update `packages/shopee/src/index.ts` to export new adapter
 
 ## Stop Conditions Check
 

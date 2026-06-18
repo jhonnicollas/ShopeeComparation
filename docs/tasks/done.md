@@ -1503,3 +1503,29 @@ Quality Gate:
 - test: pass (499 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-091: Build Browser Run adapter interface
+
+Status: DONE
+CompletedAt: 2026-06-18 23:40
+Branch: main
+Commit: 93edf28
+
+Summary:
+- Created BrowserRunAdapter in packages/shopee/src/adapters/browserRunAdapter.ts.
+- Implements ShopeeExtractor interface (resolveUrl, searchProducts, extractProduct, extractShop).
+- Uses Cloudflare Browser Run REST API (POST /content with renderJs=true).
+- Configuration loaded from D1 sh_searchProviderConfigs where providerType='browserRun'.
+- Extracts canonical URL from link rel="canonical" and meta property="og:url".
+- Detects MALL, STAR, STARPLUS, UNKNOWN shop statuses.
+- All error messages sanitized with sanitizeForLog() to prevent secret leakage.
+- Added 16 unit tests (resolveUrl, extractProduct, extractShop, searchProducts, error safety, config loading).
+- All 515 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (515 tests)
+- build: pass
+- validation scripts: pass

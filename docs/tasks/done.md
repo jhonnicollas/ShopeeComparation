@@ -817,3 +817,26 @@ Quality Gate:
 - test: pass (314 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 20 shopee fixtures, 7 shopee contracts, 2 home)
 - build: pass
 - validation scripts: pass
+
+## TASK-053: Create ShopSnapshot contract
+
+Status: DONE
+CompletedAt: 2026-06-18 00:15
+Branch: feature/TASK-053-shop-contract
+Commit: pending
+
+Summary:
+- Verified ShopSnapshot type exists in shared package.
+- Created packages/shopee/src/contracts/shops.ts with re-exports.
+- Added isValidShopSnapshot() type guard.
+- Added getShopTrustLevel() helper (high/medium/low based on status/rating/response rate).
+- Created shops.test.ts with 10 unit tests.
+- All 324 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (324 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 96 auth/api, 17 component, 29 config repos, 20 shopee fixtures, 17 shopee contracts, 2 home)
+- build: pass
+- validation scripts: pass

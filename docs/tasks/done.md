@@ -1062,3 +1062,27 @@ Quality Gate:
 - test: pass (395 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 27 core, 10 save extracted, 2 home, 5 breakdown)
 - build: pass
 - validation scripts: pass
+
+## TASK-063: Build data quality checker
+
+Status: DONE
+CompletedAt: 2026-06-18 00:55
+Branch: feature/TASK-063-data-quality
+Commit: pending
+
+Summary:
+- Created packages/core/src/quality/checker.ts.
+- Implemented checkDataQuality() returning DataQualityResult[].
+- 18 fields checked: product fields + shop fields.
+- Status: available/unavailable based on value presence.
+- Returns fieldName, value, source, confidence, status.
+- Added 8 unit tests.
+- All 403 tests pass.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (403 tests: 22 enum, 36 schema, 11 R2, 9 queue, 8 consumer, 12 env, 8 password, 19 session, 20 validation, 108 auth/api, 21 component, 29 config repos, 27 shopee, 35 core, 10 save extracted, 2 home, 5 breakdown)
+- build: pass
+- validation scripts: pass

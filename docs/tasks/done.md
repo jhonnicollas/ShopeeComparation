@@ -2119,3 +2119,30 @@ Quality Gate:
 - test: pass (724 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-122: Add error handling standardization
+
+Status: DONE
+CompletedAt: 2026-06-20 03:15
+Branch: main
+Commit: 30bc344
+
+Summary:
+- Created workers/api/src/lib/errors.ts with shared error helpers: errorBody, errorResponse,
+  invalidJsonResponse, validationErrorResponse, notFoundResponse, forbiddenResponse,
+  unauthorizedResponse, unauthenticatedResponse, conflictResponse, internalErrorResponse,
+  rateLimitedResponse, sanitizeErrorMessage.
+- Added global app.onError handler in workers/api/src/index.ts for uncaught errors.
+- Refactored auth.ts (8 replacements), config.ts (47 replacements), research.ts (12 replacements),
+  shopee.ts (2 replacements) to use shared helpers.
+- Net -178 lines (368 added, 546 removed) from eliminating duplicate error response objects.
+- Added 14 tests for error helpers covering all helper functions and sanitizeErrorMessage.
+- All 738 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (738 tests)
+- build: pass
+- validation scripts: pass

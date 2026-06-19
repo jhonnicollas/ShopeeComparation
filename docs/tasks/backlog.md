@@ -124,7 +124,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-112 Build research detail page
 - [x] TASK-113 Build job logs page
 - [x] TASK-114 Build product detail page
-- [ ] TASK-115 Build shop detail page
+- [x] TASK-115 Build shop detail page
 
 ## Phase 12 — Hardening
 

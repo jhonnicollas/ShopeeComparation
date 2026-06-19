@@ -2047,3 +2047,28 @@ Quality Gate:
 - test: pass (705 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-115: Build shop detail page
+
+Status: DONE
+CompletedAt: 2026-06-20 02:15
+Branch: main
+Commit: 9ca1d08
+
+Summary:
+- Created apps/web/src/pages/ShopDetailPage.tsx with shop details, stats, and detail table.
+- Fetches from GET /api/research/shops/:shopId using TanStack Query.
+- Shows rating, response rate, followers, products, status labels, location, timestamps.
+- Added /shops/$shopId route to router.tsx (protected by RequireAuth).
+- Updated ProductDetailPage to link to shop detail page via View Shop Link.
+- Created ShopDetailPage.test.tsx with 3 component tests (loading, error, details).
+- Created ProductDetailPage.test.tsx with updated shop link test.
+- All 708 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (708 tests)
+- build: pass
+- validation scripts: pass

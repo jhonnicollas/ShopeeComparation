@@ -2146,3 +2146,32 @@ Quality Gate:
 - test: pass (738 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-123: Add extraction failure logs
+
+Status: DONE
+CompletedAt: 2026-06-20 03:20
+Branch: main
+Commit: 36e0a92
+
+Summary:
+- Created sh_extractionFailures table with migration 0002_extraction_failures.sql.
+- Table columns: id, ownerId, ownerType, adapter, url, errorMessage, metadataJson, createdAt.
+- Added indexes on ownerType, ownerId, createdAt.
+- Created packages/db/src/repositories/extractionFailures.ts with:
+  - createExtractionFailure: insert a failure log row
+  - listExtractionFailures: list with optional ownerType filter and limit
+  - listExtractionFailuresByOwner: list failures for a specific owner
+  - countExtractionFailures: count with optional since-date filter
+- Exported from packages/db/src/index.ts.
+- Added 6 tests covering create, list, filter, count operations.
+- Updated schema.md with table documentation.
+- All 744 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (744 tests)
+- build: pass
+- validation scripts: pass

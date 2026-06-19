@@ -1815,3 +1815,29 @@ Quality Gate:
 - test: pass (648 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-104: Build candidate enrichment job
+
+Status: DONE
+CompletedAt: 2026-06-19 17:55
+Branch: main
+Commit: 6d1c01b
+
+Summary:
+- Created runEnrichment in packages/shopee/src/jobs/candidateEnrichmentJob.ts.
+- Accepts SearchResultCandidate[] and FallbackShopeeExtractor.
+- Calls extractProduct and extractShop per candidate.
+- Saves product and shop to D1 via upsertProduct/upsertShop.
+- Optionally saves raw content to R2 via saveRawProductSnapshot/saveRawShopSnapshot.
+- Bounded concurrency (default 5, configurable).
+- Returns EnrichmentResult with products, shops, errors, enrichedCount, failedCount.
+- Added 7 unit tests covering all scenarios (empty, success, failure, raw content, jobId, concurrency).
+- All 655 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (655 tests)
+- build: pass
+- validation scripts: pass

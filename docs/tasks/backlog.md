@@ -112,7 +112,7 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-101 Build search provider adapter
 - [x] TASK-102 Build candidate collector
 - [x] TASK-103 Build DKI Jakarta shippedFrom filter
-- [ ] TASK-104 Build candidate enrichment job
+- [x] TASK-104 Build candidate enrichment job
 - [ ] TASK-105 Build top 10 ranking
 - [ ] TASK-106 Build keyword search frontend page
 - [ ] TASK-107 Build keyword search result page

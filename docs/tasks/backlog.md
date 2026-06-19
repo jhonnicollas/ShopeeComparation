@@ -135,5 +135,5 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-124 Add config audit logs
 - [x] TASK-125 Add no-hardcode validation
 - [x] TASK-126 Add database naming validation
-- [ ] TASK-127 Add deployment checklist
-- [ ] TASK-128 Add final README runbook
+- [x] TASK-127 Add deployment checklist
+- [x] TASK-128 Add final README runbook

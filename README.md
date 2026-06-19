@@ -118,3 +118,76 @@ Autopilot must obey:
 - Column names must not contain underscores.
 - Job status enum must use `partialSuccess`, not alternate spellings.
 - Shop status enum must use `STARPLUS`, not `STAR_PLUS`.
+
+## Development Runbook
+
+### Prerequisites
+
+- Node.js >= 20
+- pnpm >= 9
+- Cloudflare account (for deployment)
+
+### Setup
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run quality gate (lint, typecheck, test, build, validation scripts)
+node scripts/quality-gate.js
+```
+
+### Commands
+
+| Command | Description |
+|---|---|
+| `pnpm lint` | ESLint all packages |
+| `pnpm typecheck` | TypeScript check all packages |
+| `pnpm test` | Run all tests (Vitest) |
+| `pnpm build` | Build all packages |
+| `node scripts/quality-gate.js` | Full quality gate |
+| `node scripts/validate-db-naming.js` | Validate DB naming rules |
+| `node scripts/validate-no-hardcode.js` | Validate no hardcoded secrets/config |
+| `node scripts/validate-source-of-truth.js` | Validate source of truth docs |
+
+### Project Structure
+
+```
+apps/web/               # React + Vite frontend
+workers/api/            # Cloudflare Workers API (Hono)
+workers/queueConsumer/  # Cloudflare Queue consumer
+packages/ai/            # Mastra + 9router integration
+packages/auth/          # Password hashing, session management
+packages/core/          # Scoring engine, risk detection, quality checker
+packages/db/            # D1 repositories, R2 helpers, migrations
+packages/shared/        # Zod schemas, enums, constants
+packages/shopee/        # Shopee extraction, parsing, search
+```
+
+### Key Technologies
+
+- **Frontend:** React + Vite + TanStack Router + TanStack Query
+- **Backend:** Cloudflare Workers (Hono framework)
+- **Database:** Cloudflare D1 (SQLite)
+- **Storage:** Cloudflare R2
+- **Queue:** Cloudflare Queues
+- **Validation:** Zod
+- **AI:** Mastra orchestrator + 9router gateway
+- **Package Manager:** pnpm
+
+### Database
+
+- Tables use `sh_` prefix
+- Columns use camelCase (no underscores)
+- Migrations in `packages/db/migrations/`
+- Schema docs in `docs/database/schema.md`
+
+### Configuration
+
+All runtime configuration is stored in D1 and editable via the admin UI at `/settings/config`. No provider, model, base URL, scoring, or search strategy is hardcoded.
+
+Secrets are set via Cloudflare secrets (`wrangler secret put`), never in code or D1.
+
+### Deployment
+
+See `docs/deployment/checklist.md` for the full deployment checklist.

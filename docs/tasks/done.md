@@ -2243,3 +2243,37 @@ Summary:
 
 Quality Gate:
 - validation script: pass
+
+## TASK-127: Add deployment checklist
+
+Status: DONE
+CompletedAt: 2026-06-20 03:30
+Branch: main
+Commit: 3398381
+
+Summary:
+- Created docs/deployment/checklist.md with full deployment checklist.
+- Covers prerequisites, database migrations, secrets, build, deploy, verification, and rollback.
+- Documents all environment variables with examples.
+- Includes verification checklist for post-deployment testing.
+
+Quality Gate:
+- n/a (documentation only)
+
+## TASK-128: Add final README runbook
+
+Status: DONE
+CompletedAt: 2026-06-20 03:32
+Branch: main
+Commit: (pending)
+
+Summary:
+- Updated README.md with Development Runbook section.
+- Added prerequisites, setup instructions, command reference.
+- Added project structure overview with all packages and workers.
+- Added key technologies section.
+- Added database conventions and configuration notes.
+- Added deployment reference to docs/deployment/checklist.md.
+
+Quality Gate:
+- n/a (documentation only)

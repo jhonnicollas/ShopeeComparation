@@ -387,3 +387,131 @@ describe("GET /api/research/sessions/:id", () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe("POST /api/research/keyword-search", () => {
+  let db: MockD1Database;
+  let queue: MockQueue;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+    queue = new MockQueue();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await researchRouter.request(
+      "/keyword-search",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ keyword: "tensimeter" }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 400 for empty keyword", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/keyword-search",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: JSON.stringify({ keyword: "" }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for invalid JSON", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/keyword-search",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: "not json",
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for limit out of range", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/keyword-search",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: JSON.stringify({ keyword: "tensimeter", limit: 100 }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("creates session, job, and enqueues message with defaults", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/keyword-search",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: JSON.stringify({ keyword: "tensimeter digital" }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(202);
+    const body = (await res.json()) as { researchSessionId: string; jobId: string; status: string };
+    expect(body.researchSessionId).toMatch(/^rsr_/);
+    expect(body.jobId).toMatch(/^job_/);
+    expect(body.status).toBe("pending");
+    expect(db.researchSessions).toHaveLength(1);
+    expect(db.jobs).toHaveLength(1);
+    expect(queue.sent).toHaveLength(1);
+    const session = db.researchSessions[0];
+    expect(session?.mode).toBe("keywordSearch");
+    expect(session?.keyword).toBe("tensimeter digital");
+    expect(session?.shippedFrom).toBe("DKI Jakarta");
+    const job = db.jobs[0];
+    expect(job?.type).toBe("keywordSearch");
+    const sentMessage = JSON.parse(queue.sent[0]!.body);
+    expect(sentMessage.mode).toBe("keywordSearch");
+    expect(sentMessage.keyword).toBe("tensimeter digital");
+    expect(sentMessage.shippedFrom).toBe("DKI Jakarta");
+    expect(sentMessage.limit).toBe(10);
+  });
+
+  it("respects custom shippedFrom, limit, and filters", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/keyword-search",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `session_token=${token}` },
+        body: JSON.stringify({
+          keyword: "laptop",
+          shippedFrom: "Jawa Barat",
+          limit: 20,
+          priceMin: 1000000,
+          priceMax: 5000000,
+          minimumRating: 4.5,
+          storeStatus: ["MALL", "STAR"],
+        }),
+      },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(202);
+    const session = db.researchSessions[0];
+    expect(session?.shippedFrom).toBe("Jawa Barat");
+    const sentMessage = JSON.parse(queue.sent[0]!.body);
+    expect(sentMessage.shippedFrom).toBe("Jawa Barat");
+    expect(sentMessage.limit).toBe(20);
+    expect(sentMessage.priceMin).toBe(1000000);
+    expect(sentMessage.priceMax).toBe(5000000);
+    expect(sentMessage.minimumRating).toBe(4.5);
+    expect(sentMessage.storeStatus).toEqual(["MALL", "STAR"]);
+  });
+});

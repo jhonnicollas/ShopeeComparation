@@ -3,6 +3,8 @@ import {
   compareLinksRequestSchema,
   compareLinksResponseSchema,
   jobStatus,
+  keywordSearchRequestSchema,
+  keywordSearchResponseSchema,
   researchMode,
 } from "@shopee-research/shared";
 import {
@@ -96,6 +98,97 @@ researchRouter.post("/compare-links", async (c) => {
 
   return c.json(
     compareLinksResponseSchema.parse({
+      researchSessionId: sessionId,
+      jobId,
+      status: jobStatus.pending,
+    }),
+    202
+  );
+});
+
+researchRouter.post("/keyword-search", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
+      400
+    );
+  }
+
+  const parsed = keywordSearchRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Invalid keyword search input",
+          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+        },
+      },
+      400
+    );
+  }
+
+  const sessionId = generateId("rsr");
+  const jobId = generateId("job");
+
+  const shippedFrom = parsed.data.shippedFrom ?? "DKI Jakarta";
+  const limit = parsed.data.limit ?? 10;
+
+  await createResearchSession(c.env.DB, {
+    id: sessionId,
+    userId: auth.user.userId,
+    mode: researchMode.keywordSearch,
+    keyword: parsed.data.keyword,
+    shippedFrom,
+    status: jobStatus.pending,
+  });
+
+  const payload = {
+    keyword: parsed.data.keyword,
+    shippedFrom,
+    limit,
+    ...(parsed.data.priceMin !== undefined && parsed.data.priceMin !== null ? { priceMin: parsed.data.priceMin } : {}),
+    ...(parsed.data.priceMax !== undefined && parsed.data.priceMax !== null ? { priceMax: parsed.data.priceMax } : {}),
+    ...(parsed.data.minimumRating !== undefined && parsed.data.minimumRating !== null ? { minimumRating: parsed.data.minimumRating } : {}),
+    ...(parsed.data.storeStatus && parsed.data.storeStatus.length > 0 ? { storeStatus: parsed.data.storeStatus } : {}),
+  };
+
+  await createJob(c.env.DB, {
+    id: jobId,
+    userId: auth.user.userId,
+    researchSessionId: sessionId,
+    type: researchMode.keywordSearch,
+    status: jobStatus.pending,
+    payloadJson: JSON.stringify(payload),
+  });
+
+  await sendResearchJobMessage({
+    queue: c.env.RESEARCH_QUEUE,
+    message: {
+      userId: auth.user.userId,
+      researchSessionId: sessionId,
+      mode: researchMode.keywordSearch,
+      keyword: parsed.data.keyword,
+      shippedFrom,
+      limit,
+      ...(parsed.data.priceMin !== undefined && parsed.data.priceMin !== null ? { priceMin: parsed.data.priceMin } : {}),
+      ...(parsed.data.priceMax !== undefined && parsed.data.priceMax !== null ? { priceMax: parsed.data.priceMax } : {}),
+      ...(parsed.data.minimumRating !== undefined && parsed.data.minimumRating !== null ? { minimumRating: parsed.data.minimumRating } : {}),
+      ...(parsed.data.storeStatus && parsed.data.storeStatus.length > 0 ? { storeStatus: parsed.data.storeStatus } : {}),
+    },
+  });
+
+  return c.json(
+    keywordSearchResponseSchema.parse({
       researchSessionId: sessionId,
       jobId,
       status: jobStatus.pending,

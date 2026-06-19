@@ -14,6 +14,8 @@ import {
   listResearchSessionsByUser,
   sendResearchJobMessage,
 } from "@shopee-research/db";
+import { findProductById } from "@shopee-research/db";
+import { findShopById } from "@shopee-research/db";
 import { authenticate, authErrorResponse } from "../lib/auth.js";
 
 type Bindings = {
@@ -413,4 +415,42 @@ researchRouter.get("/comparisons/:comparisonId/ai-report", async (c) => {
     },
     200
   );
+});
+
+researchRouter.get("/products/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const product = await findProductById(c.env.DB, id);
+  if (!product) {
+    return c.json(
+      { error: { code: "PRODUCT_NOT_FOUND", message: "Product not found", details: null } },
+      404
+    );
+  }
+
+  return c.json(product, 200);
+});
+
+researchRouter.get("/shops/:id", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const shop = await findShopById(c.env.DB, id);
+  if (!shop) {
+    return c.json(
+      { error: { code: "SHOP_NOT_FOUND", message: "Shop not found", details: null } },
+      404
+    );
+  }
+
+  return c.json(shop, 200);
 });

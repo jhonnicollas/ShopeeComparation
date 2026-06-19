@@ -15,6 +15,7 @@ import { HistoryPage } from "../pages/HistoryPage";
 import { JobLogsPage } from "../pages/JobLogsPage";
 import { KeywordSearchPage } from "../pages/KeywordSearchPage";
 import { LoginPage } from "../pages/LoginPage";
+import { ProductDetailPage } from "../pages/ProductDetailPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ResearchDetailPage } from "../pages/ResearchDetailPage";
 import { ResultPage } from "../pages/ResultPage";
@@ -140,6 +141,19 @@ const jobLogsRoute = createRoute({
   },
 });
 
+const productDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/products/$productId",
+  component: () => {
+    const { productId } = productDetailRoute.useParams();
+    return (
+      <RequireAuth>
+        <ProductDetailPage productId={productId} />
+      </RequireAuth>
+    );
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -153,6 +167,7 @@ const routeTree = rootRoute.addChildren([
   resultRoute,
   researchDetailRoute,
   jobLogsRoute,
+  productDetailRoute,
 ]);
 
 export const router = createRouter({ routeTree });

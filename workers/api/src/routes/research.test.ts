@@ -13,6 +13,8 @@ class MockD1Database {
   public sessions: Array<Record<string, unknown>> = [];
   public researchSessions: Array<Record<string, unknown>> = [];
   public jobs: Array<Record<string, unknown>> = [];
+  public products: Array<Record<string, unknown>> = [];
+  public shops: Array<Record<string, unknown>> = [];
 
   prepare(query: string) {
     const stmt: MockD1PreparedStatement = {
@@ -42,6 +44,16 @@ class MockD1Database {
       stmt.first.mockImplementation(async () => {
         const args = stmt.bind.mock.calls[0] || [];
         return this.jobs.find((j) => j.id === args[0]) ?? null;
+      });
+    } else if (query.includes("SELECT * FROM sh_products WHERE id")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.products.find((p) => p.id === args[0]) ?? null;
+      });
+    } else if (query.includes("SELECT * FROM sh_shops WHERE id")) {
+      stmt.first.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        return this.shops.find((s) => s.id === args[0]) ?? null;
       });
     } else if (query.includes("SELECT * FROM sh_researchSessions WHERE userId")) {
       stmt.all.mockImplementation(async () => {
@@ -594,5 +606,105 @@ describe("POST /api/research/keyword-search", () => {
     expect(sentMessage.priceMax).toBe(5000000);
     expect(sentMessage.minimumRating).toBe(4.5);
     expect(sentMessage.storeStatus).toEqual(["MALL", "STAR"]);
+  });
+});
+
+describe("GET /api/research/products/:id", () => {
+  let db: MockD1Database;
+  let queue: MockQueue;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+    queue = new MockQueue();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await researchRouter.request(
+      "/products/p_1",
+      { method: "GET" },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 404 for missing product", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/products/missing",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns product for authenticated user", async () => {
+    const token = await createUserSession(db);
+    db.products.push({
+      id: "p_1",
+      shopeeItemId: "123",
+      shopeeShopId: "456",
+      title: "Test Product",
+      rating: 4.5,
+      confidenceScore: 0.9,
+    });
+    const res = await researchRouter.request(
+      "/products/p_1",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { id: string; title: string };
+    expect(body.id).toBe("p_1");
+    expect(body.title).toBe("Test Product");
+  });
+});
+
+describe("GET /api/research/shops/:id", () => {
+  let db: MockD1Database;
+  let queue: MockQueue;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+    queue = new MockQueue();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await researchRouter.request(
+      "/shops/s_1",
+      { method: "GET" },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 404 for missing shop", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/shops/missing",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns shop for authenticated user", async () => {
+    const token = await createUserSession(db);
+    db.shops.push({
+      id: "s_1",
+      shopeeShopId: "456",
+      name: "Test Shop",
+      primaryStatus: "MALL",
+      rating: 4.8,
+      confidenceScore: 0.9,
+    });
+    const res = await researchRouter.request(
+      "/shops/s_1",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { id: string; name: string };
+    expect(body.id).toBe("s_1");
+    expect(body.name).toBe("Test Shop");
   });
 });

@@ -276,6 +276,20 @@ Rules:
 | createdAt | TEXT NOT NULL | Created timestamp |
 
 
+### sh_extractionFailures
+
+| Column | Type | Notes |
+|---|---|---|
+| id | TEXT PRIMARY KEY | Example `efl_xxx` |
+| ownerId | TEXT NOT NULL | Related entity ID (session, product, etc.) |
+| ownerType | TEXT NOT NULL | `product`, `shop`, `session` |
+| adapter | TEXT NOT NULL | Adapter name that failed |
+| url | TEXT | URL that was being extracted |
+| errorMessage | TEXT NOT NULL | Sanitized error message |
+| metadataJson | TEXT | Optional structured metadata |
+| createdAt | TEXT NOT NULL | Created timestamp |
+
+
 ### sh_appConfigs
 
 | Column | Type | Notes |
@@ -592,6 +606,17 @@ CREATE TABLE IF NOT EXISTS sh_fieldEvidence (
   "confidence" REAL NOT NULL DEFAULT 0,
   "status" TEXT NOT NULL,
   "rawSnapshotR2Key" TEXT,
+  "createdAt" TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sh_extractionFailures (
+  "id" TEXT PRIMARY KEY,
+  "ownerId" TEXT NOT NULL,
+  "ownerType" TEXT NOT NULL,
+  "adapter" TEXT NOT NULL,
+  "url" TEXT,
+  "errorMessage" TEXT NOT NULL,
+  "metadataJson" TEXT,
   "createdAt" TEXT NOT NULL
 );
 

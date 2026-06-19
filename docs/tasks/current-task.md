@@ -1,12 +1,12 @@
-# TASK-122: Add error handling standardization
+# TASK-123: Add extraction failure logs
 
 ## Status
 
-DONE
+IN_PROGRESS
 
 ## Goal
 
-Standardize error response construction across all API routes using shared helpers.
+Log extraction failures (when Shopee product/shop extraction fails) to D1 for debugging and monitoring. Include error details, adapter used, URL attempted, and timestamps.
 
 ## Required Reading
 
@@ -16,40 +16,38 @@ Standardize error response construction across all API routes using shared helpe
 
 ## Scope
 
-- Create `workers/api/src/lib/errors.ts` with shared error helpers
-- Add global `app.onError` handler in `workers/api/src/index.ts`
-- Refactor `auth.ts`, `config.ts`, `research.ts`, `shopee.ts` to use shared helpers
-- Add tests for error helpers
+- Create extraction failure log table in D1 (sh_extractionFailures)
+- Create repository function to insert/query failure logs
+- Hook into existing extractor error paths to log failures
+- Add API endpoint to query failure logs (for admin/debugging)
+- Add tests
 
 ## Out of Scope
 
 - Do not change frontend
-- Do not change non-error logic
-- Do not add new error codes
+- Do not change extraction logic
+- Do not block on failures (fire-and-forget logging)
 
 ## Allowed Files
 
-- `workers/api/src/lib/errors.ts` (new)
-- `workers/api/src/lib/errors.test.ts` (new)
-- `workers/api/src/index.ts`
-- `workers/api/src/routes/auth.ts`
-- `workers/api/src/routes/config.ts`
-- `workers/api/src/routes/research.ts`
-- `workers/api/src/routes/shopee.ts`
+- `packages/db/src/schema.ts` (add table)
+- `packages/db/src/repositories/extractionFailures.ts` (new)
+- `packages/db/src/repositories/extractionFailures.test.ts` (new)
+- `packages/shopee/src/extractors/fallbackExtractor.ts` (hook logging)
+- `workers/api/src/routes/research.ts` (add endpoint)
 - `docs/tasks/**`
 
 ## Forbidden Files
 
 - `apps/web/**`
-- `packages/db/**`
-- `packages/shopee/**`
 - `packages/core/**`
 
 ## Acceptance Criteria
 
-- [x] Shared error helper created
-- [x] Global error handler added
-- [x] All routes use shared helpers
+- [x] Extraction failure log table created
+- [x] Repository functions to insert/query
+- [x] Failures logged on extraction errors
+- [x] API endpoint to query failures
 - [x] Tests pass
 - [x] Quality gate passes
 

@@ -17,3 +17,4 @@ export * from "./repositories/comparisonItems.js";
 export * from "./repositories/comparisons.js";
 export * from "./repositories/aiReports.js";
 export * from "./repositories/rawSnapshots.js";
+export * from "./repositories/extractionFailures.js";

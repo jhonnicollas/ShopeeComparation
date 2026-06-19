@@ -1920,7 +1920,30 @@ Quality Gate:
 - build: pass
 - validation scripts: pass
 
-## TASK-110: Build dashboard page
+## TASK-111: Build research history page
+
+Status: DONE
+CompletedAt: 2026-06-20 01:30
+Branch: main
+Commit: 0fce2d2
+
+Summary:
+- Created apps/web/src/pages/HistoryPage.tsx with full session list.
+- Fetches from GET /api/research using TanStack Query.
+- Shows table of all sessions with mode, keyword, status, createdAt, and View link.
+- Shows empty state when no sessions.
+- Added /history route to apps/web/src/app/router.tsx (protected by RequireAuth).
+- Added "History" link to AppShell navigation.
+- Created HistoryPage.test.tsx with 4 component tests (loading, error, empty, sessions list).
+- All 687 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (687 tests)
+- build: pass
+- validation scripts: pass
 
 Status: DONE
 CompletedAt: 2026-06-20 01:15

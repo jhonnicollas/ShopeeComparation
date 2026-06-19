@@ -1709,3 +1709,56 @@ Quality Gate:
 - test: pass (613 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-100: Build keyword search API
+
+Status: DONE
+CompletedAt: 2026-06-19 15:23
+Branch: main
+Commit: 4cefe87
+
+Summary:
+- Added POST /api/research/keyword-search endpoint in workers/api/src/routes/research.ts.
+- Validates input with existing keywordSearchRequestSchema (Zod).
+- Defaults shippedFrom to "DKI Jakarta" and limit to 10 when not provided.
+- Creates research session, job, and enqueues message via sendResearchJobMessage.
+- Respects priceMin, priceMax, minimumRating, and storeStatus filters.
+- Returns 202 with researchSessionId, jobId, status=pending.
+- Added 6 unit tests covering all scenarios (auth, validation, success).
+- All 619 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (619 tests)
+- build: pass
+- validation scripts: pass
+
+## TASK-101: Build search provider adapter
+
+Status: DONE
+CompletedAt: 2026-06-19 15:30
+Branch: main
+Commit: cdbfc00
+
+Summary:
+- Created SearchProviderAdapter in packages/shopee/src/adapters/searchProviderAdapter.ts implementing SearchProvider interface.
+- Loads config from D1 sh_searchProviderConfigs via findSearchProviderByKey.
+- Routes to NineRouterFetchAdapter for webFetch/9router providerType.
+- Routes to BrowserRunAdapter for browserRun providerType.
+- Returns empty for manual/officialApi (placeholder for future).
+- Skips disabled providers (isEnabled = 0).
+- Handles missing secret env gracefully (no hardcoded values).
+- Supports setDb() to reset cache.
+- Secret values resolved from env, never hardcoded.
+- Added 10 unit tests covering all scenarios.
+- All 629 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (629 tests)
+- build: pass
+- validation scripts: pass

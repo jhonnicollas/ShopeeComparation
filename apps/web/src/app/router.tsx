@@ -20,6 +20,7 @@ import { RegisterPage } from "../pages/RegisterPage";
 import { ResearchDetailPage } from "../pages/ResearchDetailPage";
 import { ResultPage } from "../pages/ResultPage";
 import { SettingsPage } from "../pages/SettingsPage";
+import { ShopDetailPage } from "../pages/ShopDetailPage";
 import { RequireAuth } from "../components/RequireAuth.js";
 import { logout, useAuth } from "../lib/auth.js";
 
@@ -154,6 +155,19 @@ const productDetailRoute = createRoute({
   },
 });
 
+const shopDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/shops/$shopId",
+  component: () => {
+    const { shopId } = shopDetailRoute.useParams();
+    return (
+      <RequireAuth>
+        <ShopDetailPage shopId={shopId} />
+      </RequireAuth>
+    );
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -168,6 +182,7 @@ const routeTree = rootRoute.addChildren([
   researchDetailRoute,
   jobLogsRoute,
   productDetailRoute,
+  shopDetailRoute,
 ]);
 
 export const router = createRouter({ routeTree });

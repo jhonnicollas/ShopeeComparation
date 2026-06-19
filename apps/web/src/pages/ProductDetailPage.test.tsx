@@ -79,11 +79,11 @@ describe("ProductDetailPage", () => {
     expect(screen.getByText("Electronics")).toBeInTheDocument();
   });
 
-  it("renders shop ID reference", () => {
+  it("renders shop link", () => {
     mockIsLoading = false;
     mockIsError = false;
     mockQueryData = mockProduct;
     render(<ProductDetailPage productId="p_1" />);
-    expect(screen.getByText(/Shop ID:/)).toBeInTheDocument();
+    expect(screen.getByText("View Shop")).toHaveAttribute("href", "/shops/456");
   });
 });

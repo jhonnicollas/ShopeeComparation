@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 
 interface ProductDetail {
   id: string;
@@ -141,9 +142,13 @@ export function ProductDetailPage({ productId }: { productId: string }) {
       )}
 
       <div>
-        <span className="secondaryButton">
-          Shop ID: {product.shopeeShopId}
-        </span>
+        <Link
+          to="/shops/$shopId"
+          params={{ shopId: product.shopeeShopId }}
+          className="secondaryButton"
+        >
+          View Shop
+        </Link>
       </div>
     </section>
   );

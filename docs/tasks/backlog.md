@@ -129,7 +129,7 @@ This backlog is the execution queue for 100% autopilot mode.
 ## Phase 12 — Hardening
 
 - [x] TASK-120 Add API rate limit
-- [ ] TASK-121 Add retry policy
+- [x] TASK-121 Add retry policy
 - [ ] TASK-122 Add error handling standardization
 - [ ] TASK-123 Add extraction failure logs
 - [ ] TASK-124 Add config audit logs

@@ -2072,3 +2072,50 @@ Quality Gate:
 - test: pass (708 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-120: Add API rate limit
+
+Status: DONE
+CompletedAt: 2026-06-20 02:25
+Branch: main
+Commit: d2b0efd
+
+Summary:
+- Created workers/api/src/middleware/rateLimit.ts with sliding window per-IP rate limiter.
+- Default limit: 60 req/min, heavy endpoints (compare-links, keyword-search): 10 req/min.
+- Exports checkRateLimit, rateLimitMiddleware, store, getClientIp, getConfigForPath.
+- Wired into index.ts via app.use("*", rateLimitMiddleware).
+- Returns 429 with Retry-After header when limit exceeded.
+- Added 10 tests covering window sliding, IP tracking, heavy paths, headers, cleanup.
+- All 718 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (718 tests)
+- build: pass
+- validation scripts: pass
+
+## TASK-121: Add retry policy
+
+Status: DONE
+CompletedAt: 2026-06-20 02:35
+Branch: main
+Commit: 3a123e6
+
+Summary:
+- Created packages/ai/src/retry.ts with withRetry, isRetryableError, calculateDelay, DEFAULT_RETRY_CONFIG.
+- Exponential backoff: maxAttempts 3, baseDelay 1s, maxDelay 10s, multiplier 2.
+- Only retries timeout/network/ECONNRESET/ECONNREFUSED/502/503/429 errors.
+- Exported from packages/ai/src/index.ts.
+- Added 6 tests covering success, retryable, non-retryable, max attempts, error identification, delay calculation.
+- All 724 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (724 tests)
+- build: pass
+- validation scripts: pass

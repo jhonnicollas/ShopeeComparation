@@ -1,16 +1,16 @@
-# TASK-101: Build search provider adapter
+# TASK-102: Build candidate collector
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a search provider adapter that implements the `SearchProvider` interface. The adapter loads its configuration from `sh_searchProviderConfigs` table (D1), respecting `isEnabled` and `priority` order. It must support pluggable providers (official API, webFetch, 9router, BrowserRun, manual) and use the existing `SearchInput`/`SearchResultCandidate` types.
+Build a candidate collector that aggregates search results from multiple search providers, deduplicates by `shopId+itemId` or canonical URL, and returns a merged list of `SearchResultCandidate`. The collector should respect provider priority order from D1 config.
 
 ## Required Reading
 
-- `docs/prd/prd.md` (section 8.6, 8.3)
+- `docs/prd/prd.md` (section 8.3)
 - `docs/architecture/technical-decisions.md`
 - `docs/shared/enums.md`
 - `docs/database/schema.md`
@@ -25,28 +25,26 @@ Build a search provider adapter that implements the `SearchProvider` interface. 
 
 ## Scope
 
-- Create `packages/shopee/src/adapters/searchProviderAdapter.ts` — SearchProviderAdapter
-- Implement `SearchProvider` interface (single `search()` method)
-- Load `SearchProviderConfigRow` from D1 by `providerKey`
-- Pass `baseUrl`/`timeoutMs`/`retryCount`/`authType`/`secretRef` from row
-- Use existing 9router adapter (`NineRouterFetchAdapter`) when `providerType` is `webFetch`/`9router`
-- Use existing Browser Run adapter (`BrowserRunAdapter`) when `providerType` is `browserRun`
-- For `manual`/`officialApi` types, return empty candidates (placeholder for future)
-- Skip disabled providers (`isEnabled = 0`)
-- Comprehensive unit tests with mocked D1 + mocked fetch
+- Create `packages/shopee/src/collectors/candidateCollector.ts` — CandidateCollector
+- Accepts list of search providers (each implements `SearchProvider`)
+- Calls each provider in order
+- Merges and deduplicates results by `shopId+itemId` then by `canonicalUrl`
+- Returns top N candidates (default `limit` from `SearchInput`)
+- Tracks per-provider result count for diagnostics
+- Handles provider failures gracefully (partial success)
+- Unit tests with mocked providers
 
 ## Out of Scope
 
-- Do not call Shopee from frontend (no frontend change here)
-- Do not implement queue consumer (separate task)
-- Do not implement candidate collection/enrichment (TASK-102..104)
+- Do not implement actual Shopee API calls
+- Do not implement score/rank
+- Do not implement queue consumer
 - Do not change D1 schema
-- Do not change wrangler.toml
 
 ## Allowed Files
 
-- `packages/shopee/src/adapters/searchProviderAdapter.ts` (new)
-- `packages/shopee/src/adapters/searchProviderAdapter.test.ts` (new)
+- `packages/shopee/src/collectors/candidateCollector.ts` (new)
+- `packages/shopee/src/collectors/candidateCollector.test.ts` (new)
 - `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
@@ -54,59 +52,52 @@ Build a search provider adapter that implements the `SearchProvider` interface. 
 
 - `apps/**`
 - `workers/**`
-- `packages/db/**` (no DB schema changes; reuse existing repos)
+- `packages/db/**` (no schema changes)
 - `packages/core/**`
 - `packages/ai/**`
 - `wrangler*.toml`
 
 ## Input Contract
 
-`search(input: SearchInput): Promise<SearchResultCandidate[]>`
-
-`SearchInput`:
-```ts
-{
-  keyword: string;
-  shippedFrom: string;
-  limit: number;
-  priceMin?: number;
-  priceMax?: number;
-  minimumRating?: number;
-  minimumReviewCount?: number;
-  storeStatus?: string[];
-}
-```
+`collect(input: { searchInput: SearchInput; providers: SearchProvider[] }): Promise<CollectionResult>`
 
 ## Output Contract
 
-`SearchResultCandidate[]` with each field nullable except `source` and `confidence`.
+`CollectionResult`:
+```ts
+{
+  candidates: SearchResultCandidate[];
+  perProviderCount: Record<string, number>;
+  failedProviders: string[];
+}
+```
 
 ## Acceptance Criteria
 
-- [ ] SearchProviderAdapter class implements `SearchProvider` interface
-- [ ] `search()` method returns `SearchResultCandidate[]`
-- [ ] Loads config from D1 by `providerKey`
-- [ ] Returns empty array when provider is disabled
-- [ ] Returns empty array when provider is not found
-- [ ] Uses correct adapter based on `providerType`
-- [ ] Does not call Shopee from frontend
-- [ ] Secret values resolved from env, never hardcoded
+- [ ] CandidateCollector class implemented
+- [ ] Calls each provider in priority order
+- [ ] Deduplicates by `shopId+itemId` first, then by `canonicalUrl`
+- [ ] Returns top N candidates (respects `searchInput.limit`)
+- [ ] Tracks per-provider result count
+- [ ] Tracks failed providers
+- [ ] Handles provider errors without crashing
 - [ ] Unit tests pass
 - [ ] All existing tests pass
-- [ ] Quality gate passes (lint, typecheck, test, build, quality-gate.js)
+- [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit test: returns empty when provider is disabled
-- [ ] Unit test: returns empty when provider is not found
-- [ ] Unit test: uses 9router adapter for webFetch type
-- [ ] Unit test: uses Browser Run adapter for browserRun type
-- [ ] Unit test: returns empty for manual/officialApi types
-- [ ] Unit test: handles missing secret env gracefully
+- [ ] Unit test: collects from all providers
+- [ ] Unit test: deduplicates by shopId+itemId
+- [ ] Unit test: deduplicates by canonicalUrl
+- [ ] Unit test: respects limit
+- [ ] Unit test: handles provider failure
+- [ ] Unit test: returns empty when no providers
+- [ ] Unit test: tracks per-provider count
 
 ## Documentation Update
 
-- [ ] Update `packages/shopee/src/index.ts` to export new adapter
+- [ ] Update `packages/shopee/src/index.ts` to export new collector
 
 ## Stop Conditions Check
 

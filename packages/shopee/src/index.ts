@@ -15,3 +15,4 @@ export * from "./parser/productParser.js";
 export * from "./parser/shopParser.js";
 export * from "./parser/weightExtractor.js";
 export * from "./parser/featureExtractor.js";
+export * from "./collectors/candidateCollector.js";

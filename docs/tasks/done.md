@@ -2207,3 +2207,39 @@ Quality Gate:
 - test: pass (749 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-125: Add no-hardcode validation
+
+Status: DONE
+CompletedAt: 2026-06-20 03:28
+Branch: main
+Commit: c9684c1
+
+Summary:
+- Validation script scripts/validate-no-hardcode.js already exists and passes.
+- Scans all .ts, .tsx, .js, .jsx, .json, .toml, .md, .sql, .yml, .yaml files.
+- Detects Cloudflare tokens, API key assignments, hardcoded 9router URLs, hardcoded model strings.
+- Allows process.env/env. references and <set-via-secret> placeholders.
+- Runs as part of quality gate (node scripts/quality-gate.js).
+- No changes needed.
+
+Quality Gate:
+- validation script: pass
+
+## TASK-126: Add database naming validation
+
+Status: DONE
+CompletedAt: 2026-06-20 03:28
+Branch: main
+Commit: c9684c1
+
+Summary:
+- Validation script scripts/validate-db-naming.js already exists and passes.
+- Scans all .sql, .ts, .tsx, .js, .jsx, .md files in packages/db, workers, apps, docs/database.
+- Validates all CREATE TABLE names start with sh_ prefix.
+- Validates all column names use camelCase (no underscores).
+- Runs as part of quality gate (node scripts/quality-gate.js).
+- No changes needed.
+
+Quality Gate:
+- validation script: pass

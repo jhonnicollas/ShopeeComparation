@@ -960,10 +960,26 @@ h2 {
   color: #1f2933;
 }
 
+.statValueSmall {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2933;
+  word-break: break-all;
+}
+
 .quickActions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.detailMeta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 8px;
 }
 
 .dataTable {

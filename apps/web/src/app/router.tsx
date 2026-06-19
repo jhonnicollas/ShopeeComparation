@@ -12,6 +12,7 @@ import { ConfigPage } from "../pages/ConfigPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { HomePage } from "../pages/HomePage";
 import { HistoryPage } from "../pages/HistoryPage";
+import { JobLogsPage } from "../pages/JobLogsPage";
 import { KeywordSearchPage } from "../pages/KeywordSearchPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
@@ -126,6 +127,19 @@ const researchDetailRoute = createRoute({
   },
 });
 
+const jobLogsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/jobs/$jobId",
+  component: () => {
+    const { jobId } = jobLogsRoute.useParams();
+    return (
+      <RequireAuth>
+        <JobLogsPage jobId={jobId} />
+      </RequireAuth>
+    );
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -138,6 +152,7 @@ const routeTree = rootRoute.addChildren([
   configRoute,
   resultRoute,
   researchDetailRoute,
+  jobLogsRoute,
 ]);
 
 export const router = createRouter({ routeTree });

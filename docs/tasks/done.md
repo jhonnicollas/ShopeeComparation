@@ -1841,3 +1841,27 @@ Quality Gate:
 - test: pass (655 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-105: Build top 10 ranking
+
+Status: DONE
+CompletedAt: 2026-06-19 22:20
+Branch: main
+Commit: c84f5c7
+
+Summary:
+- Created rankTopN in packages/shopee/src/jobs/topTenRanking.ts.
+- Uses packages/core calculateProductScore scoring engine.
+- Sorts by score descending with deterministic itemId tiebreak (alphabetical).
+- Returns top N ranked items with rank, productId, score, product, shop.
+- Handles null shop and missing itemId gracefully.
+- Added 10 unit tests covering all scenarios (empty, score ordering, limit, ties, null shop, missing itemId, rank assignment).
+- All 665 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (665 tests)
+- build: pass
+- validation scripts: pass

@@ -119,7 +119,7 @@ This backlog is the execution queue for 100% autopilot mode.
 
 ## Phase 11 — History and Dashboard
 
-- [ ] TASK-110 Build dashboard page
+- [x] TASK-110 Build dashboard page
 - [ ] TASK-111 Build research history page
 - [ ] TASK-112 Build research detail page
 - [ ] TASK-113 Build job logs page

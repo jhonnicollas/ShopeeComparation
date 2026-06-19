@@ -1919,3 +1919,31 @@ Quality Gate:
 - test: pass (675 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-110: Build dashboard page
+
+Status: DONE
+CompletedAt: 2026-06-20 01:15
+Branch: main
+Commit: f2d5f96
+
+Summary:
+- Created apps/web/src/pages/DashboardPage.tsx with stats, recent sessions, and quick actions.
+- Fetches from GET /api/research using TanStack Query.
+- Shows stats cards: total, completed, failed, partialSuccess, pending.
+- Shows recent sessions list (top 5) with mode, keyword, status, createdAt, and View link.
+- Shows quick action links: Compare Links, Keyword Search, Settings.
+- Shows empty state when no sessions.
+- Added /dashboard route to apps/web/src/app/router.tsx (protected by RequireAuth).
+- Added "Dashboard" link to AppShell navigation.
+- Backend endpoint GET /api/research and listResearchSessionsByUser repo function already existed.
+- Created DashboardPage.test.tsx with 5 component tests (loading, error, empty, stats, quick actions).
+- All 683 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (683 tests)
+- build: pass
+- validation scripts: pass

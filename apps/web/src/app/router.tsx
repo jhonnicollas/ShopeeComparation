@@ -11,6 +11,7 @@ import { ComparePage } from "../pages/ComparePage";
 import { ConfigPage } from "../pages/ConfigPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { HomePage } from "../pages/HomePage";
+import { HistoryPage } from "../pages/HistoryPage";
 import { KeywordSearchPage } from "../pages/KeywordSearchPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
@@ -47,6 +48,16 @@ const dashboardRoute = createRoute({
   component: () => (
     <RequireAuth>
       <DashboardPage />
+    </RequireAuth>
+  ),
+});
+
+const historyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/history",
+  component: () => (
+    <RequireAuth>
+      <HistoryPage />
     </RequireAuth>
   ),
 });
@@ -106,6 +117,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
   dashboardRoute,
+  historyRoute,
   compareRoute,
   keywordSearchRoute,
   settingsRoute,
@@ -145,6 +157,9 @@ function AppShell() {
         <nav className="navLinks" aria-label="Primary navigation">
           <Link to="/dashboard" activeProps={{ "aria-current": "page" }}>
             Dashboard
+          </Link>
+          <Link to="/history" activeProps={{ "aria-current": "page" }}>
+            History
           </Link>
           <Link to="/compare" activeProps={{ "aria-current": "page" }}>
             Compare

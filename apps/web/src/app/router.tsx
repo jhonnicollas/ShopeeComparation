@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ComparePage } from "../pages/ComparePage";
 import { ConfigPage } from "../pages/ConfigPage";
+import { DashboardPage } from "../pages/DashboardPage";
 import { HomePage } from "../pages/HomePage";
 import { KeywordSearchPage } from "../pages/KeywordSearchPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -38,6 +39,16 @@ const registerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/register",
   component: RegisterPage,
+});
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/dashboard",
+  component: () => (
+    <RequireAuth>
+      <DashboardPage />
+    </RequireAuth>
+  ),
 });
 
 const compareRoute = createRoute({
@@ -94,6 +105,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   registerRoute,
+  dashboardRoute,
   compareRoute,
   keywordSearchRoute,
   settingsRoute,
@@ -131,6 +143,9 @@ function AppShell() {
           Shopee Product Research AI
         </Link>
         <nav className="navLinks" aria-label="Primary navigation">
+          <Link to="/dashboard" activeProps={{ "aria-current": "page" }}>
+            Dashboard
+          </Link>
           <Link to="/compare" activeProps={{ "aria-current": "page" }}>
             Compare
           </Link>

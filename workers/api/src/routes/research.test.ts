@@ -43,6 +43,18 @@ class MockD1Database {
         const args = stmt.bind.mock.calls[0] || [];
         return this.jobs.find((j) => j.id === args[0]) ?? null;
       });
+    } else if (query.includes("SELECT * FROM sh_researchSessions WHERE userId")) {
+      stmt.all.mockImplementation(async () => {
+        const args = stmt.bind.mock.calls[0] || [];
+        const userId = args[0];
+        return {
+          results: this.researchSessions
+            .filter((s) => s.userId === userId)
+            .sort((a, b) =>
+              (b.createdAt as string).localeCompare(a.createdAt as string)
+            ),
+        };
+      });
     } else if (query.includes("INSERT INTO sh_researchSessions")) {
       stmt.run.mockImplementation(async () => {
         const args = stmt.bind.mock.calls[0] || [];
@@ -385,6 +397,75 @@ describe("GET /api/research/sessions/:id", () => {
       createEnv(db, queue)
     );
     expect(res.status).toBe(403);
+  });
+});
+
+describe("GET /api/research", () => {
+  let db: MockD1Database;
+  let queue: MockQueue;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+    queue = new MockQueue();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await researchRouter.request("/", { method: "GET" }, createEnv(db, queue));
+    expect(res.status).toBe(401);
+  });
+
+  it("returns empty list when no sessions", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { items: unknown[] };
+    expect(body.items).toEqual([]);
+  });
+
+  it("returns user's research sessions", async () => {
+    const token = await createUserSession(db);
+    db.researchSessions.push({
+      id: "rsr_1",
+      userId: "usr_test",
+      mode: "compareLinks",
+      keyword: null,
+      shippedFrom: "DKI Jakarta",
+      status: "completed",
+      bestProductId: "prd_1",
+      totalProducts: 3,
+      completedProducts: 3,
+      errorMessage: null,
+      createdAt: "2026-06-18T00:00:00.000Z",
+      updatedAt: "2026-06-18T00:00:00.000Z",
+    });
+    db.researchSessions.push({
+      id: "rsr_2",
+      userId: "usr_test",
+      mode: "keywordSearch",
+      keyword: "tensimeter",
+      shippedFrom: "DKI Jakarta",
+      status: "pending",
+      bestProductId: null,
+      totalProducts: 0,
+      completedProducts: 0,
+      errorMessage: null,
+      createdAt: "2026-06-19T00:00:00.000Z",
+      updatedAt: "2026-06-19T00:00:00.000Z",
+    });
+    const res = await researchRouter.request(
+      "/",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { items: Array<{ id: string; mode: string }> };
+    expect(body.items).toHaveLength(2);
+    expect(body.items[0]?.id).toBe("rsr_2");
+    expect(body.items[1]?.id).toBe("rsr_1");
   });
 });
 

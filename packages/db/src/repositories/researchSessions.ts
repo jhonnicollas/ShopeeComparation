@@ -83,3 +83,17 @@ export async function updateResearchSessionStatus(
     .bind(...values)
     .run();
 }
+
+export async function listResearchSessionsByUser(
+  db: D1Database,
+  userId: string,
+  limit: number = 50
+): Promise<ResearchSessionRow[]> {
+  const result = await db
+    .prepare(
+      "SELECT * FROM sh_researchSessions WHERE userId = ? ORDER BY createdAt DESC LIMIT ?"
+    )
+    .bind(userId, limit)
+    .all<ResearchSessionRow>();
+  return result.results ?? [];
+}

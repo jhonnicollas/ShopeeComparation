@@ -930,3 +930,84 @@ h2 {
   color: #b91c1c;
   margin-bottom: 4px;
 }
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.statCard {
+  background: #f6f8fb;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2933;
+}
+
+.quickActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dataTable th,
+.dataTable td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e1e6ee;
+}
+
+.dataTable th {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.moreNote {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+.statusBadgeCompleted {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusBadgeFailed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusBadgePending,
+.statusBadgeProcessing {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusBadgePartialSuccess {
+  background: #dbeafe;
+  color: #1e40af;
+}

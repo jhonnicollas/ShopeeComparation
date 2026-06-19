@@ -5,11 +5,13 @@ import {
   jobStatus,
   keywordSearchRequestSchema,
   keywordSearchResponseSchema,
+  researchListResponseSchema,
   researchMode,
 } from "@shopee-research/shared";
 import {
   createResearchSession,
   createJob,
+  listResearchSessionsByUser,
   sendResearchJobMessage,
 } from "@shopee-research/db";
 import { authenticate, authErrorResponse } from "../lib/auth.js";
@@ -194,6 +196,29 @@ researchRouter.post("/keyword-search", async (c) => {
       status: jobStatus.pending,
     }),
     202
+  );
+});
+
+researchRouter.get("/", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const sessions = await listResearchSessionsByUser(c.env.DB, auth.user.userId, 50);
+  return c.json(
+    researchListResponseSchema.parse({
+      items: sessions.map((s) => ({
+        id: s.id,
+        mode: s.mode,
+        keyword: s.keyword,
+        status: s.status,
+        bestProductId: s.bestProductId,
+        createdAt: s.createdAt,
+      })),
+    }),
+    200
   );
 });
 

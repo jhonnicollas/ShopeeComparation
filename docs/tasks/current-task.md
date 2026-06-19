@@ -1,84 +1,99 @@
-# TASK-107: Build keyword search result page
+# TASK-110: Build dashboard page
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build keyword search result page that displays top 10 ranked products with score breakdown, product details (title, price, rating, sold, weight), shop info, and AI report. The page must handle both `compareLinks` and `keywordSearch` research session modes.
+Build a frontend dashboard page that shows an overview of the user's research activity: total research sessions, recent jobs, status counts, and quick actions to start new research. The page is the user's home for managing their research.
 
 ## Required Reading
 
-- `docs/prd/prd.md` (section 8.3, 8.10)
+- `docs/prd/prd.md` (section 5.2 admin)
 - `docs/architecture/technical-decisions.md`
-- `docs/api/api-contract.md`
-- `docs/shared/enums.md`
+- `docs/api/api-contract.md` (Research API)
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/done-definition.md`
 
 ## Scope
 
-- Update `apps/web/src/pages/ResultPage.tsx` to support `keywordSearch` mode
-- Display keyword, shippedFrom, limit info when mode is `keywordSearch`
-- Fetch AI report from GET /api/research/comparisons/:id/ai-report
-- Display ranked products with full product details (title, priceMin, priceMax, rating, soldCount)
-- Show weight if available
-- Show shop info (name, status)
+- Create `apps/web/src/pages/DashboardPage.tsx`
+- Fetch user research sessions via GET /api/research
+- Show stats: total sessions, completed, failed, partialSuccess
+- Show list of recent sessions (top 5)
+- Show quick action links: compare-links, keyword-search, settings
+- Add route `/dashboard`
+- Update `apps/web/src/app/router.tsx` to add route
 - Add tests
 
 ## Out of Scope
 
-- Do not change backend API endpoints
-- Do not implement scoring engine (already exists)
+- Do not change backend API
 - Do not change D1 schema
+- Do not implement admin-only features (user-scoped only)
 
 ## Allowed Files
 
-- `apps/web/src/pages/ResultPage.tsx`
-- `apps/web/src/pages/ResultPage.test.tsx`
+- `apps/web/src/pages/DashboardPage.tsx` (new)
+- `apps/web/src/pages/DashboardPage.test.tsx` (new)
+- `apps/web/src/app/router.tsx`
 - `apps/web/src/styles/global.css`
+- `workers/api/src/routes/research.ts`
+- `workers/api/src/routes/research.test.ts`
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `packages/**`
-- `workers/**`
+- `packages/db/**` (no schema changes; reuse existing repos)
+- `packages/shopee/**`
+- `packages/core/**`
+- `packages/ai/**`
 
 ## Input Contract
 
-Route param: `researchSessionId`
-Fetch from `GET /api/research/sessions/:id` and `GET /api/research/comparisons/by-session/:sessionId` and `GET /api/research/comparisons/:id/ai-report`
+Fetch from `GET /api/research` returning:
+```ts
+{
+  items: Array<{
+    id: string;
+    mode: "compareLinks" | "keywordSearch";
+    keyword: string | null;
+    status: "pending" | "processing" | "completed" | "failed" | "partialSuccess";
+    bestProductId: string | null;
+    createdAt: string;
+  }>
+}
+```
 
 ## Output Contract
 
-Renders:
-- Header with keyword search info (keyword, shippedFrom, total products)
-- Best product (rank 1) callout
-- Ranked list of products with: rank, product title, price, rating, sold count, shop name, score breakdown
-- AI report section
-- Weight info if available
+Dashboard shows:
+- Welcome header
+- Stats cards: total, completed, failed, partialSuccess
+- Recent sessions list (top 5 with mode, keyword/status/createdAt)
+- Quick action links
 
 ## Acceptance Criteria
 
-- [ ] Page handles both `keywordSearch` and `compareLinks` modes
-- [ ] Shows keyword and shippedFrom for keywordSearch mode
-- [ ] Renders ranked product cards with title, price, rating, sold
-- [ ] Shows shop name and status if available
-- [ ] Shows weight if available
-- [ ] Shows AI report if available
+- [ ] DashboardPage component renders
+- [ ] Fetches from GET /api/research
+- [ ] Shows stats cards
+- [ ] Shows recent sessions list
+- [ ] Shows quick action links
+- [ ] Route /dashboard added
 - [ ] Component tests pass
 - [ ] All existing tests pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit test: renders for keywordSearch mode
-- [ ] Unit test: renders for compareLinks mode
-- [ ] Unit test: shows best product callout
-- [ ] Unit test: shows AI report
-- [ ] Unit test: shows loading and error states
+- [ ] Unit test: renders dashboard with stats
+- [ ] Unit test: renders recent sessions
+- [ ] Unit test: shows loading state
+- [ ] Unit test: shows empty state when no sessions
+- [ ] Unit test: shows error state
 
 ## Documentation Update
 

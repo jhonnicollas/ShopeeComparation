@@ -15,6 +15,7 @@ import { HistoryPage } from "../pages/HistoryPage";
 import { KeywordSearchPage } from "../pages/KeywordSearchPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
+import { ResearchDetailPage } from "../pages/ResearchDetailPage";
 import { ResultPage } from "../pages/ResultPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { RequireAuth } from "../components/RequireAuth.js";
@@ -112,6 +113,19 @@ const resultRoute = createRoute({
   ),
 });
 
+const researchDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/research/$researchSessionId",
+  component: () => {
+    const { researchSessionId } = researchDetailRoute.useParams();
+    return (
+      <RequireAuth>
+        <ResearchDetailPage researchSessionId={researchSessionId} />
+      </RequireAuth>
+    );
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -123,6 +137,7 @@ const routeTree = rootRoute.addChildren([
   settingsRoute,
   configRoute,
   resultRoute,
+  researchDetailRoute,
 ]);
 
 export const router = createRouter({ routeTree });

@@ -18,3 +18,4 @@ export * from "./repositories/comparisons.js";
 export * from "./repositories/aiReports.js";
 export * from "./repositories/rawSnapshots.js";
 export * from "./repositories/extractionFailures.js";
+export * from "./repositories/configAuditLogs.js";

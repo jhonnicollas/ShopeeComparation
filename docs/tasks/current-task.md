@@ -1,4 +1,4 @@
-# TASK-123: Add extraction failure logs
+# TASK-124: Add config audit logs
 
 ## Status
 
@@ -6,7 +6,7 @@ IN_PROGRESS
 
 ## Goal
 
-Log extraction failures (when Shopee product/shop extraction fails) to D1 for debugging and monitoring. Include error details, adapter used, URL attempted, and timestamps.
+Log configuration changes (create, update, delete) to D1 for auditing. Track who changed what, when, and the old/new values.
 
 ## Required Reading
 
@@ -16,26 +16,25 @@ Log extraction failures (when Shopee product/shop extraction fails) to D1 for de
 
 ## Scope
 
-- Create extraction failure log table in D1 (sh_extractionFailures)
-- Create repository function to insert/query failure logs
-- Hook into existing extractor error paths to log failures
-- Add API endpoint to query failure logs (for admin/debugging)
+- Create config audit log table in D1 (sh_configAuditLogs)
+- Create repository function to insert/query audit logs
+- Hook into config routes to log create/update/delete operations
 - Add tests
 
 ## Out of Scope
 
 - Do not change frontend
-- Do not change extraction logic
-- Do not block on failures (fire-and-forget logging)
+- Do not block on audit logging (fire-and-forget)
 
 ## Allowed Files
 
-- `packages/db/src/schema.ts` (add table)
-- `packages/db/src/repositories/extractionFailures.ts` (new)
-- `packages/db/src/repositories/extractionFailures.test.ts` (new)
-- `packages/shopee/src/extractors/fallbackExtractor.ts` (hook logging)
-- `workers/api/src/routes/research.ts` (add endpoint)
+- `packages/db/migrations/0003_config_audit_logs.sql` (new)
+- `packages/db/src/repositories/configAuditLogs.ts` (new)
+- `packages/db/src/repositories/configAuditLogs.test.ts` (new)
+- `packages/db/src/index.ts`
+- `workers/api/src/routes/config.ts`
 - `docs/tasks/**`
+- `docs/database/schema.md`
 
 ## Forbidden Files
 
@@ -44,10 +43,9 @@ Log extraction failures (when Shopee product/shop extraction fails) to D1 for de
 
 ## Acceptance Criteria
 
-- [x] Extraction failure log table created
+- [x] Config audit log table created
 - [x] Repository functions to insert/query
-- [x] Failures logged on extraction errors
-- [x] API endpoint to query failures
+- [x] Audit logs created on config changes
 - [x] Tests pass
 - [x] Quality gate passes
 

@@ -69,6 +69,7 @@ import {
   findScoringConfigByKey,
   listScoringConfigs,
   updateScoringConfig,
+  createConfigAuditLog,
 } from "@shopee-research/db";
 import { authenticate, authErrorResponse, requireAdmin } from "../lib/auth.js";
 import {
@@ -264,6 +265,10 @@ function generateId(prefix: string): string {
   return `${prefix}_${btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
 }
 
+function generateAuditId(): string {
+  return generateId("aud");
+}
+
 export const configRouter = new Hono<{ Bindings: Bindings }>();
 
 configRouter.get("/apps/public", async (c) => {
@@ -335,6 +340,15 @@ configRouter.post("/apps", async (c) => {
     isEnabled: parsed.data.isEnabled ?? 1,
   });
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "appConfig",
+    configId: created.id,
+    action: "create",
+    newValueJson: JSON.stringify(toResponse(created)),
+  });
+
   return c.json(createAppConfigResponseSchema.parse({ config: toResponse(created) }), 201);
 });
 
@@ -386,6 +400,16 @@ configRouter.put("/apps/:id", async (c) => {
     return notFoundResponse(c, "CONFIG_NOT_FOUND", "App config not found");
   }
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "appConfig",
+    configId: updated.id,
+    action: "update",
+    oldValueJson: JSON.stringify(toResponse(existing)),
+    newValueJson: JSON.stringify(toResponse(updated)),
+  });
+
   return c.json(updateAppConfigResponseSchema.parse({ config: toResponse(updated) }), 200);
 });
 
@@ -408,6 +432,16 @@ configRouter.delete("/apps/:id", async (c) => {
   }
 
   await deleteAppConfig(c.env.DB, id);
+
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "appConfig",
+    configId: id,
+    action: "delete",
+    oldValueJson: JSON.stringify(toResponse(existing)),
+  });
+
   return c.json(deleteAppConfigResponseSchema.parse({ success: true }), 200);
 });
 
@@ -465,6 +499,15 @@ configRouter.post("/ai-providers", async (c) => {
     isEnabled: parsed.data.isEnabled ?? 1,
   });
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "aiProvider",
+    configId: created.id,
+    action: "create",
+    newValueJson: JSON.stringify(toAiProviderResponse(created)),
+  });
+
   return c.json(createAiProviderResponseSchema.parse({ provider: toAiProviderResponse(created) }), 201);
 });
 
@@ -512,6 +555,16 @@ configRouter.put("/ai-providers/:id", async (c) => {
     return notFoundResponse(c, "PROVIDER_NOT_FOUND", "AI provider not found");
   }
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "aiProvider",
+    configId: updated.id,
+    action: "update",
+    oldValueJson: JSON.stringify(toAiProviderResponse(existing)),
+    newValueJson: JSON.stringify(toAiProviderResponse(updated)),
+  });
+
   return c.json(updateAiProviderResponseSchema.parse({ provider: toAiProviderResponse(updated) }), 200);
 });
 
@@ -534,6 +587,16 @@ configRouter.delete("/ai-providers/:id", async (c) => {
   }
 
   await deleteAiProvider(c.env.DB, id);
+
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "aiProvider",
+    configId: id,
+    action: "delete",
+    oldValueJson: JSON.stringify(toAiProviderResponse(existing)),
+  });
+
   return c.json(deleteAiProviderResponseSchema.parse({ success: true }), 200);
 });
 
@@ -599,6 +662,15 @@ configRouter.post("/ai-models", async (c) => {
     isEnabled: parsed.data.isEnabled ?? 1,
   });
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "aiModel",
+    configId: created.id,
+    action: "create",
+    newValueJson: JSON.stringify(toAiModelResponse(created)),
+  });
+
   return c.json(createAiModelResponseSchema.parse({ model: toAiModelResponse(created) }), 201);
 });
 
@@ -650,6 +722,16 @@ configRouter.put("/ai-models/:id", async (c) => {
     return notFoundResponse(c, "MODEL_NOT_FOUND", "AI model not found");
   }
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "aiModel",
+    configId: updated.id,
+    action: "update",
+    oldValueJson: JSON.stringify(toAiModelResponse(existing)),
+    newValueJson: JSON.stringify(toAiModelResponse(updated)),
+  });
+
   return c.json(updateAiModelResponseSchema.parse({ model: toAiModelResponse(updated) }), 200);
 });
 
@@ -672,6 +754,16 @@ configRouter.delete("/ai-models/:id", async (c) => {
   }
 
   await deleteAiModel(c.env.DB, id);
+
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "aiModel",
+    configId: id,
+    action: "delete",
+    oldValueJson: JSON.stringify(toAiModelResponse(existing)),
+  });
+
   return c.json(deleteAiModelResponseSchema.parse({ success: true }), 200);
 });
 
@@ -731,6 +823,15 @@ configRouter.post("/search-providers", async (c) => {
     isEnabled: parsed.data.isEnabled ?? 1,
   });
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "searchProvider",
+    configId: created.id,
+    action: "create",
+    newValueJson: JSON.stringify(toSearchProviderResponse(created)),
+  });
+
   return c.json(createSearchProviderResponseSchema.parse({ provider: toSearchProviderResponse(created) }), 201);
 });
 
@@ -780,6 +881,16 @@ configRouter.put("/search-providers/:id", async (c) => {
     return notFoundResponse(c, "PROVIDER_NOT_FOUND", "Search provider not found");
   }
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "searchProvider",
+    configId: updated.id,
+    action: "update",
+    oldValueJson: JSON.stringify(toSearchProviderResponse(existing)),
+    newValueJson: JSON.stringify(toSearchProviderResponse(updated)),
+  });
+
   return c.json(updateSearchProviderResponseSchema.parse({ provider: toSearchProviderResponse(updated) }), 200);
 });
 
@@ -802,6 +913,16 @@ configRouter.delete("/search-providers/:id", async (c) => {
   }
 
   await deleteSearchProvider(c.env.DB, id);
+
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "searchProvider",
+    configId: id,
+    action: "delete",
+    oldValueJson: JSON.stringify(toSearchProviderResponse(existing)),
+  });
+
   return c.json(deleteSearchProviderResponseSchema.parse({ success: true }), 200);
 });
 
@@ -866,6 +987,15 @@ configRouter.post("/scoring-configs", async (c) => {
     isEnabled: parsed.data.isEnabled ?? 1,
   });
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "scoring",
+    configId: created.id,
+    action: "create",
+    newValueJson: JSON.stringify(toScoringConfigResponse(created)),
+  });
+
   return c.json(createScoringConfigResponseSchema.parse({ config: toScoringConfigResponse(created) }), 201);
 });
 
@@ -922,6 +1052,16 @@ configRouter.put("/scoring-configs/:id", async (c) => {
     return notFoundResponse(c, "SCORING_NOT_FOUND", "Scoring config not found");
   }
 
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "scoring",
+    configId: updated.id,
+    action: "update",
+    oldValueJson: JSON.stringify(toScoringConfigResponse(existing)),
+    newValueJson: JSON.stringify(toScoringConfigResponse(updated)),
+  });
+
   return c.json(updateScoringConfigResponseSchema.parse({ config: toScoringConfigResponse(updated) }), 200);
 });
 
@@ -944,6 +1084,16 @@ configRouter.delete("/scoring-configs/:id", async (c) => {
   }
 
   await deleteScoringConfig(c.env.DB, id);
+
+  await createConfigAuditLog(c.env.DB, {
+    id: generateAuditId(),
+    userId: auth.user.userId,
+    configType: "scoring",
+    configId: id,
+    action: "delete",
+    oldValueJson: JSON.stringify(toScoringConfigResponse(existing)),
+  });
+
   return c.json(deleteScoringConfigResponseSchema.parse({ success: true }), 200);
 });
 

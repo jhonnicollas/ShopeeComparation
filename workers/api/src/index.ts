@@ -4,6 +4,7 @@ import { authRouter } from "./routes/auth.js";
 import { configRouter } from "./routes/config.js";
 import { researchRouter } from "./routes/research.js";
 import { shopeeRouter } from "./routes/shopee.js";
+import { rateLimitMiddleware } from "./middleware/rateLimit.js";
 
 export type ApiEnv = {
   Bindings: {
@@ -17,6 +18,12 @@ export type ApiEnv = {
 };
 
 const app = new Hono<ApiEnv>();
+
+app.use("*", async (c, next) => {
+  const blocked = rateLimitMiddleware(c.req.raw);
+  if (blocked) return blocked;
+  await next();
+});
 
 app.get("/api/health", (c) => {
   return c.json({

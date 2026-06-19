@@ -3,6 +3,7 @@ import type { D1Database, R2Bucket, Queue } from "@cloudflare/workers-types";
 import { resolveUrlRequestSchema } from "@shopee-research/shared";
 import { resolveUrlWithDiagnostics } from "@shopee-research/shopee";
 import { authenticate, authErrorResponse } from "../lib/auth.js";
+import { invalidJsonResponse, validationErrorResponse, sanitizeErrorMessage } from "../lib/errors.js";
 
 type Bindings = {
   DB: D1Database;
@@ -12,26 +13,6 @@ type Bindings = {
   APP_NAME: string;
   PASSWORD_PEPPER?: string;
 };
-
-const SECRET_PATTERNS = [
-  /api[_-]?key\s*[:=]\s*\S+/gi,
-  /token\s*[:=]\s*\S+/gi,
-  /secret\s*[:=]\s*\S+/gi,
-  /bearer\s+\S+/gi,
-  /authorization\s*[:=]\s*\S+/gi,
-];
-
-function sanitizeErrorMessage(msg: string | undefined): string | null {
-  if (!msg) return null;
-  let sanitized = msg;
-  for (const pattern of SECRET_PATTERNS) {
-    sanitized = sanitized.replace(pattern, "[REDACTED]");
-  }
-  if (sanitized.length > 300) {
-    sanitized = sanitized.slice(0, 300) + "...";
-  }
-  return sanitized;
-}
 
 export const shopeeRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -46,24 +27,12 @@ shopeeRouter.post("/resolve-url", async (c) => {
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = resolveUrlRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid resolve URL input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid resolve URL input", parsed.error.issues);
   }
 
   const result = await resolveUrlWithDiagnostics({ url: parsed.data.url });

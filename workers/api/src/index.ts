@@ -5,6 +5,7 @@ import { configRouter } from "./routes/config.js";
 import { researchRouter } from "./routes/research.js";
 import { shopeeRouter } from "./routes/shopee.js";
 import { rateLimitMiddleware } from "./middleware/rateLimit.js";
+import { internalErrorResponse } from "./lib/errors.js";
 
 export type ApiEnv = {
   Bindings: {
@@ -23,6 +24,14 @@ app.use("*", async (c, next) => {
   const blocked = rateLimitMiddleware(c.req.raw);
   if (blocked) return blocked;
   await next();
+});
+
+app.onError((_error, c) => {
+  return internalErrorResponse(c);
+});
+
+app.notFound((c) => {
+  return c.json({ error: { code: "NOT_FOUND", message: "Route not found", details: null } }, 404);
 });
 
 app.get("/api/health", (c) => {

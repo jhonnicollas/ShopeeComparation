@@ -1,12 +1,12 @@
-# TASK-121: Add retry policy
+# TASK-122: Add error handling standardization
 
 ## Status
 
-IN_PROGRESS
+DONE
 
 ## Goal
 
-Add a retry utility to the AI package for handling transient network/provider errors with exponential backoff. Used by 9router calls and extractor adapters.
+Standardize error response construction across all API routes using shared helpers.
 
 ## Required Reading
 
@@ -16,37 +16,42 @@ Add a retry utility to the AI package for handling transient network/provider er
 
 ## Scope
 
-- Create `packages/ai/src/retry.ts` with `withRetry`, `isRetryableError`, `calculateDelay`, `DEFAULT_RETRY_CONFIG`
-- Export from `packages/ai/src/index.ts`
-- Add tests for retry behavior
+- Create `workers/api/src/lib/errors.ts` with shared error helpers
+- Add global `app.onError` handler in `workers/api/src/index.ts`
+- Refactor `auth.ts`, `config.ts`, `research.ts`, `shopee.ts` to use shared helpers
+- Add tests for error helpers
 
 ## Out of Scope
 
 - Do not change frontend
-- Do not change worker code
-- Do not integrate into 9router client yet (separate task)
+- Do not change non-error logic
+- Do not add new error codes
 
 ## Allowed Files
 
-- `packages/ai/src/retry.ts` (new)
-- `packages/ai/src/retry.test.ts` (new)
-- `packages/ai/src/index.ts`
+- `workers/api/src/lib/errors.ts` (new)
+- `workers/api/src/lib/errors.test.ts` (new)
+- `workers/api/src/index.ts`
+- `workers/api/src/routes/auth.ts`
+- `workers/api/src/routes/config.ts`
+- `workers/api/src/routes/research.ts`
+- `workers/api/src/routes/shopee.ts`
 - `docs/tasks/**`
 
 ## Forbidden Files
 
 - `apps/web/**`
-- `workers/api/**`
 - `packages/db/**`
 - `packages/shopee/**`
 - `packages/core/**`
 
 ## Acceptance Criteria
 
-- [ ] Retry utility created with exponential backoff
-- [ ] Only retries timeout/network/502/503/429 errors
-- [ ] Tests pass
-- [ ] Quality gate passes
+- [x] Shared error helper created
+- [x] Global error handler added
+- [x] All routes use shared helpers
+- [x] Tests pass
+- [x] Quality gate passes
 
 ## Completion Rule
 

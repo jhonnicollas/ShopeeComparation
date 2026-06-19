@@ -71,6 +71,13 @@ import {
   updateScoringConfig,
 } from "@shopee-research/db";
 import { authenticate, authErrorResponse, requireAdmin } from "../lib/auth.js";
+import {
+  invalidJsonResponse,
+  validationErrorResponse,
+  notFoundResponse,
+  forbiddenResponse,
+  conflictResponse,
+} from "../lib/errors.js";
 import { testNineRouterModel } from "../lib/nineRouter.js";
 
 type Bindings = {
@@ -272,16 +279,7 @@ configRouter.get("/apps", async (c) => {
     return c.json(err.body, err.status as 401 | 403);
   }
   if (auth.user.role !== "admin") {
-    return c.json(
-      {
-        error: {
-          code: "FORBIDDEN",
-          message: "Admin role required",
-          details: null,
-        },
-      },
-      403
-    );
+    return forbiddenResponse(c, "Admin role required");
   }
 
   const category = c.req.query("category");
@@ -318,30 +316,12 @@ configRouter.post("/apps", async (c) => {
 
   const parsed = createAppConfigRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid app config input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid app config input", parsed.error.issues);
   }
 
   const existing = await findAppConfigByKey(c.env.DB, parsed.data.key);
   if (existing) {
-    return c.json(
-      {
-        error: {
-          code: "CONFIG_KEY_EXISTS",
-          message: "A config with this key already exists",
-          details: null,
-        },
-      },
-      409
-    );
+    return conflictResponse(c, "CONFIG_KEY_EXISTS", "A config with this key already exists");
   }
 
   const created = await createAppConfig(c.env.DB, {
@@ -373,10 +353,7 @@ configRouter.put("/apps/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findAppConfigById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "CONFIG_NOT_FOUND", message: "App config not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "CONFIG_NOT_FOUND", "App config not found");
   }
 
   let body: unknown;
@@ -393,16 +370,7 @@ configRouter.put("/apps/:id", async (c) => {
 
   const parsed = updateAppConfigRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid app config input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid app config input", parsed.error.issues);
   }
 
   const updated = await updateAppConfig(c.env.DB, id, {
@@ -415,10 +383,7 @@ configRouter.put("/apps/:id", async (c) => {
   });
 
   if (!updated) {
-    return c.json(
-      { error: { code: "CONFIG_NOT_FOUND", message: "App config not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "CONFIG_NOT_FOUND", "App config not found");
   }
 
   return c.json(updateAppConfigResponseSchema.parse({ config: toResponse(updated) }), 200);
@@ -439,10 +404,7 @@ configRouter.delete("/apps/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findAppConfigById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "CONFIG_NOT_FOUND", message: "App config not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "CONFIG_NOT_FOUND", "App config not found");
   }
 
   await deleteAppConfig(c.env.DB, id);
@@ -456,10 +418,7 @@ configRouter.get("/ai-providers", async (c) => {
     return c.json(err.body, err.status as 401 | 403);
   }
   if (auth.user.role !== "admin") {
-    return c.json(
-      { error: { code: "FORBIDDEN", message: "Admin role required", details: null } },
-      403
-    );
+    return forbiddenResponse(c, "Admin role required");
   }
   const rows = await listAiProviders(c.env.DB);
   return c.json(listAiProvidersResponseSchema.parse({ providers: rows.map(toAiProviderResponse) }), 200);
@@ -481,32 +440,17 @@ configRouter.post("/ai-providers", async (c) => {
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = createAiProviderRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid AI provider input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid AI provider input", parsed.error.issues);
   }
 
   const existing = await findAiProviderByKey(c.env.DB, parsed.data.providerKey);
   if (existing) {
-    return c.json(
-      { error: { code: "PROVIDER_KEY_EXISTS", message: "A provider with this key already exists", details: null } },
-      409
-    );
+    return conflictResponse(c, "PROVIDER_KEY_EXISTS", "A provider with this key already exists");
   }
 
   const created = await createAiProvider(c.env.DB, {
@@ -539,34 +483,19 @@ configRouter.put("/ai-providers/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findAiProviderById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "PROVIDER_NOT_FOUND", message: "AI provider not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "PROVIDER_NOT_FOUND", "AI provider not found");
   }
 
   let body: unknown;
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = updateAiProviderRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid AI provider input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid AI provider input", parsed.error.issues);
   }
 
   const updated = await updateAiProvider(c.env.DB, id, {
@@ -580,10 +509,7 @@ configRouter.put("/ai-providers/:id", async (c) => {
   });
 
   if (!updated) {
-    return c.json(
-      { error: { code: "PROVIDER_NOT_FOUND", message: "AI provider not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "PROVIDER_NOT_FOUND", "AI provider not found");
   }
 
   return c.json(updateAiProviderResponseSchema.parse({ provider: toAiProviderResponse(updated) }), 200);
@@ -604,10 +530,7 @@ configRouter.delete("/ai-providers/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findAiProviderById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "PROVIDER_NOT_FOUND", message: "AI provider not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "PROVIDER_NOT_FOUND", "AI provider not found");
   }
 
   await deleteAiProvider(c.env.DB, id);
@@ -621,10 +544,7 @@ configRouter.get("/ai-models", async (c) => {
     return c.json(err.body, err.status as 401 | 403);
   }
   if (auth.user.role !== "admin") {
-    return c.json(
-      { error: { code: "FORBIDDEN", message: "Admin role required", details: null } },
-      403
-    );
+    return forbiddenResponse(c, "Admin role required");
   }
   const providerKey = c.req.query("providerKey");
   const rows = providerKey
@@ -649,32 +569,17 @@ configRouter.post("/ai-models", async (c) => {
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = createAiModelRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid AI model input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid AI model input", parsed.error.issues);
   }
 
   const provider = await findAiProviderByKey(c.env.DB, parsed.data.providerKey);
   if (!provider) {
-    return c.json(
-      { error: { code: "PROVIDER_NOT_FOUND", message: "Provider not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "PROVIDER_NOT_FOUND", "Provider not found");
   }
 
   const created = await createAiModel(c.env.DB, {
@@ -712,34 +617,19 @@ configRouter.put("/ai-models/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findAiModelById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "MODEL_NOT_FOUND", message: "AI model not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "MODEL_NOT_FOUND", "AI model not found");
   }
 
   let body: unknown;
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = updateAiModelRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid AI model input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid AI model input", parsed.error.issues);
   }
 
   const updated = await updateAiModel(c.env.DB, id, {
@@ -757,10 +647,7 @@ configRouter.put("/ai-models/:id", async (c) => {
   });
 
   if (!updated) {
-    return c.json(
-      { error: { code: "MODEL_NOT_FOUND", message: "AI model not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "MODEL_NOT_FOUND", "AI model not found");
   }
 
   return c.json(updateAiModelResponseSchema.parse({ model: toAiModelResponse(updated) }), 200);
@@ -781,10 +668,7 @@ configRouter.delete("/ai-models/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findAiModelById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "MODEL_NOT_FOUND", message: "AI model not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "MODEL_NOT_FOUND", "AI model not found");
   }
 
   await deleteAiModel(c.env.DB, id);
@@ -798,10 +682,7 @@ configRouter.get("/search-providers", async (c) => {
     return c.json(err.body, err.status as 401 | 403);
   }
   if (auth.user.role !== "admin") {
-    return c.json(
-      { error: { code: "FORBIDDEN", message: "Admin role required", details: null } },
-      403
-    );
+    return forbiddenResponse(c, "Admin role required");
   }
   const rows = await listSearchProviders(c.env.DB);
   return c.json(listSearchProvidersResponseSchema.parse({ providers: rows.map(toSearchProviderResponse) }), 200);
@@ -823,32 +704,17 @@ configRouter.post("/search-providers", async (c) => {
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = createSearchProviderRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid search provider input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid search provider input", parsed.error.issues);
   }
 
   const existing = await findSearchProviderByKey(c.env.DB, parsed.data.providerKey);
   if (existing) {
-    return c.json(
-      { error: { code: "PROVIDER_KEY_EXISTS", message: "A provider with this key already exists", details: null } },
-      409
-    );
+    return conflictResponse(c, "PROVIDER_KEY_EXISTS", "A provider with this key already exists");
   }
 
   const created = await createSearchProvider(c.env.DB, {
@@ -883,34 +749,19 @@ configRouter.put("/search-providers/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findSearchProviderById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "PROVIDER_NOT_FOUND", message: "Search provider not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "PROVIDER_NOT_FOUND", "Search provider not found");
   }
 
   let body: unknown;
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = updateSearchProviderRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid search provider input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid search provider input", parsed.error.issues);
   }
 
   const updated = await updateSearchProvider(c.env.DB, id, {
@@ -926,10 +777,7 @@ configRouter.put("/search-providers/:id", async (c) => {
   });
 
   if (!updated) {
-    return c.json(
-      { error: { code: "PROVIDER_NOT_FOUND", message: "Search provider not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "PROVIDER_NOT_FOUND", "Search provider not found");
   }
 
   return c.json(updateSearchProviderResponseSchema.parse({ provider: toSearchProviderResponse(updated) }), 200);
@@ -950,10 +798,7 @@ configRouter.delete("/search-providers/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findSearchProviderById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "PROVIDER_NOT_FOUND", message: "Search provider not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "PROVIDER_NOT_FOUND", "Search provider not found");
   }
 
   await deleteSearchProvider(c.env.DB, id);
@@ -967,10 +812,7 @@ configRouter.get("/scoring-configs", async (c) => {
     return c.json(err.body, err.status as 401 | 403);
   }
   if (auth.user.role !== "admin") {
-    return c.json(
-      { error: { code: "FORBIDDEN", message: "Admin role required", details: null } },
-      403
-    );
+    return forbiddenResponse(c, "Admin role required");
   }
   const rows = await listScoringConfigs(c.env.DB);
   return c.json(listScoringConfigsResponseSchema.parse({ configs: rows.map(toScoringConfigResponse) }), 200);
@@ -992,24 +834,12 @@ configRouter.post("/scoring-configs", async (c) => {
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = createScoringConfigRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid scoring config input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid scoring config input", parsed.error.issues);
   }
 
   try {
@@ -1023,10 +853,7 @@ configRouter.post("/scoring-configs", async (c) => {
 
   const existing = await findScoringConfigByKey(c.env.DB, parsed.data.configKey);
   if (existing) {
-    return c.json(
-      { error: { code: "SCORING_KEY_EXISTS", message: "A scoring config with this key already exists", details: null } },
-      409
-    );
+    return conflictResponse(c, "SCORING_KEY_EXISTS", "A scoring config with this key already exists");
   }
 
   const created = await createScoringConfig(c.env.DB, {
@@ -1057,34 +884,19 @@ configRouter.put("/scoring-configs/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findScoringConfigById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "SCORING_NOT_FOUND", message: "Scoring config not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "SCORING_NOT_FOUND", "Scoring config not found");
   }
 
   let body: unknown;
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = updateScoringConfigRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid scoring config input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid scoring config input", parsed.error.issues);
   }
 
   if (parsed.data.weightsJson) {
@@ -1107,10 +919,7 @@ configRouter.put("/scoring-configs/:id", async (c) => {
   });
 
   if (!updated) {
-    return c.json(
-      { error: { code: "SCORING_NOT_FOUND", message: "Scoring config not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "SCORING_NOT_FOUND", "Scoring config not found");
   }
 
   return c.json(updateScoringConfigResponseSchema.parse({ config: toScoringConfigResponse(updated) }), 200);
@@ -1131,10 +940,7 @@ configRouter.delete("/scoring-configs/:id", async (c) => {
   const id = c.req.param("id");
   const existing = await findScoringConfigById(c.env.DB, id);
   if (!existing) {
-    return c.json(
-      { error: { code: "SCORING_NOT_FOUND", message: "Scoring config not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "SCORING_NOT_FOUND", "Scoring config not found");
   }
 
   await deleteScoringConfig(c.env.DB, id);
@@ -1156,18 +962,12 @@ configRouter.post("/ai-models/:id/test", async (c) => {
   const id = c.req.param("id");
   const model = await findAiModelById(c.env.DB, id);
   if (!model) {
-    return c.json(
-      { error: { code: "MODEL_NOT_FOUND", message: "AI model not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "MODEL_NOT_FOUND", "AI model not found");
   }
 
   const provider = await findAiProviderByKey(c.env.DB, model.providerKey);
   if (!provider) {
-    return c.json(
-      { error: { code: "PROVIDER_NOT_FOUND", message: "AI provider not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "PROVIDER_NOT_FOUND", "AI provider not found");
   }
 
   let body: { prompt?: string } = {};

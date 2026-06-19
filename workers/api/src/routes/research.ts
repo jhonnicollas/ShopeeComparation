@@ -17,6 +17,7 @@ import {
 import { findProductById } from "@shopee-research/db";
 import { findShopById } from "@shopee-research/db";
 import { authenticate, authErrorResponse } from "../lib/auth.js";
+import { forbiddenResponse, invalidJsonResponse, notFoundResponse, validationErrorResponse } from "../lib/errors.js";
 
 type Bindings = {
   DB: D1Database;
@@ -49,24 +50,12 @@ researchRouter.post("/compare-links", async (c) => {
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = compareLinksRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid compare links input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid compare links input", parsed.error.issues);
   }
 
   const sessionId = generateId("rsr");
@@ -121,24 +110,12 @@ researchRouter.post("/keyword-search", async (c) => {
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      { error: { code: "INVALID_INPUT", message: "Request body must be valid JSON", details: null } },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = keywordSearchRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid keyword search input",
-          details: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid keyword search input", parsed.error.issues);
   }
 
   const sessionId = generateId("rsr");
@@ -235,17 +212,11 @@ researchRouter.get("/jobs/:id", async (c) => {
   const { findJobById } = await import("@shopee-research/db");
   const job = await findJobById(c.env.DB, id);
   if (!job) {
-    return c.json(
-      { error: { code: "JOB_NOT_FOUND", message: "Job not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "JOB_NOT_FOUND", "Job not found");
   }
 
   if (job.userId !== auth.user.userId) {
-    return c.json(
-      { error: { code: "FORBIDDEN", message: "Cannot access this job", details: null } },
-      403
-    );
+    return forbiddenResponse(c, "Cannot access this job");
   }
 
   return c.json(
@@ -276,17 +247,11 @@ researchRouter.get("/sessions/:id", async (c) => {
   const { findResearchSessionById } = await import("@shopee-research/db");
   const session = await findResearchSessionById(c.env.DB, id);
   if (!session) {
-    return c.json(
-      { error: { code: "SESSION_NOT_FOUND", message: "Session not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "SESSION_NOT_FOUND", "Session not found");
   }
 
   if (session.userId !== auth.user.userId) {
-    return c.json(
-      { error: { code: "FORBIDDEN", message: "Cannot access this session", details: null } },
-      403
-    );
+    return forbiddenResponse(c, "Cannot access this session");
   }
 
   return c.json(
@@ -320,17 +285,11 @@ researchRouter.get("/comparisons/by-session/:sessionId", async (c) => {
 
   const session = await findResearchSessionById(c.env.DB, sessionId);
   if (!session) {
-    return c.json(
-      { error: { code: "SESSION_NOT_FOUND", message: "Session not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "SESSION_NOT_FOUND", "Session not found");
   }
 
   if (session.userId !== auth.user.userId) {
-    return c.json(
-      { error: { code: "FORBIDDEN", message: "Cannot access this session", details: null } },
-      403
-    );
+    return forbiddenResponse(c, "Cannot access this session");
   }
 
   const comparison = await findComparisonBySession(c.env.DB, sessionId);
@@ -383,17 +342,11 @@ researchRouter.get("/comparisons/:comparisonId/ai-report", async (c) => {
 
   const comparison = await findComparisonById(c.env.DB, comparisonId);
   if (!comparison) {
-    return c.json(
-      { error: { code: "COMPARISON_NOT_FOUND", message: "Comparison not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "COMPARISON_NOT_FOUND", "Comparison not found");
   }
 
   if (comparison.userId !== auth.user.userId) {
-    return c.json(
-      { error: { code: "FORBIDDEN", message: "Cannot access this comparison", details: null } },
-      403
-    );
+    return forbiddenResponse(c, "Cannot access this comparison");
   }
 
   const report = await findAiReportByComparison(c.env.DB, comparisonId);
@@ -427,10 +380,7 @@ researchRouter.get("/products/:id", async (c) => {
   const id = c.req.param("id");
   const product = await findProductById(c.env.DB, id);
   if (!product) {
-    return c.json(
-      { error: { code: "PRODUCT_NOT_FOUND", message: "Product not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "PRODUCT_NOT_FOUND", "Product not found");
   }
 
   return c.json(product, 200);
@@ -446,10 +396,7 @@ researchRouter.get("/shops/:id", async (c) => {
   const id = c.req.param("id");
   const shop = await findShopById(c.env.DB, id);
   if (!shop) {
-    return c.json(
-      { error: { code: "SHOP_NOT_FOUND", message: "Shop not found", details: null } },
-      404
-    );
+    return notFoundResponse(c, "SHOP_NOT_FOUND", "Shop not found");
   }
 
   return c.json(shop, 200);

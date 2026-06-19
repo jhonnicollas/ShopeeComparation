@@ -20,6 +20,7 @@ import {
   findSessionByTokenHash,
   revokeSession,
 } from "@shopee-research/db";
+import { invalidJsonResponse, validationErrorResponse, errorResponse, unauthenticatedResponse, conflictResponse } from "../lib/errors.js";
 
 type Bindings = {
   DB: D1Database;
@@ -67,62 +68,23 @@ authRouter.post("/register", async (c) => {
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Request body must be valid JSON",
-          details: null,
-        },
-      },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = registerRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid registration input",
-          details: parsed.error.issues.map((i) => ({
-            path: i.path.join("."),
-            message: i.message,
-          })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid registration input", parsed.error.issues);
   }
 
   const { email, password, name } = parsed.data;
   const validation = validateAuthInput(email, password, name);
   if (!validation.valid) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: validation.error ?? "Invalid input",
-          details: null,
-        },
-      },
-      400
-    );
+    return errorResponse(c, 400, "INVALID_INPUT", validation.error ?? "Invalid input");
   }
 
   const existing = await findUserByEmail(c.env.DB, email);
   if (existing) {
-    return c.json(
-      {
-        error: {
-          code: "EMAIL_ALREADY_EXISTS",
-          message: "An account with this email already exists",
-          details: null,
-        },
-      },
-      409
-    );
+    return conflictResponse(c, "EMAIL_ALREADY_EXISTS", "An account with this email already exists");
   }
 
   const pepper = c.env.PASSWORD_PEPPER ?? "";
@@ -178,76 +140,28 @@ authRouter.post("/login", async (c) => {
   try {
     body = await c.req.json();
   } catch {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Request body must be valid JSON",
-          details: null,
-        },
-      },
-      400
-    );
+    return invalidJsonResponse(c);
   }
 
   const parsed = loginRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_INPUT",
-          message: "Invalid login input",
-          details: parsed.error.issues.map((i) => ({
-            path: i.path.join("."),
-            message: i.message,
-          })),
-        },
-      },
-      400
-    );
+    return validationErrorResponse(c, "Invalid login input", parsed.error.issues);
   }
 
   const { email, password } = parsed.data;
   const user = await findUserByEmail(c.env.DB, email);
   if (!user) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_CREDENTIALS",
-          message: "Invalid email or password",
-          details: null,
-        },
-      },
-      401
-    );
+    return errorResponse(c, 401, "INVALID_CREDENTIALS", "Invalid email or password");
   }
 
   if (user.status !== "active") {
-    return c.json(
-      {
-        error: {
-          code: "ACCOUNT_DISABLED",
-          message: "Account is disabled",
-          details: null,
-        },
-      },
-      401
-    );
+    return errorResponse(c, 401, "ACCOUNT_DISABLED", "Account is disabled");
   }
 
   const pepper = c.env.PASSWORD_PEPPER ?? "";
   const isValid = await verifyPassword(password, user.passwordHash, user.passwordSalt, pepper);
   if (!isValid) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_CREDENTIALS",
-          message: "Invalid email or password",
-          details: null,
-        },
-      },
-      401
-    );
+    return errorResponse(c, 401, "INVALID_CREDENTIALS", "Invalid email or password");
   }
 
   const sessionToken = generateSessionToken();
@@ -287,16 +201,7 @@ authRouter.post("/logout", async (c) => {
   const cookieHeader = c.req.header("cookie");
   const sessionToken = extractSessionToken(cookieHeader);
   if (!sessionToken) {
-    return c.json(
-      {
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "No session cookie provided",
-          details: null,
-        },
-      },
-      401
-    );
+    return unauthenticatedResponse(c, "No session cookie provided");
   }
 
   const tokenHash = await hashSessionTokenAsync(sessionToken);
@@ -304,31 +209,13 @@ authRouter.post("/logout", async (c) => {
   if (!session) {
     const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
     c.header("Set-Cookie", clearCookie);
-    return c.json(
-      {
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "Session not found",
-          details: null,
-        },
-      },
-      401
-    );
+    return unauthenticatedResponse(c, "Session not found");
   }
 
   if (isSessionExpired(session.expiresAt) || isSessionRevoked(session.revokedAt)) {
     const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
     c.header("Set-Cookie", clearCookie);
-    return c.json(
-      {
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "Session is no longer valid",
-          details: null,
-        },
-      },
-      401
-    );
+    return unauthenticatedResponse(c, "Session is no longer valid");
   }
 
   await revokeSession(c.env.DB, session.id);
@@ -342,71 +229,26 @@ authRouter.get("/me", async (c) => {
   const cookieHeader = c.req.header("cookie");
   const sessionToken = extractSessionToken(cookieHeader);
   if (!sessionToken) {
-    return c.json(
-      {
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "No session cookie provided",
-          details: null,
-        },
-      },
-      401
-    );
+    return unauthenticatedResponse(c, "No session cookie provided");
   }
 
   const tokenHash = await hashSessionTokenAsync(sessionToken);
   const session = await findSessionByTokenHash(c.env.DB, tokenHash);
   if (!session) {
-    return c.json(
-      {
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "Session not found",
-          details: null,
-        },
-      },
-      401
-    );
+    return unauthenticatedResponse(c, "Session not found");
   }
 
   if (isSessionExpired(session.expiresAt) || isSessionRevoked(session.revokedAt)) {
-    return c.json(
-      {
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "Session is no longer valid",
-          details: null,
-        },
-      },
-      401
-    );
+    return unauthenticatedResponse(c, "Session is no longer valid");
   }
 
   const user = await findUserById(c.env.DB, session.userId);
   if (!user) {
-    return c.json(
-      {
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "User not found",
-          details: null,
-        },
-      },
-      401
-    );
+    return unauthenticatedResponse(c, "User not found");
   }
 
   if (user.status !== "active") {
-    return c.json(
-      {
-        error: {
-          code: "ACCOUNT_DISABLED",
-          message: "Account is disabled",
-          details: null,
-        },
-      },
-      401
-    );
+    return errorResponse(c, 401, "ACCOUNT_DISABLED", "Account is disabled");
   }
 
   const responseBody = meResponseSchema.parse({

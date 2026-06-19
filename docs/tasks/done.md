@@ -1891,3 +1891,31 @@ Quality Gate:
 - test: pass (672 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-107: Build keyword search result page
+
+Status: DONE
+CompletedAt: 2026-06-19 22:55
+Branch: main
+Commit: 0732c0c
+
+Summary:
+- Updated ResultPage to support both keywordSearch and compareLinks modes.
+- Display keyword, shippedFrom for keywordSearch mode.
+- Show best product callout with rank, ID, score.
+- Show ranked product cards with score breakdown (final, rating, reviews, sold, price, shop).
+- Show pros, cons, risks.
+- Show AI report section with confidence, best product, best value, safest, riskiest.
+- Show missing data notes.
+- Show partialSuccess banner when status is partialSuccess.
+- Added CSS for bestProductCallout, partialSuccessBanner, aiRankBadge, missingDataNotes, riskSection.
+- Added 7 unit tests covering loading, mode detection, best product, ranked products, AI report, pros/cons, missing data.
+- All 675 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (675 tests)
+- build: pass
+- validation scripts: pass

@@ -2175,3 +2175,35 @@ Quality Gate:
 - test: pass (744 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-124: Add config audit logs
+
+Status: DONE
+CompletedAt: 2026-06-20 03:26
+Branch: main
+Commit: 3f462a4
+
+Summary:
+- Created sh_configAuditLogs table with migration 0003_config_audit_logs.sql.
+- Table columns: id, userId, configType, configId, action, oldValueJson, newValueJson, createdAt.
+- Added indexes on userId, configType, configId, createdAt.
+- Created packages/db/src/repositories/configAuditLogs.ts with:
+  - createConfigAuditLog: insert an audit log row
+  - listConfigAuditLogs: list with optional configType and configId filters
+- Exported from packages/db/src/index.ts.
+- Added 5 tests covering create, list, filter operations.
+- Wired audit logging into all 15 config CRUD routes in workers/api/src/routes/config.ts:
+  - 5 create operations (POST for apps, ai-providers, ai-models, search-providers, scoring-configs)
+  - 5 update operations (PUT for each entity type)
+  - 5 delete operations (DELETE for each entity type)
+- Tracks userId, configType, configId, action, oldValueJson, newValueJson.
+- Updated schema.md with table documentation.
+- All 749 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (749 tests)
+- build: pass
+- validation scripts: pass

@@ -1,4 +1,4 @@
-# TASK-110: Build dashboard page
+# TASK-114: Build product detail page
 
 ## Status
 
@@ -6,38 +6,33 @@ TODO
 
 ## Goal
 
-Build a frontend dashboard page that shows an overview of the user's research activity: total research sessions, recent jobs, status counts, and quick actions to start new research. The page is the user's home for managing their research.
+Build a frontend product detail page that shows all extracted product data, including scores, weights, features, source attribution, and confidence levels.
 
 ## Required Reading
 
-- `docs/prd/prd.md` (section 5.2 admin)
-- `docs/architecture/technical-decisions.md`
-- `docs/api/api-contract.md` (Research API)
+- `docs/prd/prd.md`
+- `docs/api/api-contract.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/done-definition.md`
 
 ## Scope
 
-- Create `apps/web/src/pages/DashboardPage.tsx`
-- Fetch user research sessions via GET /api/research
-- Show stats: total sessions, completed, failed, partialSuccess
-- Show list of recent sessions (top 5)
-- Show quick action links: compare-links, keyword-search, settings
-- Add route `/dashboard`
-- Update `apps/web/src/app/router.tsx` to add route
+- Add GET /api/research/products/:id endpoint
+- Create `apps/web/src/pages/ProductDetailPage.tsx`
+- Add route `/products/:productId`
+- Update `apps/web/src/app/router.tsx`
 - Add tests
 
 ## Out of Scope
 
-- Do not change backend API
 - Do not change D1 schema
-- Do not implement admin-only features (user-scoped only)
+- Do not implement admin-only features
 
 ## Allowed Files
 
-- `apps/web/src/pages/DashboardPage.tsx` (new)
-- `apps/web/src/pages/DashboardPage.test.tsx` (new)
+- `apps/web/src/pages/ProductDetailPage.tsx` (new)
+- `apps/web/src/pages/ProductDetailPage.test.tsx` (new)
 - `apps/web/src/app/router.tsx`
 - `apps/web/src/styles/global.css`
 - `workers/api/src/routes/research.ts`
@@ -46,69 +41,19 @@ Build a frontend dashboard page that shows an overview of the user's research ac
 
 ## Forbidden Files
 
-- `packages/db/**` (no schema changes; reuse existing repos)
+- `packages/db/**`
 - `packages/shopee/**`
 - `packages/core/**`
 - `packages/ai/**`
 
-## Input Contract
-
-Fetch from `GET /api/research` returning:
-```ts
-{
-  items: Array<{
-    id: string;
-    mode: "compareLinks" | "keywordSearch";
-    keyword: string | null;
-    status: "pending" | "processing" | "completed" | "failed" | "partialSuccess";
-    bestProductId: string | null;
-    createdAt: string;
-  }>
-}
-```
-
-## Output Contract
-
-Dashboard shows:
-- Welcome header
-- Stats cards: total, completed, failed, partialSuccess
-- Recent sessions list (top 5 with mode, keyword/status/createdAt)
-- Quick action links
-
 ## Acceptance Criteria
 
-- [ ] DashboardPage component renders
-- [ ] Fetches from GET /api/research
-- [ ] Shows stats cards
-- [ ] Shows recent sessions list
-- [ ] Shows quick action links
-- [ ] Route /dashboard added
+- [ ] GET /api/research/products/:id endpoint added
+- [ ] ProductDetailPage component renders
+- [ ] Route /products/:productId added
 - [ ] Component tests pass
-- [ ] All existing tests pass
 - [ ] Quality gate passes
-
-## Test Requirements
-
-- [ ] Unit test: renders dashboard with stats
-- [ ] Unit test: renders recent sessions
-- [ ] Unit test: shows loading state
-- [ ] Unit test: shows empty state when no sessions
-- [ ] Unit test: shows error state
-
-## Documentation Update
-
-- [ ] No public docs changes
-
-## Stop Conditions Check
-
-- [ ] No hard stop condition is triggered
 
 ## Completion Rule
 
-Task is complete only when:
-- Lint passes
-- Typecheck passes
-- Tests pass
-- Build passes
-- Self-review passes
-- Task is committed
+Task is complete only when all quality gates pass and task is committed.

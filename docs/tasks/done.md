@@ -1995,3 +1995,55 @@ Quality Gate:
 - test: pass (691 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-113: Build job logs page
+
+Status: DONE
+CompletedAt: 2026-06-20 01:55
+Branch: main
+Commit: 7f4144d
+
+Summary:
+- Created apps/web/src/pages/JobLogsPage.tsx with job execution details.
+- Fetches from GET /api/research/jobs/:jobId using TanStack Query.
+- Shows stats: jobId, progress percentage, step count.
+- Shows current step, error message, timestamps.
+- Added /jobs/$jobId route to router.tsx (protected by RequireAuth).
+- Added statValueSmall and detailMeta CSS classes.
+- Created JobLogsPage.test.tsx with 4 component tests (loading, error, details, failed job).
+- All 695 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (695 tests)
+- build: pass
+- validation scripts: pass
+
+## TASK-114: Build product detail page
+
+Status: DONE
+CompletedAt: 2026-06-20 02:05
+Branch: main
+Commit: 073709d
+
+Summary:
+- Added GET /api/research/products/:id and GET /api/research/shops/:id endpoints in workers/api/src/routes/research.ts.
+- Both endpoints require authentication and return 404 for missing entities.
+- Created apps/web/src/pages/ProductDetailPage.tsx with product details, stats, description.
+- Fetches from GET /api/research/products/:productId using TanStack Query.
+- Shows price, rating, reviews, sold, stock, category, shippedFrom, URLs, timestamps.
+- Added /products/$productId route to router.tsx (protected by RequireAuth).
+- Added productImage and productDescription CSS classes.
+- Added 6 unit tests for product and shop API endpoints (3 for each).
+- Created ProductDetailPage.test.tsx with 4 component tests.
+- All 705 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (705 tests)
+- build: pass
+- validation scripts: pass

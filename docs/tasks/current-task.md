@@ -1,18 +1,18 @@
-# TASK-106: Build keyword search frontend page
+# TASK-107: Build keyword search result page
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build the Keyword Search frontend page with a form for keyword, optional filters (shippedFrom default "DKI Jakarta", limit default 10, priceMin/Max, minimumRating, storeStatus), and submission to POST /api/research/keyword-search. The page must show job status (polling) and navigate to result page on completion.
+Build keyword search result page that displays top 10 ranked products with score breakdown, product details (title, price, rating, sold, weight), shop info, and AI report. The page must handle both `compareLinks` and `keywordSearch` research session modes.
 
 ## Required Reading
 
 - `docs/prd/prd.md` (section 8.3, 8.10)
 - `docs/architecture/technical-decisions.md`
-- `docs/api/api-contract.md` (Research API section)
+- `docs/api/api-contract.md`
 - `docs/shared/enums.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
@@ -20,26 +20,24 @@ Build the Keyword Search frontend page with a form for keyword, optional filters
 
 ## Scope
 
-- Update `apps/web/src/pages/KeywordSearchPage.tsx` with full form
-- Add `submitKeywordSearch()` function in `apps/web/src/lib/shopee.ts` (or similar)
-- Use TanStack Query mutation to POST
-- Use TanStack Query polling for job status (GET /api/research/jobs/:id)
-- Navigate to results page on completion
-- Show loading and error states
-- Add CSS for form
+- Update `apps/web/src/pages/ResultPage.tsx` to support `keywordSearch` mode
+- Display keyword, shippedFrom, limit info when mode is `keywordSearch`
+- Fetch AI report from GET /api/research/comparisons/:id/ai-report
+- Display ranked products with full product details (title, priceMin, priceMax, rating, soldCount)
+- Show weight if available
+- Show shop info (name, status)
 - Add tests
 
 ## Out of Scope
 
-- Do not implement result page (TASK-107)
+- Do not change backend API endpoints
+- Do not implement scoring engine (already exists)
 - Do not change D1 schema
-- Do not call Shopee from frontend
 
 ## Allowed Files
 
-- `apps/web/src/pages/KeywordSearchPage.tsx`
-- `apps/web/src/pages/KeywordSearchPage.test.tsx` (new)
-- `apps/web/src/lib/research.ts` (new) or `apps/web/src/lib/api.ts`
+- `apps/web/src/pages/ResultPage.tsx`
+- `apps/web/src/pages/ResultPage.test.tsx`
 - `apps/web/src/styles/global.css`
 - `docs/tasks/**`
 
@@ -50,39 +48,37 @@ Build the Keyword Search frontend page with a form for keyword, optional filters
 
 ## Input Contract
 
-Form fields:
-- keyword (required, string, min 1)
-- shippedFrom (optional, default "DKI Jakarta")
-- limit (optional, default 10, 1-50)
-- priceMin/priceMax (optional, number)
-- minimumRating (optional, number 0-5)
-- storeStatus (optional, multi-select)
+Route param: `researchSessionId`
+Fetch from `GET /api/research/sessions/:id` and `GET /api/research/comparisons/by-session/:sessionId` and `GET /api/research/comparisons/:id/ai-report`
 
 ## Output Contract
 
-- On submit: POST /api/research/keyword-search → 202 with researchSessionId, jobId
-- Poll GET /api/research/jobs/:id every 3s
-- On status=completed/partialSuccess: navigate to /results/:researchSessionId
+Renders:
+- Header with keyword search info (keyword, shippedFrom, total products)
+- Best product (rank 1) callout
+- Ranked list of products with: rank, product title, price, rating, sold count, shop name, score breakdown
+- AI report section
+- Weight info if available
 
 ## Acceptance Criteria
 
-- [ ] Page shows form with keyword, shippedFrom, limit, priceMin/Max, minimumRating, storeStatus fields
-- [ ] Defaults shippedFrom to "DKI Jakarta" and limit to 10
-- [ ] On submit, POST /api/research/keyword-search with correct payload
-- [ ] Polls GET /api/research/jobs/:id every 3s after submission
-- [ ] Navigates to result page on completed/partialSuccess
-- [ ] Shows error states for 401, 400, etc.
+- [ ] Page handles both `keywordSearch` and `compareLinks` modes
+- [ ] Shows keyword and shippedFrom for keywordSearch mode
+- [ ] Renders ranked product cards with title, price, rating, sold
+- [ ] Shows shop name and status if available
+- [ ] Shows weight if available
+- [ ] Shows AI report if available
 - [ ] Component tests pass
 - [ ] All existing tests pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit test: renders all form fields
-- [ ] Unit test: defaults shippedFrom and limit
-- [ ] Unit test: submits correct payload
-- [ ] Unit test: shows error on failure
-- [ ] Unit test: navigates on completion
+- [ ] Unit test: renders for keywordSearch mode
+- [ ] Unit test: renders for compareLinks mode
+- [ ] Unit test: shows best product callout
+- [ ] Unit test: shows AI report
+- [ ] Unit test: shows loading and error states
 
 ## Documentation Update
 

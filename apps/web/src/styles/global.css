@@ -875,3 +875,58 @@ h2 {
   font-size: 14px;
   color: #1f2933;
 }
+
+.bestProductCallout {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: #f6f8fb;
+  border-radius: 8px;
+}
+
+.bestProductId {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1f2933;
+}
+
+.bestScore {
+  margin-left: auto;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.partialSuccessBanner {
+  padding: 12px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  color: #92400e;
+  margin-top: 8px;
+}
+
+.aiRankBadge {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: #e0e7ff;
+  color: #3730a3;
+  border-radius: 10px;
+}
+
+.missingDataNotes {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e1e6ee;
+}
+
+.riskSection {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e1e6ee;
+}
+
+.riskSection h3 {
+  color: #b91c1c;
+  margin-bottom: 4px;
+}

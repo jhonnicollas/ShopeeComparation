@@ -1,4 +1,4 @@
-# TASK-100: Build keyword search API
+# TASK-101: Build search provider adapter
 
 ## Status
 
@@ -6,18 +6,18 @@ TODO
 
 ## Goal
 
-Build `POST /api/research/keyword-search` endpoint that accepts keyword, optional shippedFrom (default `DKI Jakarta`), limit, price range, minimum rating, and store status filters. Creates a `sh_researchSessions` row, a `sh_jobs` row, and enqueues a `keywordSearch` job via Cloudflare Queues. Returns 202 with researchSessionId, jobId, and status.
+Build a search provider adapter that implements the `SearchProvider` interface. The adapter loads its configuration from `sh_searchProviderConfigs` table (D1), respecting `isEnabled` and `priority` order. It must support pluggable providers (official API, webFetch, 9router, BrowserRun, manual) and use the existing `SearchInput`/`SearchResultCandidate` types.
 
 ## Required Reading
 
-- `docs/prd/prd.md` (sections 8.3, 8.9, 8.10)
+- `docs/prd/prd.md` (section 8.6, 8.3)
 - `docs/architecture/technical-decisions.md`
-- `docs/architecture/implementation-stack.md`
 - `docs/shared/enums.md`
 - `docs/database/schema.md`
-- `docs/api/api-contract.md` (section: Research API)
+- `docs/api/api-contract.md`
 - `docs/configuration/runtime-configuration.md`
 - `docs/shopee/search-api-strategy.md`
+- `docs/shopee/extraction-strategy.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/autopilot-policy.md`
@@ -25,89 +25,88 @@ Build `POST /api/research/keyword-search` endpoint that accepts keyword, optiona
 
 ## Scope
 
-- Add `POST /api/research/keyword-search` endpoint in `workers/api/src/routes/research.ts`
-- Validate with existing `keywordSearchRequestSchema` from `packages/shared`
-- Reuse `createResearchSession` and `createJob` from `packages/db`
-- Reuse `sendResearchJobMessage` from `packages/db` (queue producer)
-- Auth via existing `authenticate` helper
-- Return 202 with `{ researchSessionId, jobId, status: "pending" }`
-- Add unit tests for all scenarios
+- Create `packages/shopee/src/adapters/searchProviderAdapter.ts` — SearchProviderAdapter
+- Implement `SearchProvider` interface (single `search()` method)
+- Load `SearchProviderConfigRow` from D1 by `providerKey`
+- Pass `baseUrl`/`timeoutMs`/`retryCount`/`authType`/`secretRef` from row
+- Use existing 9router adapter (`NineRouterFetchAdapter`) when `providerType` is `webFetch`/`9router`
+- Use existing Browser Run adapter (`BrowserRunAdapter`) when `providerType` is `browserRun`
+- For `manual`/`officialApi` types, return empty candidates (placeholder for future)
+- Skip disabled providers (`isEnabled = 0`)
+- Comprehensive unit tests with mocked D1 + mocked fetch
 
 ## Out of Scope
 
-- Do not implement queue consumer logic (existing or separate task)
-- Do not implement candidate collection/enrichment/scoring (TASK-101..105)
-- Do not build frontend (TASK-106..107)
+- Do not call Shopee from frontend (no frontend change here)
+- Do not implement queue consumer (separate task)
+- Do not implement candidate collection/enrichment (TASK-102..104)
 - Do not change D1 schema
 - Do not change wrangler.toml
 
 ## Allowed Files
 
-- `workers/api/src/routes/research.ts`
-- `workers/api/src/routes/research.test.ts`
+- `packages/shopee/src/adapters/searchProviderAdapter.ts` (new)
+- `packages/shopee/src/adapters/searchProviderAdapter.test.ts` (new)
+- `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
 ## Forbidden Files
 
 - `apps/**`
+- `workers/**`
 - `packages/db/**` (no DB schema changes; reuse existing repos)
-- `packages/shopee/**`
-- `packages/ai/**`
 - `packages/core/**`
+- `packages/ai/**`
 - `wrangler*.toml`
 
 ## Input Contract
 
-`POST /api/research/keyword-search`
-```json
+`search(input: SearchInput): Promise<SearchResultCandidate[]>`
+
+`SearchInput`:
+```ts
 {
-  "keyword": "tensimeter digital",
-  "shippedFrom": "DKI Jakarta",
-  "limit": 10,
-  "priceMin": null,
-  "priceMax": null,
-  "minimumRating": null,
-  "storeStatus": null
+  keyword: string;
+  shippedFrom: string;
+  limit: number;
+  priceMin?: number;
+  priceMax?: number;
+  minimumRating?: number;
+  minimumReviewCount?: number;
+  storeStatus?: string[];
 }
 ```
 
 ## Output Contract
 
-`202 Accepted`
-```json
-{
-  "researchSessionId": "rsr_xxx",
-  "jobId": "job_xxx",
-  "status": "pending"
-}
-```
+`SearchResultCandidate[]` with each field nullable except `source` and `confidence`.
 
 ## Acceptance Criteria
 
-- [ ] POST /api/research/keyword-search endpoint exists
-- [ ] Auth required (401 if no session)
-- [ ] Validates with Zod keywordSearchRequestSchema
-- [ ] Returns 400 on invalid input (empty keyword, limit out of range, etc.)
-- [ ] Creates research session in D1 (mode=keywordSearch, status=pending, shippedFrom defaults to "DKI Jakarta")
-- [ ] Creates job in D1 (type=keywordSearch, status=pending)
-- [ ] Enqueues message via sendResearchJobMessage
-- [ ] Returns 202 with researchSessionId, jobId, status=pending
-- [ ] Unit tests for all scenarios
+- [ ] SearchProviderAdapter class implements `SearchProvider` interface
+- [ ] `search()` method returns `SearchResultCandidate[]`
+- [ ] Loads config from D1 by `providerKey`
+- [ ] Returns empty array when provider is disabled
+- [ ] Returns empty array when provider is not found
+- [ ] Uses correct adapter based on `providerType`
+- [ ] Does not call Shopee from frontend
+- [ ] Secret values resolved from env, never hardcoded
+- [ ] Unit tests pass
 - [ ] All existing tests pass
 - [ ] Quality gate passes (lint, typecheck, test, build, quality-gate.js)
 
 ## Test Requirements
 
-- [ ] Unit test: returns 401 without auth
-- [ ] Unit test: returns 400 for empty keyword
-- [ ] Unit test: returns 400 for limit out of range
-- [ ] Unit test: creates session, job, and enqueues message with all fields
-- [ ] Unit test: defaults shippedFrom to "DKI Jakarta"
-- [ ] Unit test: respects priceMin, priceMax, minimumRating, storeStatus
+- [ ] Unit test: returns empty when provider is disabled
+- [ ] Unit test: returns empty when provider is not found
+- [ ] Unit test: uses 9router adapter for webFetch type
+- [ ] Unit test: uses Browser Run adapter for browserRun type
+- [ ] Unit test: returns empty for manual/officialApi types
+- [ ] Unit test: handles missing secret env gracefully
 
 ## Documentation Update
 
-- [ ] No public docs changes needed (internal API)
+- [ ] Update `packages/shopee/src/index.ts` to export new adapter
 
 ## Stop Conditions Check
 

@@ -1762,3 +1762,30 @@ Quality Gate:
 - test: pass (629 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-102: Build candidate collector
+
+Status: DONE
+CompletedAt: 2026-06-19 17:15
+Branch: main
+Commit: 3ee81fc
+
+Summary:
+- Created CandidateCollector in packages/shopee/src/collectors/candidateCollector.ts.
+- Collects from multiple SearchProvider in priority order.
+- Deduplicates by shopId+itemId first, then canonicalUrl, then originalUrl.
+- Picks higher confidence candidate when duplicate found.
+- Sorts by confidence descending before applying limit.
+- Tracks per-provider count and failed providers.
+- Handles provider failures gracefully (partial success).
+- Uses default limit of 10 when input.limit is 0 or negative.
+- Added 10 unit tests covering all scenarios.
+- All 639 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (639 tests)
+- build: pass
+- validation scripts: pass

@@ -1970,3 +1970,28 @@ Quality Gate:
 - test: pass (683 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-112: Build research detail page
+
+Status: DONE
+CompletedAt: 2026-06-20 01:45
+Branch: main
+Commit: 76b0206
+
+Summary:
+- Created apps/web/src/pages/ResearchDetailPage.tsx with session detail, comparison, and AI report.
+- Fetches session via GET /api/research/sessions/:id.
+- Fetches comparison via GET /api/research/comparisons/by-session/:sessionId (enabled only for completed/partialSuccess).
+- Fetches AI report via GET /api/research/comparisons/:comparisonId/ai-report (enabled only when comparison exists).
+- Shows stats cards, error messages, comparison table, AI report sections.
+- Added /research/$researchSessionId route to router.tsx (protected by RequireAuth).
+- Created ResearchDetailPage.test.tsx with 4 component tests (loading, error, session details, comparison items).
+- All 691 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (691 tests)
+- build: pass
+- validation scripts: pass

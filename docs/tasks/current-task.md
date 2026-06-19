@@ -1,45 +1,42 @@
-# TASK-104: Build candidate enrichment job
+# TASK-105: Build top 10 ranking
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a candidate enrichment pipeline that takes a list of `SearchResultCandidate`, enriches each with full `ProductSnapshot` and `ShopSnapshot` via the `FallbackShopeeExtractor`, and saves results to D1 (products, shops, weights) and R2 (raw snapshots). Pipeline processes candidates in parallel with bounded concurrency and reports partial success.
+Build a deterministic scoring and ranking function for enriched `ProductSnapshot` + `ShopSnapshot` products. Uses existing `packages/core` scoring engine to produce final scores, then sorts and returns top N (default 10). Each result includes rank, score, and a deterministic comparison key.
 
 ## Required Reading
 
-- `docs/prd/prd.md` (section 8.3, 8.6, 8.7, 8.8)
+- `docs/prd/prd.md` (section 8.3, 8.9)
 - `docs/architecture/technical-decisions.md`
 - `docs/shared/enums.md`
-- `docs/database/schema.md`
 - `docs/shopee/search-api-strategy.md`
-- `docs/shopee/extraction-strategy.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
+- `.ai/done-definition.md`
 
 ## Scope
 
-- Create `packages/shopee/src/jobs/candidateEnrichmentJob.ts`
-- Accept list of `SearchResultCandidate`, db, r2, fallback extractor
-- For each candidate: extract product, extract shop, save to D1, save snapshot to R2
-- Bounded concurrency (e.g. 5 parallel)
-- Return `EnrichmentResult` with enriched products, shops, errors
-- Mark research session progress as items complete
-- Use existing packages/db repos
-- Unit tests with mocked db/r2/extractor
+- Create `packages/shopee/src/jobs/topTenRanking.ts`
+- Export `rankTopN(items: { product: ProductSnapshot; shop: ShopSnapshot | null }[], limit: number): RankedResult[]`
+- Use existing `packages/core` scoring engine (calculateProductScore)
+- Sort by score descending; tiebreak by `itemId` for determinism
+- Return `RankedResult[]` with `rank`, `productId`, `score`, `product`, `shop`
+- Unit tests with various score inputs
 
 ## Out of Scope
 
-- Do not implement queue consumer (separate task)
-- Do not implement score/rank
+- Do not implement actual AI ranking
+- Do not modify packages/core
 - Do not change D1 schema
 
 ## Allowed Files
 
-- `packages/shopee/src/jobs/candidateEnrichmentJob.ts` (new)
-- `packages/shopee/src/jobs/candidateEnrichmentJob.test.ts` (new)
+- `packages/shopee/src/jobs/topTenRanking.ts` (new)
+- `packages/shopee/src/jobs/topTenRanking.test.ts` (new)
 - `packages/shopee/src/index.ts` (re-export)
 - `docs/tasks/**`
 
@@ -47,59 +44,49 @@ Build a candidate enrichment pipeline that takes a list of `SearchResultCandidat
 
 - `apps/**`
 - `workers/**`
-- `packages/db/**` (no schema changes; reuse repos)
-- `packages/core/**`
+- `packages/db/**`
 - `packages/ai/**`
 
 ## Input Contract
 
 ```ts
-runEnrichment(input: {
-  db: D1Database;
-  r2: R2Bucket;
-  extractor: FallbackShopeeExtractor;
-  candidates: SearchResultCandidate[];
-  researchSessionId: string;
-  concurrency?: number;
-}): Promise<EnrichmentResult>
+rankTopN(items: RankInput[], limit: number): RankedResult[]
 ```
 
 ## Output Contract
 
 ```ts
-{
-  products: ProductSnapshot[];
-  shops: ShopSnapshot[];
-  errors: Array<{ itemId: string; error: string }>;
-  enrichedCount: number;
-  failedCount: number;
+interface RankedResult {
+  rank: number;
+  productId: string;
+  score: number;
+  product: ProductSnapshot;
+  shop: ShopSnapshot | null;
 }
 ```
 
 ## Acceptance Criteria
 
-- [ ] runEnrichment function implemented
-- [ ] Processes candidates with bounded concurrency
-- [ ] Saves each product and shop to D1
-- [ ] Saves raw snapshot to R2
-- [ ] Handles per-candidate failures gracefully
-- [ ] Returns enriched products, shops, errors
+- [ ] rankTopN function implemented
+- [ ] Uses packages/core scoring engine
+- [ ] Sorts by score descending with deterministic tiebreak
+- [ ] Returns top N items
+- [ ] Assigns rank 1..N
 - [ ] Unit tests pass
 - [ ] All existing tests pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit test: enriches all candidates successfully
-- [ ] Unit test: handles per-candidate failure
-- [ ] Unit test: saves to D1
-- [ ] Unit test: saves to R2
-- [ ] Unit test: respects concurrency
-- [ ] Unit test: returns empty result for empty candidates
+- [ ] Unit test: ranks by score descending
+- [ ] Unit test: tiebreak by itemId
+- [ ] Unit test: respects limit
+- [ ] Unit test: handles empty list
+- [ ] Unit test: assigns ranks correctly
 
 ## Documentation Update
 
-- [ ] Update `packages/shopee/src/index.ts` to export new job
+- [ ] Update `packages/shopee/src/index.ts` to export new ranker
 
 ## Stop Conditions Check
 

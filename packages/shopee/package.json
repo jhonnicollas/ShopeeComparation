@@ -14,6 +14,7 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
+    "@shopee-research/core": "workspace:*",
     "@shopee-research/db": "workspace:*",
     "@shopee-research/shared": "workspace:*"
   }

@@ -127,6 +127,9 @@ importers:
 
   packages/shopee:
     dependencies:
+      '@shopee-research/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopee-research/db':
         specifier: workspace:*
         version: link:../db

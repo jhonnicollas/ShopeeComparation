@@ -18,3 +18,4 @@ export * from "./parser/featureExtractor.js";
 export * from "./collectors/candidateCollector.js";
 export * from "./filters/shippedFromFilter.js";
 export * from "./jobs/candidateEnrichmentJob.js";
+export * from "./jobs/topTenRanking.js";

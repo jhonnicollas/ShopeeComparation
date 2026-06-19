@@ -1865,3 +1865,29 @@ Quality Gate:
 - test: pass (665 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-106: Build keyword search frontend page
+
+Status: DONE
+CompletedAt: 2026-06-19 22:30
+Branch: main
+Commit: e602b4d
+
+Summary:
+- Replaced placeholder KeywordSearchPage with full form.
+- Form fields: keyword (required), shippedFrom (default DKI Jakarta), limit (default 10, clamped 1-50), priceMin/Max, minimumRating, storeStatus multi-select.
+- POST /api/research/keyword-search on submit.
+- Polls GET /api/research/jobs/:id every 3s.
+- Navigates to /results/:researchSessionId on completed/partialSuccess.
+- Validates keyword required and priceMin <= priceMax.
+- Added CSS for checkboxGroup and checkboxLabel.
+- Added 7 unit tests covering form rendering, defaults, submission, checkboxes, limit clamping, validation.
+- All 672 tests pass, lint clean, typecheck clean.
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (672 tests)
+- build: pass
+- validation scripts: pass

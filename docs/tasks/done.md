@@ -1789,3 +1789,29 @@ Quality Gate:
 - test: pass (639 tests)
 - build: pass
 - validation scripts: pass
+
+## TASK-103: Build DKI Jakarta shippedFrom filter
+
+Status: DONE
+CompletedAt: 2026-06-19 17:30
+Branch: main
+Commit: 10a7dd1
+
+Summary:
+- Created filterByShippedFrom in packages/shopee/src/filters/shippedFromFilter.ts.
+- Includes candidates matching shippedFrom.
+- Drops candidates with null shippedFrom (cannot confirm).
+- Drops candidates with non-matching shippedFrom.
+- Case-insensitive matching.
+- Trims whitespace in both candidate values and filter value.
+- Tracks kept and dropped candidates with counts.
+- Added 9 unit tests covering all scenarios.
+- All 648 tests pass, quality gate passes (lint, typecheck, test, build, validation scripts).
+
+Quality Gate:
+- pnpm install: pass
+- lint: pass
+- typecheck: pass
+- test: pass (648 tests)
+- build: pass
+- validation scripts: pass

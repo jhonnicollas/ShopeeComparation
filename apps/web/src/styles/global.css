@@ -861,3 +861,17 @@ h2 {
   background: #fee2e2;
   color: #991b1b;
 }
+
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #1f2933;
+}

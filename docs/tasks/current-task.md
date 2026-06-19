@@ -1,92 +1,92 @@
-# TASK-105: Build top 10 ranking
+# TASK-106: Build keyword search frontend page
 
 ## Status
 
-DONE
+TODO
 
 ## Goal
 
-Build a deterministic scoring and ranking function for enriched `ProductSnapshot` + `ShopSnapshot` products. Uses existing `packages/core` scoring engine to produce final scores, then sorts and returns top N (default 10). Each result includes rank, score, and a deterministic comparison key.
+Build the Keyword Search frontend page with a form for keyword, optional filters (shippedFrom default "DKI Jakarta", limit default 10, priceMin/Max, minimumRating, storeStatus), and submission to POST /api/research/keyword-search. The page must show job status (polling) and navigate to result page on completion.
 
 ## Required Reading
 
-- `docs/prd/prd.md` (section 8.3, 8.9)
+- `docs/prd/prd.md` (section 8.3, 8.10)
 - `docs/architecture/technical-decisions.md`
+- `docs/api/api-contract.md` (Research API section)
 - `docs/shared/enums.md`
-- `docs/shopee/search-api-strategy.md`
 - `docs/tasks/autopilot-task-contract.md`
 - `.ai/agent-rules.md`
 - `.ai/done-definition.md`
 
 ## Scope
 
-- Create `packages/shopee/src/jobs/topTenRanking.ts`
-- Export `rankTopN(items: { product: ProductSnapshot; shop: ShopSnapshot | null }[], limit: number): RankedResult[]`
-- Use existing `packages/core` scoring engine (calculateProductScore)
-- Sort by score descending; tiebreak by `itemId` for determinism
-- Return `RankedResult[]` with `rank`, `productId`, `score`, `product`, `shop`
-- Unit tests with various score inputs
+- Update `apps/web/src/pages/KeywordSearchPage.tsx` with full form
+- Add `submitKeywordSearch()` function in `apps/web/src/lib/shopee.ts` (or similar)
+- Use TanStack Query mutation to POST
+- Use TanStack Query polling for job status (GET /api/research/jobs/:id)
+- Navigate to results page on completion
+- Show loading and error states
+- Add CSS for form
+- Add tests
 
 ## Out of Scope
 
-- Do not implement actual AI ranking
-- Do not modify packages/core
+- Do not implement result page (TASK-107)
 - Do not change D1 schema
+- Do not call Shopee from frontend
 
 ## Allowed Files
 
-- `packages/shopee/src/jobs/topTenRanking.ts` (new)
-- `packages/shopee/src/jobs/topTenRanking.test.ts` (new)
-- `packages/shopee/src/index.ts` (re-export)
+- `apps/web/src/pages/KeywordSearchPage.tsx`
+- `apps/web/src/pages/KeywordSearchPage.test.tsx` (new)
+- `apps/web/src/lib/research.ts` (new) or `apps/web/src/lib/api.ts`
+- `apps/web/src/styles/global.css`
 - `docs/tasks/**`
 
 ## Forbidden Files
 
-- `apps/**`
+- `packages/**`
 - `workers/**`
-- `packages/db/**`
-- `packages/ai/**`
 
 ## Input Contract
 
-```ts
-rankTopN(items: RankInput[], limit: number): RankedResult[]
-```
+Form fields:
+- keyword (required, string, min 1)
+- shippedFrom (optional, default "DKI Jakarta")
+- limit (optional, default 10, 1-50)
+- priceMin/priceMax (optional, number)
+- minimumRating (optional, number 0-5)
+- storeStatus (optional, multi-select)
 
 ## Output Contract
 
-```ts
-interface RankedResult {
-  rank: number;
-  productId: string;
-  score: number;
-  product: ProductSnapshot;
-  shop: ShopSnapshot | null;
-}
-```
+- On submit: POST /api/research/keyword-search → 202 with researchSessionId, jobId
+- Poll GET /api/research/jobs/:id every 3s
+- On status=completed/partialSuccess: navigate to /results/:researchSessionId
 
 ## Acceptance Criteria
 
-- [ ] rankTopN function implemented
-- [ ] Uses packages/core scoring engine
-- [ ] Sorts by score descending with deterministic tiebreak
-- [ ] Returns top N items
-- [ ] Assigns rank 1..N
-- [ ] Unit tests pass
+- [ ] Page shows form with keyword, shippedFrom, limit, priceMin/Max, minimumRating, storeStatus fields
+- [ ] Defaults shippedFrom to "DKI Jakarta" and limit to 10
+- [ ] On submit, POST /api/research/keyword-search with correct payload
+- [ ] Polls GET /api/research/jobs/:id every 3s after submission
+- [ ] Navigates to result page on completed/partialSuccess
+- [ ] Shows error states for 401, 400, etc.
+- [ ] Component tests pass
 - [ ] All existing tests pass
 - [ ] Quality gate passes
 
 ## Test Requirements
 
-- [ ] Unit test: ranks by score descending
-- [ ] Unit test: tiebreak by itemId
-- [ ] Unit test: respects limit
-- [ ] Unit test: handles empty list
-- [ ] Unit test: assigns ranks correctly
+- [ ] Unit test: renders all form fields
+- [ ] Unit test: defaults shippedFrom and limit
+- [ ] Unit test: submits correct payload
+- [ ] Unit test: shows error on failure
+- [ ] Unit test: navigates on completion
 
 ## Documentation Update
 
-- [ ] Update `packages/shopee/src/index.ts` to export new ranker
+- [ ] No public docs changes
 
 ## Stop Conditions Check
 

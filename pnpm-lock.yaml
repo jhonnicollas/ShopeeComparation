@@ -93,6 +93,9 @@ importers:
       '@shopee-research/shared':
         specifier: workspace:*
         version: link:../shared
+      '@shopee-research/shopee':
+        specifier: workspace:*
+        version: link:../shopee
 
   packages/auth:
     dependencies:
@@ -139,6 +142,9 @@ importers:
 
   workers/api:
     dependencies:
+      '@shopee-research/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@shopee-research/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -164,12 +170,21 @@ importers:
 
   workers/queueConsumer:
     dependencies:
+      '@shopee-research/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@shopee-research/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@shopee-research/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@shopee-research/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@shopee-research/shopee':
+        specifier: workspace:*
+        version: link:../../packages/shopee
       hono:
         specifier: ^4.12.25
         version: 4.12.25

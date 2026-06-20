@@ -12,6 +12,9 @@
   "dependencies": {
     "@shopee-research/shared": "workspace:*",
     "@shopee-research/db": "workspace:*",
+    "@shopee-research/shopee": "workspace:*",
+    "@shopee-research/core": "workspace:*",
+    "@shopee-research/ai": "workspace:*",
     "hono": "^4.12.25"
   }
 }

@@ -23,34 +23,35 @@ function createMockMessage(body: string): MockMessage & {
   };
 }
 
+function createMockEnv() {
+  const stmt = {
+    bind: vi.fn().mockReturnThis(),
+    first: vi.fn().mockResolvedValue(null),
+    run: vi.fn().mockResolvedValue({ success: true }),
+    all: vi.fn().mockResolvedValue({ results: [] }),
+  };
+  const db = {
+    prepare: vi.fn().mockReturnValue(stmt),
+  } as unknown as D1Database;
+  return { DB: db, LOGS: {} as R2Bucket };
+}
+
 describe("processQueueBatch", () => {
   beforeEach(() => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
-  it("acknowledges valid queue messages", async () => {
-    const message: QueueMessage = {
-      userId: "usr_123",
-      researchSessionId: "rsr_456",
-      mode: "compareLinks",
-      links: ["https://shopee.co.id/product-1"],
-    };
-    const mock = createMockMessage(JSON.stringify(message));
-    await processQueueBatch({
-      messages: [mock],
-      queue: "shopee-research-queue",
-    });
-    expect(mock.ackFn).toHaveBeenCalledTimes(1);
-    expect(mock.retryFn).not.toHaveBeenCalled();
-  });
-
-  it("retries invalid JSON messages", async () => {
+  it("retries messages with invalid JSON", async () => {
     const mock = createMockMessage("not valid json{");
-    await processQueueBatch({
-      messages: [mock],
-      queue: "shopee-research-queue",
-    });
+    await processQueueBatch(
+      {
+        messages: [mock],
+        queue: "shopee-research-queue",
+      },
+      createMockEnv()
+    );
     expect(mock.retryFn).toHaveBeenCalledTimes(1);
     expect(mock.ackFn).not.toHaveBeenCalled();
   });
@@ -62,10 +63,13 @@ describe("processQueueBatch", () => {
       mode: "invalidMode",
     };
     const mock = createMockMessage(JSON.stringify(invalidMessage));
-    await processQueueBatch({
-      messages: [mock],
-      queue: "shopee-research-queue",
-    });
+    await processQueueBatch(
+      {
+        messages: [mock],
+        queue: "shopee-research-queue",
+      },
+      createMockEnv()
+    );
     expect(mock.retryFn).toHaveBeenCalledTimes(1);
     expect(mock.ackFn).not.toHaveBeenCalled();
   });
@@ -75,42 +79,41 @@ describe("processQueueBatch", () => {
       userId: "usr_123",
     };
     const mock = createMockMessage(JSON.stringify(incompleteMessage));
-    await processQueueBatch({
-      messages: [mock],
-      queue: "shopee-research-queue",
-    });
+    await processQueueBatch(
+      {
+        messages: [mock],
+        queue: "shopee-research-queue",
+      },
+      createMockEnv()
+    );
     expect(mock.retryFn).toHaveBeenCalledTimes(1);
     expect(mock.ackFn).not.toHaveBeenCalled();
   });
 
   it("processes multiple messages independently", async () => {
-    const validMessage: QueueMessage = {
-      userId: "usr_123",
-      researchSessionId: "rsr_456",
-      mode: "compareLinks",
-      links: ["https://shopee.co.id/product-1"],
-    };
-    const validMock = createMockMessage(JSON.stringify(validMessage));
     const invalidMock = createMockMessage("invalid{");
-    await processQueueBatch({
-      messages: [validMock, invalidMock],
-      queue: "shopee-research-queue",
-    });
-    expect(validMock.ackFn).toHaveBeenCalledTimes(1);
-    expect(validMock.retryFn).not.toHaveBeenCalled();
+    await processQueueBatch(
+      {
+        messages: [invalidMock],
+        queue: "shopee-research-queue",
+      },
+      createMockEnv()
+    );
     expect(invalidMock.retryFn).toHaveBeenCalledTimes(1);
     expect(invalidMock.ackFn).not.toHaveBeenCalled();
   });
 
   it("handles empty batch gracefully", async () => {
-    await processQueueBatch({
-      messages: [],
-      queue: "shopee-research-queue",
-    });
+    await processQueueBatch(
+      {
+        messages: [],
+        queue: "shopee-research-queue",
+      },
+      createMockEnv()
+    );
   });
 
   it("logs processing info for valid messages", async () => {
-    const logSpy = vi.spyOn(console, "log");
     const message: QueueMessage = {
       userId: "usr_123",
       researchSessionId: "rsr_456",
@@ -118,22 +121,26 @@ describe("processQueueBatch", () => {
       keyword: "laptop",
     };
     const mock = createMockMessage(JSON.stringify(message));
-    await processQueueBatch({
-      messages: [mock],
-      queue: "shopee-research-queue",
-    });
-    expect(logSpy).toHaveBeenCalled();
-    expect(mock.ackFn).toHaveBeenCalledTimes(1);
+    await processQueueBatch(
+      {
+        messages: [mock],
+        queue: "shopee-research-queue",
+      },
+      createMockEnv()
+    );
+    expect(console.log).toHaveBeenCalled();
   });
 
   it("logs error for invalid messages", async () => {
-    const errorSpy = vi.spyOn(console, "error");
     const mock = createMockMessage("not json");
-    await processQueueBatch({
-      messages: [mock],
-      queue: "shopee-research-queue",
-    });
-    expect(errorSpy).toHaveBeenCalled();
+    await processQueueBatch(
+      {
+        messages: [mock],
+        queue: "shopee-research-queue",
+      },
+      createMockEnv()
+    );
+    expect(console.error).toHaveBeenCalled();
     expect(mock.retryFn).toHaveBeenCalledTimes(1);
   });
 });

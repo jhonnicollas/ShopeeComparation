@@ -47,8 +47,7 @@ export async function upsertShop(db: D1Database, input: UpsertShopInput): Promis
         followerCount, productCount, joinedAgeText, location,
         confidenceScore, lastCheckedAt, createdAt, updatedAt
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET
-        shopeeShopId = excluded.shopeeShopId,
+      ON CONFLICT(shopeeShopId) DO UPDATE SET
         name = excluded.name,
         shopUrl = excluded.shopUrl,
         statusJson = excluded.statusJson,
@@ -67,7 +66,7 @@ export async function upsertShop(db: D1Database, input: UpsertShopInput): Promis
     )
     .bind(
       input.id,
-      input.shopeeShopId,
+      input.shopeeShopId ?? "",
       input.name,
       input.shopUrl,
       input.statusJson ? JSON.stringify(input.statusJson) : null,
@@ -86,6 +85,10 @@ export async function upsertShop(db: D1Database, input: UpsertShopInput): Promis
       now
     )
     .run();
+  const existing = input.shopeeShopId ? await findShopByShopeeId(db, input.shopeeShopId) : null;
+  if (existing) {
+    return existing;
+  }
   const result = await findShopById(db, input.id);
   if (!result) {
     throw new Error("Failed to upsert shop");

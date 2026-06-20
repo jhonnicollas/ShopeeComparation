@@ -1,48 +1,34 @@
-import { type QueueMessage, queueMessageSchema, researchMode, jobStatus } from "@shopee-research/shared";
-import { Hono } from "hono";
+import type { QueueMessage } from "@shopee-research/shared";
 import {
-  findJobById,
-  updateJobStatus,
-  updateResearchSessionStatus,
   createComparison,
   createComparisonItem,
+  upsertAiReport,
   upsertProduct,
   upsertShop,
-  upsertAiReport,
+  updateJobStatus,
+  updateResearchSessionStatus,
 } from "@shopee-research/db";
-import {
-  productFixtures,
-  findShopFixtureById,
-  type ProductFixture,
-  type ShopFixture,
-} from "@shopee-research/shopee";
-import {
-  calculateProductScore,
-  rankProducts,
-  detectRisks,
-} from "@shopee-research/core";
-import { generateRecommendation } from "@shopee-research/ai";
+import { findShopFixtureById, productFixtures, type ProductFixture, type ShopFixture } from "@shopee-research/shopee";
+import { calculateProductScore, detectRisks, rankProducts } from "@shopee-research/core";
+import { generateRecommendation } from "./agents/recommendationWriter.js";
+import { researchMode, jobStatus } from "@shopee-research/shared";
 
-type Bindings = {
+export interface JobProcessorEnv {
   DB: D1Database;
-  LOGS: R2Bucket;
-  APP_ENV?: string;
   NINEROUTER_BASE_URL?: string;
-};
+}
 
-const app = new Hono<{ Bindings: Bindings }>();
+export interface ProcessJobResult {
+  comparisonId: string;
+  bestProductId: string | null;
+  totalProducts: number;
+}
 
-app.get("/health", (c) => {
-  return c.json({ status: "ok", worker: "queue-consumer" });
-});
-
-export interface QueueMessageBatch {
-  messages: Array<{
-    body: string;
-    ack: () => void;
-    retry: () => void;
-  }>;
-  queue: string;
+interface SelectedFixture {
+  productFixture: ProductFixture;
+  shopFixture: ShopFixture;
+  productId: string;
+  shopId: string;
 }
 
 function generateId(prefix: string): string {
@@ -54,63 +40,44 @@ function generateId(prefix: string): string {
   return `${prefix}_${btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
 }
 
-interface SelectedFixture {
-  productFixture: ProductFixture;
-  shopFixture: ShopFixture;
-  productId: string;
-  shopId: string;
-}
-
-function selectFixtureByIndex(): SelectedFixture | null {
-  const productFixture = productFixtures[0];
-  const shopFixture = findShopFixtureById(productFixture.shopId);
-  if (!shopFixture) return null;
-  return {
-    productFixture,
-    shopFixture,
-    productId: generateId("prd"),
-    shopId: generateId("shp"),
-  };
-}
-
-function selectFixtureByUrl(url: string): SelectedFixture | null {
+function selectFixtureByUrl(url: string, shopIdMap?: Map<string, string>): SelectedFixture | null {
   const productFixture = productFixtures.find((p) => p.originalUrl === url) ?? productFixtures[0];
   if (!productFixture) return null;
   const shopFixture = findShopFixtureById(productFixture.shopId);
   if (!shopFixture) return null;
+  let shopId = shopIdMap?.get(productFixture.shopId);
+  if (!shopId) {
+    shopId = generateId("shp");
+    shopIdMap?.set(productFixture.shopId, shopId);
+  }
   return {
     productFixture,
     shopFixture,
     productId: generateId("prd"),
-    shopId: generateId("shp"),
+    shopId,
   };
 }
 
 function selectFixturesByKeyword(keyword: string, limit: number): SelectedFixture[] {
   const normalized = keyword.toLowerCase().trim();
-  const filtered = productFixtures.filter((p) => {
+  const filtered = productFixtures.filter((p: ProductFixture) => {
     const text = `${p.title} ${p.brand} ${p.category}`.toLowerCase();
     return text.includes(normalized) || normalized.length === 0;
   });
   const source = filtered.length > 0 ? filtered : productFixtures;
-  return source.slice(0, limit).map((productFixture) => {
-    const shopFixture = findShopFixtureById(productFixture.shopId);
-    if (!shopFixture) {
-      throw new Error(`Shop ${productFixture.shopId} not found`);
-    }
-    return {
-      productFixture,
-      shopFixture,
-      productId: generateId("prd"),
-      shopId: generateId("shp"),
-    };
+  const shopIdMap = new Map<string, string>();
+  return source.slice(0, limit).map((productFixture: ProductFixture) => {
+    const result = selectFixtureByUrl(productFixture.originalUrl, shopIdMap);
+    if (!result) throw new Error(`Failed to select fixture for ${productFixture.itemId}`);
+    return result;
   });
 }
 
-async function persistFixtures(db: D1Database, fixtures: SelectedFixture[]): Promise<SelectedFixture[]> {
+async function persistFixtures(env: JobProcessorEnv, fixtures: SelectedFixture[]): Promise<void> {
+  const seenShopKeys = new Set<string>();
   for (const f of fixtures) {
     const pf = f.productFixture;
-    await upsertProduct(db, {
+    await upsertProduct(env.DB, {
       id: f.productId,
       shopeeItemId: pf.itemId,
       shopeeShopId: pf.shopId,
@@ -138,8 +105,11 @@ async function persistFixtures(db: D1Database, fixtures: SelectedFixture[]): Pro
       confidenceScore: 1.0,
     });
 
+    if (seenShopKeys.has(f.shopId)) continue;
+    seenShopKeys.add(f.shopId);
+
     const sf = f.shopFixture;
-    await upsertShop(db, {
+    await upsertShop(env.DB, {
       id: f.shopId,
       shopeeShopId: sf.shopId,
       name: sf.name,
@@ -157,7 +127,22 @@ async function persistFixtures(db: D1Database, fixtures: SelectedFixture[]): Pro
       confidenceScore: 1.0,
     });
   }
-  return fixtures;
+
+  const shopKeyToId = new Map<string, string>();
+  const shopResult = await env.DB
+    .prepare("SELECT id, shopeeShopId FROM sh_shops")
+    .all<{ id: string; shopeeShopId: string }>();
+  for (const row of shopResult.results ?? []) {
+    if (row.shopeeShopId) {
+      shopKeyToId.set(row.shopeeShopId, row.id);
+    }
+  }
+  for (const f of fixtures) {
+    const actualId = shopKeyToId.get(f.productFixture.shopId);
+    if (actualId) {
+      f.shopId = actualId;
+    }
+  }
 }
 
 interface ScoredItem {
@@ -194,7 +179,13 @@ function scoreFixtures(fixtures: SelectedFixture[]): ScoredItem[] {
         description: pf.description,
         specificationJson: pf.specificationJson,
         variationJson: null,
-        weight: { value: pf.weight.value, unit: pf.weight.unit, rawText: pf.weight.rawText, source: pf.weight.source, confidence: pf.weight.confidence },
+        weight: {
+          value: pf.weight.value,
+          unit: pf.weight.unit,
+          rawText: pf.weight.rawText,
+          source: pf.weight.source,
+          confidence: pf.weight.confidence,
+        },
         features: pf.features,
         confidenceScore: 1.0,
       },
@@ -234,8 +225,8 @@ function scoreFixtures(fixtures: SelectedFixture[]): ScoredItem[] {
   });
 }
 
-async function saveComparisonAndItems(
-  db: D1Database,
+async function saveComparison(
+  env: JobProcessorEnv,
   message: QueueMessage,
   title: string,
   scored: ScoredItem[],
@@ -245,7 +236,7 @@ async function saveComparisonAndItems(
 ): Promise<string> {
   const comparisonId = generateId("cmp");
   const bestProductId = ranked.length > 0 ? scored[0]!.fixture.productId : null;
-  await createComparison(db, {
+  await createComparison(env.DB, {
     id: comparisonId,
     researchSessionId: message.researchSessionId,
     userId: message.userId,
@@ -258,8 +249,7 @@ async function saveComparisonAndItems(
   });
 
   for (let i = 0; i < ranked.length; i++) {
-    const item = ranked[i]!;
-    const scoredItem = scored.find((s) => s.fixture.productId === item.product.shopeeItemId)! || scored[i]!;
+    const scoredItem = scored[i]!;
     const fixture = scoredItem.fixture;
     const sf = fixture.shopFixture;
     const riskItems = detectRisks({
@@ -314,7 +304,7 @@ async function saveComparisonAndItems(
         confidenceScore: 1.0,
       },
     });
-    await createComparisonItem(db, {
+    await createComparisonItem(env.DB, {
       id: generateId("cim"),
       comparisonId,
       productId: fixture.productId,
@@ -339,14 +329,13 @@ async function saveComparisonAndItems(
 }
 
 async function generateAiReport(
-  db: D1Database,
-  env: Bindings,
+  env: JobProcessorEnv,
   message: QueueMessage,
   comparisonId: string,
   scored: ScoredItem[]
 ): Promise<void> {
   try {
-    const aiReport = await generateRecommendation(db, env as unknown as Record<string, string | undefined>, {
+    const aiReport = await generateRecommendation(env.DB, env as unknown as Record<string, string | undefined>, {
       userQuery: message.keyword ?? `Compare ${message.links?.length ?? 0} products`,
       products: scored.map((s) => ({
         shopeeItemId: s.fixture.productFixture.itemId,
@@ -385,7 +374,7 @@ async function generateAiReport(
       shops: new Map(),
     });
 
-    await upsertAiReport(db, {
+    await upsertAiReport(env.DB, {
       id: generateId("air"),
       comparisonId,
       userId: message.userId,
@@ -401,113 +390,74 @@ async function generateAiReport(
   }
 }
 
-async function completeSession(
-  db: D1Database,
+export async function processJobSync(
+  env: JobProcessorEnv,
   message: QueueMessage,
-  jobId: string,
-  fixtures: SelectedFixture[]
-): Promise<void> {
+  jobId: string
+): Promise<ProcessJobResult> {
+  const fixtures: SelectedFixture[] = [];
+
+  if (message.mode === researchMode.compareLinks) {
+    const links = message.links ?? [];
+    console.log(`[compare-links] Processing ${links.length} links`);
+    const shopIdMap = new Map<string, string>();
+    for (const url of links) {
+      const f = selectFixtureByUrl(url, shopIdMap);
+      if (f) fixtures.push(f);
+    }
+  } else if (message.mode === researchMode.keywordSearch) {
+    const keyword = message.keyword ?? "";
+    const limit = message.limit ?? 10;
+    console.log(`[keyword-search] Processing keyword: "${keyword}", limit: ${limit}`);
+    fixtures.push(...selectFixturesByKeyword(keyword, limit));
+  }
+
+  console.log(`[jobProcessor] Persisting ${fixtures.length} fixtures`);
+  try {
+    await persistFixtures(env, fixtures);
+    console.log(`[jobProcessor] Persist done`);
+  } catch (err) {
+    console.error(`[jobProcessor] Persist failed:`, err);
+    throw err;
+  }
+
+  const scored = scoreFixtures(fixtures);
+  const ranked = rankProducts(scored.map((s) => ({ product: s.fixture.productFixture as never, scoring: s.scoring })));
+
+  const keyword = message.keyword ?? null;
+  const shippedFrom = message.shippedFrom ?? null;
+  const title = message.mode === researchMode.keywordSearch
+    ? `Top ${fixtures.length} for "${keyword}"`
+    : `Compare ${fixtures.length} products`;
+
+  console.log(`[jobProcessor] Saving comparison`);
+  let comparisonId = "";
+  try {
+    comparisonId = await saveComparison(env, message, title, scored, ranked, keyword, shippedFrom);
+    console.log(`[jobProcessor] Comparison saved: ${comparisonId}`);
+    await generateAiReport(env, message, comparisonId, scored);
+    console.log(`[jobProcessor] AI report done`);
+  } catch (err) {
+    console.error(`[jobProcessor] Save/AI failed:`, err);
+    throw err;
+  }
+
   const bestProductId = fixtures.length > 0 ? fixtures[0]!.productId : null;
-  await updateResearchSessionStatus(db, message.researchSessionId, jobStatus.completed, {
+  console.log(`[jobProcessor] Updating session status`);
+  await updateResearchSessionStatus(env.DB, message.researchSessionId, jobStatus.completed, {
     bestProductId: bestProductId ?? undefined,
     totalProducts: fixtures.length,
     completedProducts: fixtures.length,
   });
-  await updateJobStatus(db, jobId, jobStatus.completed, {
+  await updateJobStatus(env.DB, jobId, jobStatus.completed, {
     progressCurrent: fixtures.length,
     progressTotal: fixtures.length,
     currentStep: "completed",
   });
+
+  return {
+    comparisonId,
+    bestProductId,
+    totalProducts: fixtures.length,
+  };
 }
-
-export async function processQueueBatch(batch: QueueMessageBatch, env: Bindings): Promise<void> {
-  for (const message of batch.messages) {
-    try {
-      const parsed = JSON.parse(message.body);
-      const result = queueMessageSchema.safeParse(parsed);
-      if (!result.success) {
-        console.error("Invalid queue message:", result.error.issues);
-        message.retry();
-        continue;
-      }
-      const queueMessage: QueueMessage = result.data;
-
-      const job = await findJobById(env.DB, queueMessage.researchSessionId);
-      const jobId = job?.id ?? "";
-
-      await updateJobStatus(env.DB, jobId, jobStatus.processing, {
-        currentStep: "started",
-        progressCurrent: 0,
-      });
-
-      console.log("Processing research job:", {
-        userId: queueMessage.userId,
-        researchSessionId: queueMessage.researchSessionId,
-        mode: queueMessage.mode,
-      });
-
-      if (queueMessage.mode === researchMode.compareLinks) {
-        const links = queueMessage.links ?? [];
-        console.log(`[compare-links] Processing ${links.length} links`);
-        const fixtures: SelectedFixture[] = [];
-        for (let i = 0; i < links.length; i++) {
-          const f = selectFixtureByIndex() ?? selectFixtureByUrl(links[i]!);
-          if (f) fixtures.push(f);
-        }
-        await persistFixtures(env.DB, fixtures);
-        const scored = scoreFixtures(fixtures);
-        const ranked = rankProducts(scored.map((s) => ({ product: s.fixture.productFixture as never, scoring: s.scoring })));
-        const comparisonId = await saveComparisonAndItems(env.DB, queueMessage, `Compare ${fixtures.length} products`, scored, ranked, null, null);
-        await generateAiReport(env.DB, env, queueMessage, comparisonId, scored);
-        await completeSession(env.DB, queueMessage, jobId, fixtures);
-      } else if (queueMessage.mode === researchMode.keywordSearch) {
-        const keyword = queueMessage.keyword ?? "";
-        const limit = queueMessage.limit ?? 10;
-        const shippedFrom = queueMessage.shippedFrom ?? "DKI Jakarta";
-        console.log(`[keyword-search] Processing keyword: "${keyword}", limit: ${limit}`);
-        const fixtures = selectFixturesByKeyword(keyword, limit);
-        await persistFixtures(env.DB, fixtures);
-        const scored = scoreFixtures(fixtures);
-        const ranked = rankProducts(scored.map((s) => ({ product: s.fixture.productFixture as never, scoring: s.scoring })));
-        const comparisonId = await saveComparisonAndItems(env.DB, queueMessage, `Top ${fixtures.length} for "${keyword}"`, scored, ranked, keyword, shippedFrom);
-        await generateAiReport(env.DB, env, queueMessage, comparisonId, scored);
-        await completeSession(env.DB, queueMessage, jobId, fixtures);
-      }
-
-      message.ack();
-    } catch (error) {
-      console.error("Error processing queue message:", error);
-      try {
-        const parsed = JSON.parse(message.body);
-        const result = queueMessageSchema.safeParse(parsed);
-        if (result.success) {
-          const job = await findJobById(env.DB, result.data.researchSessionId);
-          if (job) {
-            await updateJobStatus(env.DB, job.id, jobStatus.failed, {
-              errorMessage: error instanceof Error ? error.message : "Unknown error",
-            });
-            await updateResearchSessionStatus(env.DB, result.data.researchSessionId, jobStatus.failed, {
-              errorMessage: error instanceof Error ? error.message : "Unknown error",
-            });
-          }
-        }
-} catch (parseErr) {
-          void parseErr;
-        }
-        message.retry();
-    }
-  }
-}
-
-export default {
-  async queue(batch: MessageBatch, env: Bindings, ctx: ExecutionContext): Promise<void> {
-    void ctx;
-    await processQueueBatch(batch as unknown as QueueMessageBatch, env);
-  },
-  async fetch(request: Request, env: Bindings, ctx: ExecutionContext): Promise<Response> {
-    return app.fetch(request, env, ctx);
-  },
-};
-
-// Re-export for tests
-export { selectFixtureByIndex, selectFixtureByUrl, selectFixturesByKeyword };

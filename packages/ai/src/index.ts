@@ -6,3 +6,4 @@ export * from "./agents/riskAnalyzer.js";
 export * from "./agents/dataQualityAgent.js";
 export * from "./partialSuccess.js";
 export * from "./retry.js";
+export * from "./jobProcessor.js";

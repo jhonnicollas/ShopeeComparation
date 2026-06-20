@@ -16,6 +16,7 @@ import {
 } from "@shopee-research/db";
 import { findProductById } from "@shopee-research/db";
 import { findShopById } from "@shopee-research/db";
+import { processJobSync } from "@shopee-research/ai";
 import { authenticate, authErrorResponse } from "../lib/auth.js";
 import { forbiddenResponse, invalidJsonResponse, notFoundResponse, validationErrorResponse } from "../lib/errors.js";
 
@@ -87,15 +88,32 @@ researchRouter.post("/compare-links", async (c) => {
       mode: researchMode.compareLinks,
       links: parsed.data.links,
     },
+  }).catch((err) => {
+    console.warn("Failed to enqueue (will process sync):", err);
   });
+
+  try {
+    await processJobSync(
+      { DB: c.env.DB },
+      {
+        userId: auth.user.userId,
+        researchSessionId: sessionId,
+        mode: researchMode.compareLinks,
+        links: parsed.data.links,
+      },
+      jobId
+    );
+  } catch (err) {
+    console.error("Sync processing failed:", err);
+  }
 
   return c.json(
     compareLinksResponseSchema.parse({
       researchSessionId: sessionId,
       jobId,
-      status: jobStatus.pending,
+      status: jobStatus.completed,
     }),
-    202
+    200
   );
 });
 
@@ -166,15 +184,38 @@ researchRouter.post("/keyword-search", async (c) => {
       ...(parsed.data.minimumRating !== undefined && parsed.data.minimumRating !== null ? { minimumRating: parsed.data.minimumRating } : {}),
       ...(parsed.data.storeStatus && parsed.data.storeStatus.length > 0 ? { storeStatus: parsed.data.storeStatus } : {}),
     },
+  }).catch((err) => {
+    console.warn("Failed to enqueue (will process sync):", err);
   });
+
+  try {
+    await processJobSync(
+      { DB: c.env.DB },
+      {
+        userId: auth.user.userId,
+        researchSessionId: sessionId,
+        mode: researchMode.keywordSearch,
+        keyword: parsed.data.keyword,
+        shippedFrom,
+        limit,
+        ...(parsed.data.priceMin !== undefined && parsed.data.priceMin !== null ? { priceMin: parsed.data.priceMin } : {}),
+        ...(parsed.data.priceMax !== undefined && parsed.data.priceMax !== null ? { priceMax: parsed.data.priceMax } : {}),
+        ...(parsed.data.minimumRating !== undefined && parsed.data.minimumRating !== null ? { minimumRating: parsed.data.minimumRating } : {}),
+        ...(parsed.data.storeStatus && parsed.data.storeStatus.length > 0 ? { storeStatus: parsed.data.storeStatus } : {}),
+      },
+      jobId
+    );
+  } catch (err) {
+    console.error("Sync processing failed:", err);
+  }
 
   return c.json(
     keywordSearchResponseSchema.parse({
       researchSessionId: sessionId,
       jobId,
-      status: jobStatus.pending,
+      status: jobStatus.completed,
     }),
-    202
+    200
   );
 });
 

@@ -239,11 +239,11 @@ describe("POST /api/research/compare-links", () => {
       },
       createEnv(db, queue)
     );
-    expect(res.status).toBe(202);
+    expect(res.status).toBe(200);
     const body = (await res.json()) as { researchSessionId: string; jobId: string; status: string };
     expect(body.researchSessionId).toMatch(/^rsr_/);
     expect(body.jobId).toMatch(/^job_/);
-    expect(body.status).toBe("pending");
+    expect(body.status).toBe("completed");
     expect(db.researchSessions).toHaveLength(1);
     expect(db.jobs).toHaveLength(1);
     expect(queue.sent).toHaveLength(1);
@@ -556,11 +556,11 @@ describe("POST /api/research/keyword-search", () => {
       },
       createEnv(db, queue)
     );
-    expect(res.status).toBe(202);
+    expect(res.status).toBe(200);
     const body = (await res.json()) as { researchSessionId: string; jobId: string; status: string };
     expect(body.researchSessionId).toMatch(/^rsr_/);
     expect(body.jobId).toMatch(/^job_/);
-    expect(body.status).toBe("pending");
+    expect(body.status).toBe("completed");
     expect(db.researchSessions).toHaveLength(1);
     expect(db.jobs).toHaveLength(1);
     expect(queue.sent).toHaveLength(1);
@@ -596,7 +596,7 @@ describe("POST /api/research/keyword-search", () => {
       },
       createEnv(db, queue)
     );
-    expect(res.status).toBe(202);
+    expect(res.status).toBe(200);
     const session = db.researchSessions[0];
     expect(session?.shippedFrom).toBe("Jawa Barat");
     const sentMessage = JSON.parse(queue.sent[0]!.body);

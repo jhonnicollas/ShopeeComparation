@@ -44,7 +44,7 @@ describe("AiReportView", () => {
           prosCons: [
             { productId: "item-1", pros: ["High rating"], cons: ["Expensive"] },
           ],
-          redFlags: [{ productId: "item-2", type: "low_stock", message: "Low stock" }],
+          redFlags: ["item-2: Low stock warning"],
           confidence: 0.85,
           missingDataNotes: ["Weight for item-2"],
         },

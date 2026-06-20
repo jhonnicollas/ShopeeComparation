@@ -210,7 +210,7 @@ export interface AiReportStructured {
     productId: string;
     type: string;
     message: string;
-  }>;
+  }> | string[];
   confidence: number;
   missingDataNotes: string[];
 }

@@ -33,6 +33,7 @@ type Bindings = {
 
 const SESSION_COOKIE_NAME = "session_token";
 const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+const SAME_SITE_COOKIE = "SameSite=None; Secure";
 
 function generateId(prefix: string): string {
   const bytes = crypto.getRandomValues(new Uint8Array(12));
@@ -129,7 +130,7 @@ authRouter.post("/register", async (c) => {
   });
 
   const isProduction = c.env.APP_ENV === "production";
-  const cookieValue = `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}${isProduction ? "; Secure" : ""}`;
+  const cookieValue = `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; ${SAME_SITE_COOKIE}; Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}${isProduction ? "; Secure" : ""}`;
 
   c.header("Set-Cookie", cookieValue);
   return c.json(responseBody, 201);
@@ -191,7 +192,7 @@ authRouter.post("/login", async (c) => {
   });
 
   const isProduction = c.env.APP_ENV === "production";
-  const cookieValue = `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}${isProduction ? "; Secure" : ""}`;
+  const cookieValue = `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; ${SAME_SITE_COOKIE}; Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}${isProduction ? "; Secure" : ""}`;
 
   c.header("Set-Cookie", cookieValue);
   return c.json(responseBody, 200);
@@ -207,20 +208,20 @@ authRouter.post("/logout", async (c) => {
   const tokenHash = await hashSessionTokenAsync(sessionToken);
   const session = await findSessionByTokenHash(c.env.DB, tokenHash);
   if (!session) {
-    const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+    const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; ${SAME_SITE_COOKIE}; Max-Age=0`;
     c.header("Set-Cookie", clearCookie);
     return unauthenticatedResponse(c, "Session not found");
   }
 
   if (isSessionExpired(session.expiresAt) || isSessionRevoked(session.revokedAt)) {
-    const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+    const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; ${SAME_SITE_COOKIE}; Max-Age=0`;
     c.header("Set-Cookie", clearCookie);
     return unauthenticatedResponse(c, "Session is no longer valid");
   }
 
   await revokeSession(c.env.DB, session.id);
 
-  const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  const clearCookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; ${SAME_SITE_COOKIE}; Max-Age=0`;
   c.header("Set-Cookie", clearCookie);
   return c.json(logoutResponseSchema.parse({ success: true }), 200);
 });

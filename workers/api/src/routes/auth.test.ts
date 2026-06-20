@@ -268,7 +268,7 @@ describe("POST /api/auth/register", () => {
     expect(cookie).toContain("Path=/");
   });
 
-  it("sets Secure flag in production", async () => {
+  it("sets Secure and SameSite=None in production", async () => {
     const env = createEnv(db);
     env.APP_ENV = "production";
     const res = await authRouter.request(
@@ -285,23 +285,25 @@ describe("POST /api/auth/register", () => {
     );
     const cookie = res.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("Secure");
+    expect(cookie).toContain("SameSite=None");
   });
 
-  it("does not set Secure flag in development", async () => {
+  it("sets SameSite=None with Secure for cross-origin", async () => {
     const res = await authRouter.request(
       "/register",
       {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          email: "user@example.com",
+          email: "user2@example.com",
           password: "password123",
         }),
       },
       createEnv(db)
     );
     const cookie = res.headers.get("set-cookie") ?? "";
-    expect(cookie).not.toContain("Secure");
+    expect(cookie).toContain("SameSite=None");
+    expect(cookie).toContain("Secure");
   });
 
   it("normalizes email to lowercase", async () => {

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { apiRequest } from "../lib/api.js";
 
 interface SessionDetail {
   researchSessionId: string;
@@ -74,24 +75,12 @@ function StatusBadge({ status }: { status: string }) {
 export function ResearchDetailPage({ researchSessionId }: { researchSessionId: string }) {
   const sessionQuery = useQuery({
     queryKey: ["research", "session", researchSessionId],
-    queryFn: async () => {
-      const res = await fetch(`/api/research/sessions/${researchSessionId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as SessionDetail;
-    },
+    queryFn: () => apiRequest<SessionDetail>(`/research/sessions/${researchSessionId}`),
   });
 
   const comparisonQuery = useQuery({
     queryKey: ["research", "comparison", researchSessionId],
-    queryFn: async () => {
-      const res = await fetch(`/api/research/comparisons/by-session/${researchSessionId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as ComparisonResponse;
-    },
+    queryFn: () => apiRequest<ComparisonResponse>(`/research/comparisons/by-session/${researchSessionId}`),
     enabled: sessionQuery.data?.status === "completed" || sessionQuery.data?.status === "partialSuccess",
   });
 
@@ -100,11 +89,7 @@ export function ResearchDetailPage({ researchSessionId }: { researchSessionId: s
     queryFn: async () => {
       const comparisonId = comparisonQuery.data?.comparison?.id;
       if (!comparisonId) return null;
-      const res = await fetch(`/api/research/comparisons/${comparisonId}/ai-report`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as AiReportResponse;
+      return apiRequest<AiReportResponse>(`/research/comparisons/${comparisonId}/ai-report`);
     },
     enabled: !!comparisonQuery.data?.comparison?.id,
   });

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { ApiClientError } from "../lib/api.js";
+import { apiRequest, ApiClientError } from "../lib/api.js";
 
 interface KeywordSearchResponse {
   researchSessionId: string;
@@ -48,17 +48,10 @@ export function KeywordSearchPage() {
 
   const submitMutation = useMutation({
     mutationFn: async (input: KeywordSearchInput) => {
-      const res = await fetch("/api/research/keyword-search", {
+      return apiRequest<KeywordSearchResponse>("/research/keyword-search", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(input),
       });
-      if (!res.ok) {
-        const body = (await res.json()) as { error: { code: string; message: string } };
-        throw new ApiClientError(res.status, body.error.code, body.error.message, null);
-      }
-      return (await res.json()) as KeywordSearchResponse;
     },
     onSuccess: (data) => {
       setJobId(data.jobId);
@@ -78,13 +71,7 @@ export function KeywordSearchPage() {
 
   const jobQuery = useQuery({
     queryKey: ["job", jobId],
-    queryFn: async () => {
-      const res = await fetch(`/api/research/jobs/${jobId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as JobStatus;
-    },
+    queryFn: () => apiRequest<JobStatus>(`/research/jobs/${jobId}`),
     enabled: !!jobId,
     refetchInterval: (query) => {
       const data = query.state.data;

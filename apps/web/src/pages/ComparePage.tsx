@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { ApiClientError } from "../lib/api.js";
+import { apiRequest, ApiClientError } from "../lib/api.js";
 import { ResolverDiagnostics } from "../components/ResolverDiagnostics.js";
 
 interface CompareLinksResponse {
@@ -32,17 +32,10 @@ export function ComparePage() {
 
   const submitMutation = useMutation({
     mutationFn: async (input: { links: string[] }) => {
-      const res = await fetch("/api/research/compare-links", {
+      return apiRequest<CompareLinksResponse>("/research/compare-links", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(input),
       });
-      if (!res.ok) {
-        const body = (await res.json()) as { error: { code: string; message: string } };
-        throw new ApiClientError(res.status, body.error.code, body.error.message, null);
-      }
-      return (await res.json()) as CompareLinksResponse;
     },
     onSuccess: (data) => {
       setJobId(data.jobId);
@@ -62,11 +55,11 @@ export function ComparePage() {
   const jobQuery = useQuery({
     queryKey: ["job", jobId],
     queryFn: async () => {
-      const res = await fetch(`/api/research/jobs/${jobId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as JobStatus;
+      try {
+        return await apiRequest<JobStatus>(`/research/jobs/${jobId}`);
+      } catch {
+        return null;
+      }
     },
     enabled: !!jobId,
     refetchInterval: (query) => {

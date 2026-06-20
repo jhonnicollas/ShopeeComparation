@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "../lib/api.js";
 
 interface AiReportStructured {
   bestProductId: string | null;
@@ -19,11 +20,13 @@ export function AiReportView({ comparisonId }: { comparisonId: string }) {
   const query = useQuery({
     queryKey: ["ai-report", comparisonId],
     queryFn: async () => {
-      const res = await fetch(`/api/comparisons/${comparisonId}/ai-report`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as { report: AiReportStructured | null; rawText: string | null };
+      try {
+        return await apiRequest<{ report: AiReportStructured | null; rawText: string | null }>(
+          `/comparisons/${comparisonId}/ai-report`
+        );
+      } catch {
+        return null;
+      }
     },
     enabled: !!comparisonId,
   });

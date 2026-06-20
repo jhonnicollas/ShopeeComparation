@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "../lib/api.js";
 
 interface ShopDetail {
   id: string;
@@ -32,13 +33,7 @@ function formatDate(iso: string): string {
 export function ShopDetailPage({ shopId }: { shopId: string }) {
   const query = useQuery({
     queryKey: ["research", "shop", shopId],
-    queryFn: async () => {
-      const res = await fetch(`/api/research/shops/${shopId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as ShopDetail;
-    },
+    queryFn: () => apiRequest<ShopDetail>(`/research/shops/${shopId}`),
   });
 
   if (query.isLoading) {

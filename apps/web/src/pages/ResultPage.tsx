@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
+import { apiRequest } from "../lib/api.js";
 
 interface ComparisonItem {
   id: string;
@@ -65,25 +66,13 @@ export function ResultPage() {
 
   const sessionQuery = useQuery({
     queryKey: ["session", sessionId],
-    queryFn: async () => {
-      const res = await fetch(`/api/research/sessions/${sessionId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as ResearchSession;
-    },
+    queryFn: () => apiRequest<ResearchSession>(`/research/sessions/${sessionId}`),
     enabled: !!sessionId,
   });
 
   const comparisonQuery = useQuery({
     queryKey: ["comparison", sessionId],
-    queryFn: async (): Promise<{ comparison: Comparison | null; items: ComparisonItem[] }> => {
-      const res = await fetch(`/api/research/comparisons/by-session/${sessionId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return { comparison: null, items: [] };
-      return (await res.json()) as { comparison: Comparison | null; items: ComparisonItem[] };
-    },
+    queryFn: () => apiRequest<{ comparison: Comparison | null; items: ComparisonItem[] }>(`/research/comparisons/by-session/${sessionId}`),
     enabled: !!sessionId,
   });
 
@@ -92,11 +81,7 @@ export function ResultPage() {
     queryFn: async (): Promise<AiReportResponse | null> => {
       const id = comparisonQuery.data?.comparison?.id;
       if (!id) return null;
-      const res = await fetch(`/api/research/comparisons/${id}/ai-report`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as AiReportResponse;
+      return apiRequest<AiReportResponse>(`/research/comparisons/${id}/ai-report`);
     },
     enabled: !!comparisonQuery.data?.comparison?.id,
   });

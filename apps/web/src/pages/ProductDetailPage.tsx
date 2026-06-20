@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { apiRequest } from "../lib/api.js";
 
 interface ProductDetail {
   id: string;
@@ -44,13 +45,7 @@ function formatDate(iso: string): string {
 export function ProductDetailPage({ productId }: { productId: string }) {
   const query = useQuery({
     queryKey: ["research", "product", productId],
-    queryFn: async () => {
-      const res = await fetch(`/api/research/products/${productId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as ProductDetail;
-    },
+    queryFn: () => apiRequest<ProductDetail>(`/research/products/${productId}`),
   });
 
   if (query.isLoading) {

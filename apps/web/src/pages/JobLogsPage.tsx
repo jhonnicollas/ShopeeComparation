@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { apiRequest } from "../lib/api.js";
 
 interface JobDetail {
   jobId: string;
@@ -30,13 +31,7 @@ function StatusBadge({ status }: { status: string }) {
 export function JobLogsPage({ jobId }: { jobId: string }) {
   const query = useQuery({
     queryKey: ["research", "job", jobId],
-    queryFn: async () => {
-      const res = await fetch(`/api/research/jobs/${jobId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as JobDetail;
-    },
+    queryFn: () => apiRequest<JobDetail>(`/research/jobs/${jobId}`),
   });
 
   if (query.isLoading) {

@@ -12,7 +12,8 @@ export default tseslint.config(
       "**/build/**",
       "coverage/**",
       "**/coverage/**",
-      ".wrangler/**"
+      ".wrangler/**",
+      "**/.vite/**"
     ]
   },
   js.configs.recommended,

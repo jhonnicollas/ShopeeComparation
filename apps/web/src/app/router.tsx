@@ -4,12 +4,26 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  useNavigate,
 } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ComparePage } from "../pages/ComparePage";
+import { ConfigPage } from "../pages/ConfigPage";
+import { DashboardPage } from "../pages/DashboardPage";
 import { HomePage } from "../pages/HomePage";
+import { HistoryPage } from "../pages/HistoryPage";
+import { JobLogsPage } from "../pages/JobLogsPage";
 import { KeywordSearchPage } from "../pages/KeywordSearchPage";
+import { LoginPage } from "../pages/LoginPage";
+import { ProductDetailPage } from "../pages/ProductDetailPage";
+import { RegisterPage } from "../pages/RegisterPage";
+import { ResearchDetailPage } from "../pages/ResearchDetailPage";
+import { ResultPage } from "../pages/ResultPage";
 import { SettingsPage } from "../pages/SettingsPage";
+import { ShopDetailPage } from "../pages/ShopDetailPage";
+import { RequireAuth } from "../components/RequireAuth.js";
+import { logout, useAuth } from "../lib/auth.js";
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -21,29 +35,155 @@ const indexRoute = createRoute({
   component: HomePage,
 });
 
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: LoginPage,
+});
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/register",
+  component: RegisterPage,
+});
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/dashboard",
+  component: () => (
+    <RequireAuth>
+      <DashboardPage />
+    </RequireAuth>
+  ),
+});
+
+const historyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/history",
+  component: () => (
+    <RequireAuth>
+      <HistoryPage />
+    </RequireAuth>
+  ),
+});
+
 const compareRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/compare",
-  component: ComparePage,
+  component: () => (
+    <RequireAuth>
+      <ComparePage />
+    </RequireAuth>
+  ),
 });
 
 const keywordSearchRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/keyword-search",
-  component: KeywordSearchPage,
+  component: () => (
+    <RequireAuth>
+      <KeywordSearchPage />
+    </RequireAuth>
+  ),
 });
 
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
-  component: SettingsPage,
+  component: () => (
+    <RequireAuth>
+      <SettingsPage />
+    </RequireAuth>
+  ),
+});
+
+const configRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings/config",
+  component: () => (
+    <RequireAuth>
+      <ConfigPage />
+    </RequireAuth>
+  ),
+});
+
+const resultRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/results/$researchSessionId",
+  component: () => (
+    <RequireAuth>
+      <ResultPage />
+    </RequireAuth>
+  ),
+});
+
+const researchDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/research/$researchSessionId",
+  component: () => {
+    const { researchSessionId } = researchDetailRoute.useParams();
+    return (
+      <RequireAuth>
+        <ResearchDetailPage researchSessionId={researchSessionId} />
+      </RequireAuth>
+    );
+  },
+});
+
+const jobLogsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/jobs/$jobId",
+  component: () => {
+    const { jobId } = jobLogsRoute.useParams();
+    return (
+      <RequireAuth>
+        <JobLogsPage jobId={jobId} />
+      </RequireAuth>
+    );
+  },
+});
+
+const productDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/products/$productId",
+  component: () => {
+    const { productId } = productDetailRoute.useParams();
+    return (
+      <RequireAuth>
+        <ProductDetailPage productId={productId} />
+      </RequireAuth>
+    );
+  },
+});
+
+const shopDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/shops/$shopId",
+  component: () => {
+    const { shopId } = shopDetailRoute.useParams();
+    return (
+      <RequireAuth>
+        <ShopDetailPage shopId={shopId} />
+      </RequireAuth>
+    );
+  },
 });
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  loginRoute,
+  registerRoute,
+  dashboardRoute,
+  historyRoute,
   compareRoute,
   keywordSearchRoute,
   settingsRoute,
+  configRoute,
+  resultRoute,
+  researchDetailRoute,
+  jobLogsRoute,
+  productDetailRoute,
+  shopDetailRoute,
 ]);
 
 export const router = createRouter({ routeTree });
@@ -55,6 +195,21 @@ declare module "@tanstack/react-router" {
 }
 
 function AppShell() {
+  const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.clear();
+      void navigate({ to: "/login" });
+    },
+  });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+
   return (
     <div className="appShell">
       <header className="topBar">
@@ -62,6 +217,12 @@ function AppShell() {
           Shopee Product Research AI
         </Link>
         <nav className="navLinks" aria-label="Primary navigation">
+          <Link to="/dashboard" activeProps={{ "aria-current": "page" }}>
+            Dashboard
+          </Link>
+          <Link to="/history" activeProps={{ "aria-current": "page" }}>
+            History
+          </Link>
           <Link to="/compare" activeProps={{ "aria-current": "page" }}>
             Compare
           </Link>
@@ -72,6 +233,25 @@ function AppShell() {
             Settings
           </Link>
         </nav>
+        <div className="userArea">
+          {isAuthenticated && user ? (
+            <>
+              <span className="userEmail">{user.email}</span>
+              <button
+                type="button"
+                className="secondaryButton"
+                onClick={handleLogout}
+                disabled={logoutMutation.isPending}
+              >
+                {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+              </button>
+            </>
+          ) : (
+            <Link to="/login" className="secondaryButton">
+              Sign In
+            </Link>
+          )}
+        </div>
       </header>
       <main className="mainContent">
         <Outlet />

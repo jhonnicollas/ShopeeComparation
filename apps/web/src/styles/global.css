@@ -146,3 +146,1115 @@ h2 {
     grid-template-columns: 1fr;
   }
 }
+
+.formPanel {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formField label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.formField input {
+  padding: 10px 12px;
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #ffffff;
+  color: #1f2933;
+}
+
+.formField input:focus {
+  outline: 2px solid #2b6cb0;
+  outline-offset: 2px;
+  border-color: #2b6cb0;
+}
+
+.formField input:disabled {
+  background: #f6f8fb;
+  cursor: not-allowed;
+}
+
+.formHint {
+  color: #52606d;
+  font-size: 12px;
+}
+
+.formError {
+  background: #fef2f2;
+  border: 1px solid #f5c6c6;
+  color: #b91c1c;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.primaryButton {
+  background: #2b6cb0;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: #2c5282;
+}
+
+.primaryButton:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.formFootnote {
+  font-size: 14px;
+  color: #52606d;
+  text-align: center;
+  margin: 0;
+}
+
+.formFootnote a {
+  color: #2b6cb0;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.formFootnote a:hover {
+  text-decoration: underline;
+}
+
+.userArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.userEmail {
+  font-size: 13px;
+  color: #52606d;
+}
+
+.secondaryButton {
+  background: transparent;
+  color: #2b6cb0;
+  border: 1px solid #2b6cb0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background: #ebf4ff;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loadingState {
+  padding: 24px;
+  text-align: center;
+  color: #52606d;
+  font-size: 14px;
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+}
+
+.configTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.configTab {
+  background: #ffffff;
+  color: #52606d;
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.configTabActive {
+  background: #2b6cb0;
+  color: #ffffff;
+  border-color: #2b6cb0;
+}
+
+.configPanel {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.configTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.configTable th,
+.configTable td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #e3e8ef;
+}
+
+.configTable th {
+  color: #52606d;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.dangerButton {
+  background: transparent;
+  color: #b91c1c;
+  border: 1px solid #f5c6c6;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dangerButton:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.dangerButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.testBadgeSuccess {
+  display: inline-block;
+  background: #d1fae5;
+  color: #065f46;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.testBadgeFailed {
+  display: inline-block;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.testBadgeNone {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.resultGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.resultCard {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.resultCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rankBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #2b6cb0;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.resultCardHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.scoreGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.scoreItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f6f8fb;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.scoreLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #52606d;
+  font-weight: 600;
+}
+
+.scoreValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2933;
+  margin-top: 2px;
+}
+
+.prosConsSection {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e3e8ef;
+}
+
+.prosConsSection h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #1f2933;
+}
+
+.prosConsSection ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #52606d;
+}
+
+.redFlagList {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.redFlagEmpty {
+  background: #f6f8fb;
+  border-radius: 8px;
+  padding: 12px;
+  color: #52606d;
+  font-size: 14px;
+  text-align: center;
+}
+
+.redFlagList h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.redFlagGroup {
+  margin-bottom: 12px;
+}
+
+.redFlagGroup h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.redFlagSeverityHigh {
+  color: #b91c1c;
+}
+
+.redFlagSeverityMedium {
+  color: #b45309;
+}
+
+.redFlagSeverityLow {
+  color: #4b5563;
+}
+
+.redFlagItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.redFlagItemHigh {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.redFlagItemMedium {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.redFlagItemLow {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.redFlagType {
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.scoreBreakdown {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.scoreBreakdown h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.breakdownGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.breakdownItem {
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid #cbd2d9;
+  background: #f6f8fb;
+}
+
+.breakdownLevelHigh {
+  border-left-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.breakdownLevelMedium {
+  border-left-color: #ca8a04;
+  background: #fefce8;
+}
+
+.breakdownLevelLow {
+  border-left-color: #b91c1c;
+  background: #fef2f2;
+}
+
+.breakdownHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.breakdownComponent {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: #1f2933;
+}
+
+.breakdownScore {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2b6cb0;
+}
+
+.breakdownMeta {
+  font-size: 11px;
+  color: #52606d;
+  margin-bottom: 4px;
+}
+
+.breakdownReason {
+  font-size: 12px;
+  color: #1f2933;
+}
+
+.aiReport {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.aiReport h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.aiReportEmpty {
+  background: #f6f8fb;
+  border-radius: 8px;
+  padding: 16px;
+  color: #52606d;
+  font-size: 14px;
+  text-align: center;
+}
+
+.aiReportHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.aiReportBest,
+.aiReportConfidence {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aiLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #52606d;
+  font-weight: 600;
+}
+
+.aiBestValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.aiConfidenceValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2b6cb0;
+}
+
+.aiReportSection {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e3e8ef;
+}
+
+.aiReportSection h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.aiReportSection ol,
+.aiReportSection ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #1f2933;
+}
+
+.aiReportSection li {
+  margin-bottom: 4px;
+}
+
+.aiProsConsItem {
+  background: #f6f8fb;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.aiPros {
+  color: #16a34a;
+}
+
+.aiCons {
+  color: #b91c1c;
+}
+
+.aiReportRaw {
+  background: #1f2933;
+  color: #f6f8fb;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  margin-top: 12px;
+}
+
+.aiReportSubtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #52606d;
+}
+
+.aiReportBestProduct {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  border-left: 4px solid #16a34a;
+  padding-left: 16px;
+}
+
+.aiReportBestProductName {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2933;
+  margin-top: 4px;
+}
+
+.aiHighlightProduct {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #f0fdf4;
+  border-radius: 6px;
+  font-weight: 600;
+  color: #1f2933;
+  margin: 4px 0;
+}
+
+.aiHighlightProduct.aiSafe {
+  background: #ecfdf5;
+  border-left: 3px solid #16a34a;
+}
+
+.aiHighlightProduct.aiRisky {
+  background: #fef2f2;
+  border-left: 3px solid #b91c1c;
+}
+
+.aiNote {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #52606d;
+  font-style: italic;
+}
+
+.aiRankingList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.aiRankingList li {
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  margin-bottom: 6px;
+  background: #f6f8fb;
+  border-radius: 6px;
+  align-items: flex-start;
+}
+
+.aiRankNumber {
+  background: #2b6cb0;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.aiRankBody {
+  flex: 1;
+}
+
+.aiRankProductId {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1f2933;
+}
+
+.aiRankReason {
+  font-size: 12px;
+  color: #52606d;
+  margin-top: 2px;
+}
+
+.aiProsConsCard {
+  background: #f6f8fb;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.aiProsConsHeader {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1f2933;
+  margin-bottom: 8px;
+}
+
+.aiProsConsCard .aiPros,
+.aiProsConsCard .aiCons {
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.aiProsConsCard ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
+.aiRedFlagList,
+.aiMissingList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.aiRedFlagItem {
+  background: #fef2f2;
+  border-left: 3px solid #b91c1c;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #7f1d1d;
+}
+
+.aiMissingList li {
+  background: #fef3c7;
+  border-left: 3px solid #d97706;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #78350f;
+}
+
+.resolverDiagnostics {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f6f8fb;
+  border: 1px solid #e1e6ee;
+  border-radius: 6px;
+}
+
+.resolverLoading {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.resolverStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.resolverAdapter {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.resolverDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.resolverField {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.resolverLabel {
+  font-weight: 600;
+  color: #1f2933;
+  min-width: 100px;
+}
+
+.resolverValue {
+  color: #4b5563;
+  word-break: break-all;
+}
+
+.resolverUrl {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.resolverError {
+  margin: 8px 0;
+}
+
+.resolverErrorMessage {
+  color: #b91c1c;
+  font-size: 14px;
+  margin: 0;
+}
+
+.resolverAttempts {
+  margin-top: 8px;
+  border-top: 1px solid #e1e6ee;
+  padding-top: 8px;
+}
+
+.resolverAttempts summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #4b5563;
+  user-select: none;
+}
+
+.resolverAttemptList {
+  margin: 8px 0 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resolverAttempt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #ffffff;
+  border: 1px solid #e1e6ee;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.resolverAttemptAdapter {
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.resolverAttemptMethod {
+  color: #6b7280;
+  font-family: monospace;
+}
+
+.resolverAttemptDuration {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.resolverAttemptError {
+  width: 100%;
+  color: #b91c1c;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statusBadgeOk {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusBadgeFailed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #1f2933;
+}
+
+.bestProductCallout {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: #f6f8fb;
+  border-radius: 8px;
+}
+
+.bestProductId {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1f2933;
+}
+
+.bestScore {
+  margin-left: auto;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.partialSuccessBanner {
+  padding: 12px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  color: #92400e;
+  margin-top: 8px;
+}
+
+.aiRankBadge {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: #e0e7ff;
+  color: #3730a3;
+  border-radius: 10px;
+}
+
+.missingDataNotes {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e1e6ee;
+}
+
+.riskSection {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e1e6ee;
+}
+
+.riskSection h3 {
+  color: #b91c1c;
+  margin-bottom: 4px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.statCard {
+  background: #f6f8fb;
+  border: 1px solid #e1e6ee;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2933;
+}
+
+.statValueSmall {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2933;
+  word-break: break-all;
+}
+
+.quickActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detailMeta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dataTable th,
+.dataTable td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e1e6ee;
+}
+
+.dataTable th {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.dataTable .bestRow {
+  background: #f0fdf4;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.productCellName {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.productLink {
+  color: #2b6cb0;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.productLink:hover {
+  text-decoration: underline;
+}
+
+.productMeta {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.priceCell {
+  font-weight: 600;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+.featureChip {
+  display: inline-block;
+  background: #f6f8fb;
+  border: 1px solid #e1e6ee;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin: 2px;
+}
+
+.riskBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.riskBadgeLOW {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.riskBadgeMEDIUM {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.riskBadgeHIGH {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.bestRow {
+  background: #f0fdf4;
+}
+
+.moreNote {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+.statusBadgeCompleted {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusBadgeFailed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusBadgePending,
+.statusBadgeProcessing {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusBadgePartialSuccess {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.productImage {
+  max-width: 300px;
+  border-radius: 8px;
+  border: 1px solid #e1e6ee;
+}
+
+.productDescription {
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #374151;
+}

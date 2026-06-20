@@ -276,6 +276,34 @@ Rules:
 | createdAt | TEXT NOT NULL | Created timestamp |
 
 
+### sh_extractionFailures
+
+| Column | Type | Notes |
+|---|---|---|
+| id | TEXT PRIMARY KEY | Example `efl_xxx` |
+| ownerId | TEXT NOT NULL | Related entity ID (session, product, etc.) |
+| ownerType | TEXT NOT NULL | `product`, `shop`, `session` |
+| adapter | TEXT NOT NULL | Adapter name that failed |
+| url | TEXT | URL that was being extracted |
+| errorMessage | TEXT NOT NULL | Sanitized error message |
+| metadataJson | TEXT | Optional structured metadata |
+| createdAt | TEXT NOT NULL | Created timestamp |
+
+
+### sh_configAuditLogs
+
+| Column | Type | Notes |
+|---|---|---|
+| id | TEXT PRIMARY KEY | Example `aud_xxx` |
+| userId | TEXT NOT NULL | User who made the change |
+| configType | TEXT NOT NULL | `appConfig`, `aiProvider`, `aiModel`, `searchProvider`, `scoring` |
+| configId | TEXT NOT NULL | ID of the config entity |
+| action | TEXT NOT NULL | `create`, `update`, `delete` |
+| oldValueJson | TEXT | Previous value as JSON |
+| newValueJson | TEXT | New value as JSON |
+| createdAt | TEXT NOT NULL | Created timestamp |
+
+
 ### sh_appConfigs
 
 | Column | Type | Notes |
@@ -592,6 +620,28 @@ CREATE TABLE IF NOT EXISTS sh_fieldEvidence (
   "confidence" REAL NOT NULL DEFAULT 0,
   "status" TEXT NOT NULL,
   "rawSnapshotR2Key" TEXT,
+  "createdAt" TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sh_extractionFailures (
+  "id" TEXT PRIMARY KEY,
+  "ownerId" TEXT NOT NULL,
+  "ownerType" TEXT NOT NULL,
+  "adapter" TEXT NOT NULL,
+  "url" TEXT,
+  "errorMessage" TEXT NOT NULL,
+  "metadataJson" TEXT,
+  "createdAt" TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sh_configAuditLogs (
+  "id" TEXT PRIMARY KEY,
+  "userId" TEXT NOT NULL,
+  "configType" TEXT NOT NULL,
+  "configId" TEXT NOT NULL,
+  "action" TEXT NOT NULL,
+  "oldValueJson" TEXT,
+  "newValueJson" TEXT,
   "createdAt" TEXT NOT NULL
 );
 

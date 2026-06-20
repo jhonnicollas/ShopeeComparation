@@ -10,9 +10,11 @@
     "test": "vitest run --passWithNoTests",
     "build": "pnpm -r --if-present build",
     "format": "prettier --check .",
-    "quality": "node scripts/quality-gate.js"
+    "quality": "node scripts/quality-gate.js",
+    "format:fix": "prettier --write ."
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260617.1",
     "@eslint/js": "^9.29.0",
     "@types/node": "^24.0.3",
     "eslint": "^9.29.0",

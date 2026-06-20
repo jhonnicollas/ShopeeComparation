@@ -1,0 +1,20 @@
+{
+  "name": "@shopee-research/queue-consumer",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@shopee-research/shared": "workspace:*",
+    "@shopee-research/db": "workspace:*",
+    "@shopee-research/shopee": "workspace:*",
+    "@shopee-research/core": "workspace:*",
+    "@shopee-research/ai": "workspace:*",
+    "hono": "^4.12.25"
+  }
+}

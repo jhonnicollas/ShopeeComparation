@@ -4,8 +4,18 @@ compatibility_date = "2026-06-17"
 account_id = "79dea2845a4b62ea5229c8676dea02c0"
 
 [vars]
-APP_ENV = "development"
+APP_ENV = "production"
 APP_NAME = "Shopee Product Research AI"
+APP_BASE_URL = ""
+JOB_POLL_INTERVAL_MS = "3000"
+MAX_COMPARE_LINKS = "5"
+KEYWORD_SEARCH_LIMIT = "10"
+DEFAULT_SHIPPED_FROM = "DKI Jakarta"
+
+# Secrets (set via: wrangler secret put <NAME>):
+# - NINEROUTER_API_KEY
+# - SESSION_SECRET
+# - PASSWORD_PEPPER (optional)
 
 [[d1_databases]]
 binding = "DB"

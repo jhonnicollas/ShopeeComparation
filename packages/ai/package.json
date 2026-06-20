@@ -1,0 +1,22 @@
+{
+  "name": "@shopee-research/ai",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@shopee-research/core": "workspace:*",
+    "@shopee-research/db": "workspace:*",
+    "@shopee-research/shared": "workspace:*",
+    "@shopee-research/shopee": "workspace:*"
+  }
+}

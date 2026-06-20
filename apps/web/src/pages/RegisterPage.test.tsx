@@ -16,6 +16,11 @@ vi.mock("@tanstack/react-query", () => ({
     isError: false,
     isSuccess: false,
   }),
+  useQueryClient: () => ({
+    invalidateQueries: vi.fn(),
+    setQueryData: vi.fn(),
+    clear: vi.fn(),
+  }),
 }));
 
 describe("RegisterPage", () => {

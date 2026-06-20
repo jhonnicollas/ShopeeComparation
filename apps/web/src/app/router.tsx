@@ -4,6 +4,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  useNavigate,
 } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -196,11 +197,12 @@ declare module "@tanstack/react-router" {
 function AppShell() {
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      queryClient.setQueryData(["auth", "me"], null);
-      void queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      queryClient.clear();
+      void navigate({ to: "/login" });
     },
   });
 

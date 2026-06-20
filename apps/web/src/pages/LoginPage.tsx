@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { login, type LoginRequest } from "../lib/auth.js";
 import { ApiClientError } from "../lib/api.js";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -13,6 +14,8 @@ export function LoginPage() {
   const mutation = useMutation({
     mutationFn: (data: LoginRequest) => login(data),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      void queryClient.invalidateQueries({ queryKey: ["research", "list"] });
       void navigate({ to: "/" });
     },
     onError: (err: unknown) => {

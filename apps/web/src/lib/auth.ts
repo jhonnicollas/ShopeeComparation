@@ -73,7 +73,8 @@ export function useAuth(): UseAuthResult {
     queryKey: ["auth", "me"],
     queryFn: me,
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
   });
   return {
     user: query.data?.user ?? null,

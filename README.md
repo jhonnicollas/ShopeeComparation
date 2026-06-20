@@ -14,19 +14,15 @@ Aplikasi ini adalah web app multi-user berbasis Cloudflare yang membantu user:
 
 | File | Fungsi |
 |---|---|
-| `docs/prd/prd.md` | Product Requirements Document utama |
-| `docs/prd/user-stories.md` | User stories lengkap |
-| `docs/prd/acceptance-criteria.md` | Acceptance criteria lengkap |
-| `docs/architecture/technical-decisions.md` | Keputusan teknis yang dikunci |
-| `docs/architecture/implementation-stack.md` | Stack implementasi yang dikunci |
-| `docs/architecture/system-overview.md` | Arsitektur sistem |
+| `docs/prd.md` | Product Requirements Document, Scope, Stories, Criteria |
+| `docs/architecture.md` | Arsitektur, Technical Decisions, Stack, Overview |
 | `docs/shared/enums.md` | Enum canonical untuk API, DB, UI, dan tests |
 | `docs/database/schema.md` | Database schema D1 |
 | `docs/database/naming-rules.md` | Aturan nama table dan column |
 | `docs/api/api-contract.md` | Kontrak API |
-| `docs/ai/mastra-orchestrator.md` | Workflow dan agent Mastra |
+| `docs/ai-orchestration.md` | Workflow Mastra, Prompts, 9router config |
 | `docs/tasks/autopilot-task-contract.md` | Aturan ekspansi task autopilot |
-| `.ai/agent-rules.md` | Aturan wajib untuk AI coding agent |
+| `.ai/agent-instructions.md` | Aturan wajib untuk AI coding agent |
 
 ## Aturan paling penting
 
@@ -47,17 +43,12 @@ Aplikasi ini adalah web app multi-user berbasis Cloudflare yang membantu user:
 
 Setiap task harus menyuruh agent membaca:
 
-1. `docs/prd/prd.md`
-2. `docs/architecture/technical-decisions.md`
-3. `docs/architecture/system-overview.md`
-4. `docs/architecture/implementation-stack.md`
-5. `docs/shared/enums.md`
-6. `docs/api/api-contract.md`
-7. `docs/database/schema.md`
-8. `docs/tasks/autopilot-task-contract.md`
-9. `.ai/agent-rules.md`
-10. `.ai/done-definition.md`
-11. File task yang sedang dikerjakan
+1. `docs/prd.md`
+2. `docs/architecture.md`
+3. `docs/api/api-contract.md`
+4. `docs/database/schema.md`
+5. `.ai/agent-instructions.md`
+6. File task yang sedang dikerjakan
 
 Agent tidak boleh mengubah keputusan teknis tanpa ADR dan approval manusia.
 
@@ -84,11 +75,8 @@ This repository includes an autopilot execution system for AI coding CLI tools s
 
 Primary files:
 
-- `.ai/autopilot-prompt.md`
-- `.ai/autopilot-policy.md`
-- `.ai/stop-conditions.md`
-- `.ai/task-runner.md`
-- `.ai/self-review.md`
+- `.ai/autopilot-system.md`
+- `.ai/agent-instructions.md`
 - `docs/tasks/backlog.md`
 - `docs/tasks/current-task.md`
 - `docs/tasks/done.md`

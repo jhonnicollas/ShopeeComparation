@@ -1,3 +1,176 @@
+# Acceptance Criteria
+
+## Global Acceptance
+
+- Aplikasi berjalan sebagai Cloudflare-first app.
+- Backend utama menggunakan Cloudflare Workers.
+- Database utama menggunakan Cloudflare D1.
+- Queue menggunakan Cloudflare Queues.
+- Raw snapshot besar disimpan di R2.
+- Mastra digunakan sebagai orchestrator.
+- 9router digunakan sebagai AI gateway.
+- Frontend menggunakan React + Vite.
+- Monorepo menggunakan pnpm workspace.
+- Validasi runtime menggunakan Zod.
+- Table database wajib prefix `sh_`.
+- Column database tidak boleh mengandung underscore.
+
+## Auth
+
+- User dapat register.
+- User dapat login.
+- User dapat logout.
+- Password disimpan sebagai hash.
+- Session token tidak disimpan plain text di database.
+- Cookie session HttpOnly.
+- User hanya dapat melihat data miliknya.
+
+## Compare Links
+
+- User dapat memasukkan 1–5 link Shopee.
+- Sistem menolak input lebih dari 5 link.
+- Sistem menghapus duplicate link.
+- Sistem menerima full Shopee URL.
+- Sistem menerima short URL `id.shp.ee`.
+- Sistem menolak URL non-Shopee.
+- Sistem membuat research session.
+- Sistem membuat async job.
+- Sistem menampilkan job progress.
+- Sistem menampilkan result saat job selesai.
+
+## URL Resolver
+
+- Resolver menyimpan original URL.
+- Resolver mencoba follow redirect.
+- Resolver membersihkan tracking parameter.
+- Resolver menghasilkan canonical URL jika berhasil.
+- Resolver mengekstrak `shopId` dan `itemId` jika tersedia.
+- Resolver memiliki fallback 9router web fetch.
+- Resolver memiliki fallback Browser Run.
+- Resolver tidak crash jika URL gagal di-resolve.
+
+## Product Extraction
+
+- Sistem mencoba mengambil title.
+- Sistem mencoba mengambil price.
+- Sistem mencoba mengambil product rating.
+- Sistem mencoba mengambil review count.
+- Sistem mencoba mengambil sold count.
+- Sistem mencoba mengambil shipped from.
+- Sistem mencoba mengambil description.
+- Sistem mencoba mengambil specification.
+- Sistem mencoba mengambil features.
+- Sistem mencoba mengambil product weight.
+- Field gagal tidak boleh diisi data palsu.
+- Field gagal diberi confidence 0.
+
+## Product Weight
+
+- Setiap product result memiliki weight object.
+- Weight object memiliki value, unit, rawText, source, confidence.
+- Jika berat tidak ditemukan, value null dan confidence 0.
+- AI boleh membantu ekstraksi dari text, tetapi tidak boleh mengarang.
+
+## Shop Extraction
+
+- Sistem mencoba mengambil shop name.
+- Sistem mencoba mengambil shop status.
+- Sistem mencoba mengambil shop rating.
+- Sistem mencoba mengambil response rate.
+- Sistem mencoba mengambil response time.
+- Sistem mencoba mengambil follower count.
+- Sistem mencoba mengambil product count.
+- Sistem mencoba mengambil joined age.
+- Sistem mencoba mengambil location.
+- Shop status dinormalisasi.
+
+## Keyword Search
+
+- User dapat memasukkan keyword.
+- Default shipped from adalah DKI Jakarta.
+- Default limit adalah 10.
+- Sistem mencari kandidat produk.
+- Sistem melakukan deduplicate produk.
+- Sistem filter atau prioritaskan DKI Jakarta.
+- Sistem enrich produk kandidat.
+- Sistem mengembalikan top 10 berdasarkan score.
+
+## Scoring
+
+- Score dihitung deterministic.
+- Score berada di range 0–100.
+- Score breakdown disimpan.
+- Risk penalty diterapkan.
+- AI tidak boleh menentukan score numeric bebas.
+
+## AI Report
+
+- AI report dibuat dari structured data.
+- AI report menyebut produk terbaik.
+- AI report menjelaskan alasan.
+- AI report menyebut data yang tidak tersedia.
+- AI report tidak boleh mengarang field kosong.
+- AI output divalidasi schema.
+
+## Job Progress
+
+- Job memiliki status `pending`, `processing`, `completed`, `failed`, atau `partialSuccess`.
+- Frontend polling job status.
+- Job logs disimpan.
+- Error ditampilkan user-friendly.
+- Internal stacktrace tidak ditampilkan ke user.
+
+## Compliance
+
+- Sistem tidak login ke akun Shopee user.
+- Sistem tidak akses cart.
+- Sistem tidak akses checkout.
+- Sistem tidak akses order.
+- Sistem tidak akses halaman user/me.
+- Sistem tidak bypass CAPTCHA.
+- Sistem tidak scraping agresif.
+# MVP Scope
+
+## MVP Full Feature Definition
+
+MVP tetap memiliki fitur penuh untuk dua workflow utama:
+
+1. Keyword Search Top 10.
+2. Compare maksimal 5 link Shopee.
+
+Yang dibatasi bukan fitur inti, tetapi volume, jumlah link, jumlah hasil, dan fitur tambahan yang belum urgent.
+
+## Included in MVP
+
+- Multi-user auth.
+- Compare 1–5 Shopee links.
+- Short URL resolver.
+- Product extraction.
+- Shop extraction.
+- Product weight extraction.
+- Feature extraction.
+- Deterministic scoring.
+- Risk detection.
+- AI report via Mastra + 9router.
+- Keyword search top 10.
+- Default shipped from DKI Jakarta.
+- Async job processing.
+- Research history.
+- Job logs.
+
+## Excluded from MVP
+
+- Price tracking.
+- Price drop alert.
+- Browser extension.
+- Mobile native app.
+- Payment/subscription.
+- Marketplace selain Shopee.
+- Auto-buy.
+- Checkout integration.
+- Shopee user login.
+- Cart/order/user scraping.
+- CAPTCHA bypass.
 # PRD — Shopee Product Research AI
 
 ## 1. Product Name
@@ -432,3 +605,259 @@ Project tidak boleh membuat D1 database baru untuk MVP. Gunakan resource berikut
 Cloudflare account ID: `79dea2845a4b62ea5229c8676dea02c0`.
 
 Cloudflare API token harus disimpan sebagai secret dan tidak boleh ditulis di repo.
+# Product Vision — Shopee Product Research AI
+
+## Visi Produk
+
+Shopee Product Research AI adalah aplikasi web yang membantu user menemukan dan membandingkan produk terbaik dari Shopee.co.id secara cepat, objektif, dan berbasis data.
+
+Aplikasi ini menggantikan proses manual user yang sebelumnya harus membuka Shopee, mengecek produk satu per satu, membuka short URL secara manual, lalu bertanya ke ChatGPT untuk setiap produk.
+
+## Nilai Utama
+
+1. Menghemat waktu riset produk.
+2. Membandingkan produk secara objektif.
+3. Menggabungkan data produk, data toko, harga, rating, review, total terjual, fitur, berat produk, dan reputasi toko.
+4. Menghasilkan ranking produk terbaik.
+5. Memberikan report naratif AI yang menjelaskan alasan rekomendasi.
+6. Menyimpan history riset untuk digunakan ulang.
+
+## Positioning
+
+Aplikasi ini bukan sekadar scraper. Aplikasi ini adalah **AI-assisted Shopee product research platform**.
+
+Sistem harus menempatkan data sebagai dasar utama dan AI sebagai lapisan penjelasan. Scoring tidak boleh sepenuhnya ditentukan oleh AI.
+
+## Prinsip Produk
+
+1. Data first, AI second.
+2. AI explains, scoring decides.
+3. Jangan mengarang data yang tidak tersedia.
+4. Semua field penting harus memiliki source dan confidence.
+5. Job berat harus async.
+6. D1 hanya untuk structured data.
+7. R2 untuk raw snapshot dan file besar.
+8. Mastra mengatur workflow, bukan menggantikan business logic.
+9. MVP harus menjadi production foundation, bukan prototype buangan.
+
+## Target MVP
+
+MVP harus mendukung dua workflow utama:
+
+1. Keyword Search Top 10 dengan filter utama Shipped From DKI Jakarta.
+2. Compare maksimal 5 link Shopee, termasuk short URL.
+
+## Batasan Produk
+
+MVP tidak menangani:
+
+1. Auto-buy.
+2. Checkout integration.
+3. Login ke akun Shopee user.
+4. Akses cart, checkout, order, atau halaman private Shopee.
+5. Bypass CAPTCHA.
+6. Scraping agresif.
+7. Tracking harga berkala.
+8. Alert harga turun.
+9. Browser extension.
+10. Payment/subscription.
+# User Stories
+
+## Epic 1 — Authentication
+
+### US-001 Register
+
+Sebagai user, saya ingin membuat akun agar hasil riset produk saya dapat disimpan dan dibuka kembali.
+
+Acceptance:
+
+- User dapat register dengan email dan password.
+- Email harus valid.
+- Password harus memenuhi minimum security rule.
+- Password tidak boleh disimpan dalam bentuk plain text.
+- Setelah register berhasil, user dapat login.
+
+### US-002 Login
+
+Sebagai user, saya ingin login agar dapat mengakses dashboard dan history riset saya.
+
+Acceptance:
+
+- User dapat login dengan email dan password.
+- Session dibuat dalam cookie aman.
+- User yang belum login tidak dapat mengakses protected page.
+
+### US-003 Logout
+
+Sebagai user, saya ingin logout agar session saya tidak bisa digunakan lagi.
+
+Acceptance:
+
+- Session aktif dicabut.
+- Cookie session dihapus.
+- User diarahkan ke login page.
+
+## Epic 2 — Compare Links
+
+### US-010 Compare maksimal 5 link Shopee
+
+Sebagai user, saya ingin memasukkan maksimal 5 link produk Shopee agar sistem dapat membandingkan produk tersebut.
+
+Acceptance:
+
+- User dapat paste 1–5 link.
+- Sistem menolak lebih dari 5 link.
+- Duplicate link dibersihkan.
+- Link pendek `id.shp.ee` diterima.
+- Link non-Shopee ditolak.
+
+### US-011 Resolve short URL
+
+Sebagai user, saya ingin short URL Shopee diubah otomatis menjadi URL produk asli agar saya tidak perlu membuka link di browser secara manual.
+
+Acceptance:
+
+- Sistem menyimpan original URL.
+- Sistem mencoba mendapatkan canonical URL.
+- Sistem mengekstrak `shopId` dan `itemId` jika tersedia.
+- Jika gagal, sistem menampilkan error yang jelas.
+
+### US-012 Product comparison table
+
+Sebagai user, saya ingin melihat tabel perbandingan agar mudah memilih produk terbaik.
+
+Acceptance:
+
+- Tabel menampilkan nama produk, nama toko, dikirim dari, harga, berat, fitur, total review, total item terjual, rating produk, status toko, rating toko, response rate, response time, risk level, dan recommendation.
+- Setiap produk memiliki final score.
+- Produk terbaik ditandai jelas.
+
+## Epic 3 — Keyword Search
+
+### US-020 Cari produk dari keyword
+
+Sebagai user, saya ingin memasukkan keyword agar sistem dapat mencari produk terbaik dari Shopee.
+
+Acceptance:
+
+- User dapat memasukkan keyword.
+- Default shipped from adalah DKI Jakarta.
+- Default limit adalah 10 produk.
+- Sistem membuat job async.
+- User dapat melihat progress.
+
+### US-021 Top 10 ranking
+
+Sebagai user, saya ingin mendapatkan ranking top 10 agar tidak perlu membandingkan hasil search Shopee secara manual.
+
+Acceptance:
+
+- Sistem menghasilkan maksimal 10 produk.
+- Produk difilter atau diprioritaskan berdasarkan DKI Jakarta.
+- Produk diurutkan berdasarkan final score.
+- Produk dengan data tidak lengkap diberi confidence note.
+
+## Epic 4 — Product Data
+
+### US-030 Data produk maksimal
+
+Sebagai user, saya ingin sistem mengambil data produk sebanyak mungkin agar keputusan pembelian lebih akurat.
+
+Acceptance:
+
+- Sistem mencoba mengambil harga, rating, review count, sold count, fitur, spesifikasi, deskripsi, brand, kategori, shipped from, dan gambar.
+- Data kosong disimpan sebagai null.
+- Sistem tidak boleh mengarang data.
+
+### US-031 Berat produk
+
+Sebagai user, saya ingin melihat berat produk karena berat dapat memengaruhi ongkir dan kualitas persepsi barang.
+
+Acceptance:
+
+- Setiap produk memiliki object berat.
+- Jika berat ditemukan, value, unit, rawText, source, dan confidence disimpan.
+- Jika berat tidak ditemukan, value null dan confidence 0.
+
+## Epic 5 — Shop Intelligence
+
+### US-040 Data toko
+
+Sebagai user, saya ingin melihat reputasi toko agar tidak hanya memilih berdasarkan harga.
+
+Acceptance:
+
+- Sistem mencoba mengambil nama toko, status toko, rating toko, response rate, response time, follower, jumlah produk, lama bergabung, dan lokasi toko.
+- Status toko dinormalisasi.
+- Jika data toko tidak tersedia, sistem menandai partial data.
+
+## Epic 6 — Scoring dan Risk
+
+### US-050 Score objektif
+
+Sebagai user, saya ingin produk diberi score objektif agar rekomendasi tidak hanya berdasarkan opini AI.
+
+Acceptance:
+
+- Final score dihitung oleh scoring engine deterministic.
+- Score berada di range 0–100.
+- Score breakdown tersedia.
+- Risk penalty diterapkan jika ada red flag.
+
+### US-051 Risk detection
+
+Sebagai user, saya ingin melihat red flag agar saya tahu produk mana yang perlu dihindari.
+
+Acceptance:
+
+- Sistem menampilkan risk type, severity, message, dan impact.
+- Produk dengan banyak red flag turun ranking.
+
+## Epic 7 — AI Report
+
+### US-060 AI recommendation report
+
+Sebagai user, saya ingin report naratif agar hasil perbandingan mudah dipahami.
+
+Acceptance:
+
+- Report menyebut produk terbaik.
+- Report menjelaskan alasan.
+- Report menyebut missing data.
+- Report tidak mengarang data.
+- Report dibuat dari structured data.
+
+## Epic 8 — History dan Job
+
+### US-070 Research history
+
+Sebagai user, saya ingin melihat history riset agar hasil sebelumnya bisa dibuka kembali.
+
+Acceptance:
+
+- User melihat daftar riset miliknya.
+- User dapat membuka detail riset.
+- User tidak dapat membuka riset user lain.
+
+### US-071 Job progress
+
+Sebagai user, saya ingin melihat progress job agar tahu proses masih berjalan.
+
+Acceptance:
+
+- Job punya status.
+- Frontend melakukan polling.
+- Progress current dan total ditampilkan.
+- Error ditampilkan user-friendly.
+
+## Epic 9 — Admin
+
+### US-080 Admin job monitoring
+
+Sebagai admin, saya ingin melihat job dan error log agar bisa memperbaiki extraction failure.
+
+Acceptance:
+
+- Admin dapat melihat failed jobs.
+- Admin dapat melihat job logs.
+- Admin dapat melihat error code tanpa secret/internal stacktrace.

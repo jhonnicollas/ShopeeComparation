@@ -19,8 +19,7 @@ export class ApiClientError extends Error {
 }
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://shopee-product-research-api.indiehomesungairaya.workers.dev/api";
+  import.meta.env.VITE_API_BASE_URL || "/api";
 
 export async function apiRequest<T>(
   path: string,

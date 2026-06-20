@@ -33,7 +33,7 @@ type Bindings = {
 
 const SESSION_COOKIE_NAME = "session_token";
 const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
-const SAME_SITE_COOKIE = "SameSite=None; Secure";
+const SAME_SITE_COOKIE = "SameSite=None; Secure; Partitioned";
 
 function generateId(prefix: string): string {
   const bytes = crypto.getRandomValues(new Uint8Array(12));

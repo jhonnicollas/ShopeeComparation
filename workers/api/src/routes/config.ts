@@ -271,6 +271,63 @@ function generateAuditId(): string {
 
 export const configRouter = new Hono<{ Bindings: Bindings }>();
 
+configRouter.get("/public", async (c) => {
+  const {
+    listPublicAppConfigs,
+    listEnabledAiProviders,
+    listEnabledAiModels,
+    listEnabledSearchProviders,
+    listEnabledScoringConfigs,
+  } = await import("@shopee-research/db");
+
+  const [appConfigs, aiProviders, aiModels, searchProviders, scoringConfigs] = await Promise.all([
+    listPublicAppConfigs(c.env.DB),
+    listEnabledAiProviders(c.env.DB),
+    listEnabledAiModels(c.env.DB),
+    listEnabledSearchProviders(c.env.DB),
+    listEnabledScoringConfigs(c.env.DB),
+  ]);
+
+  return c.json(
+    {
+      appConfigs: appConfigs.map((r) => ({
+        key: r.key,
+        value: r.value,
+        valueType: r.valueType,
+        category: r.category,
+      })),
+      aiProviders: aiProviders.map((r) => ({
+        providerKey: r.providerKey,
+        displayName: r.displayName,
+        providerType: r.baseUrl,
+        timeoutMs: r.timeoutMs,
+      })),
+      aiModels: aiModels.map((r) => ({
+        providerKey: r.providerKey,
+        modelKey: r.modelKey,
+        modelName: r.modelName,
+        displayName: r.displayName,
+        usageType: r.usageType,
+        isDefault: r.isDefault === 1,
+      })),
+      searchProviders: searchProviders.map((r) => ({
+        providerKey: r.providerKey,
+        displayName: r.displayName,
+        providerType: r.providerType,
+        priority: r.priority,
+      })),
+      scoringConfigs: scoringConfigs.map((r) => ({
+        configKey: r.configKey,
+        displayName: r.displayName,
+        category: r.category,
+        weightsJson: r.weightsJson,
+        isDefault: r.isDefault === 1,
+      })),
+    },
+    200
+  );
+});
+
 configRouter.get("/apps/public", async (c) => {
   const rows = await listPublicAppConfigs(c.env.DB);
   const configs = rows.map(toResponse);

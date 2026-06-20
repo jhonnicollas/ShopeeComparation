@@ -7,6 +7,7 @@ import {
   upsertShop,
   updateJobStatus,
   updateResearchSessionStatus,
+  createJobLog,
 } from "@shopee-research/db";
 import { findShopFixtureById, productFixtures, type ProductFixture, type ShopFixture } from "@shopee-research/shopee";
 import { calculateProductScore, detectRisks, rankProducts } from "@shopee-research/core";
@@ -434,9 +435,23 @@ export async function processJobSync(
 ): Promise<ProcessJobResult> {
   const fixtures: SelectedFixture[] = [];
 
+  await createJobLog(env.DB, {
+    id: generateId("log"),
+    jobId,
+    level: "info",
+    message: `Job ${jobId} started for session ${message.researchSessionId} (${message.mode})`,
+    metadataJson: JSON.stringify({ mode: message.mode, keyword: message.keyword ?? null, linkCount: message.links?.length ?? 0 }),
+  });
+
   if (message.mode === researchMode.compareLinks) {
     const links = message.links ?? [];
     console.log(`[compare-links] Processing ${links.length} links`);
+    await createJobLog(env.DB, {
+      id: generateId("log"),
+      jobId,
+      level: "info",
+      message: `Memproses ${links.length} link Shopee`,
+    });
     const shopIdMap = new Map<string, string>();
     for (const url of links) {
       const f = selectFixtureByUrl(url, shopIdMap);
@@ -446,15 +461,39 @@ export async function processJobSync(
     const keyword = message.keyword ?? "";
     const limit = message.limit ?? 10;
     console.log(`[keyword-search] Processing keyword: "${keyword}", limit: ${limit}`);
+    await createJobLog(env.DB, {
+      id: generateId("log"),
+      jobId,
+      level: "info",
+      message: `Mencari produk untuk keyword "${keyword}" (limit ${limit})`,
+    });
     fixtures.push(...selectFixturesByKeyword(keyword, limit));
   }
 
   console.log(`[jobProcessor] Persisting ${fixtures.length} fixtures`);
+  await createJobLog(env.DB, {
+    id: generateId("log"),
+    jobId,
+    level: "info",
+    message: `Menyimpan ${fixtures.length} produk ke D1`,
+  });
   try {
     await persistFixtures(env, fixtures);
     console.log(`[jobProcessor] Persist done`);
+    await createJobLog(env.DB, {
+      id: generateId("log"),
+      jobId,
+      level: "info",
+      message: `${fixtures.length} produk berhasil disimpan`,
+    });
   } catch (err) {
     console.error(`[jobProcessor] Persist failed:`, err);
+    await createJobLog(env.DB, {
+      id: generateId("log"),
+      jobId,
+      level: "error",
+      message: `Gagal menyimpan produk: ${err instanceof Error ? err.message : "Unknown"}`,
+    });
     throw err;
   }
 
@@ -468,19 +507,49 @@ export async function processJobSync(
     : `Compare ${fixtures.length} products`;
 
   console.log(`[jobProcessor] Saving comparison`);
+  await createJobLog(env.DB, {
+    id: generateId("log"),
+    jobId,
+    level: "info",
+    message: "Membuat perbandingan dan menyimpan ranking",
+  });
   let comparisonId = "";
   try {
     comparisonId = await saveComparison(env, message, title, scored, ranked, keyword, shippedFrom);
     console.log(`[jobProcessor] Comparison saved: ${comparisonId}`);
+    await createJobLog(env.DB, {
+      id: generateId("log"),
+      jobId,
+      level: "info",
+      message: `Perbandingan ${comparisonId} berhasil disimpan`,
+    });
     await generateAiReport(env, message, comparisonId, scored);
     console.log(`[jobProcessor] AI report done`);
+    await createJobLog(env.DB, {
+      id: generateId("log"),
+      jobId,
+      level: "info",
+      message: "AI report berhasil di-generate",
+    });
   } catch (err) {
     console.error(`[jobProcessor] Save/AI failed:`, err);
+    await createJobLog(env.DB, {
+      id: generateId("log"),
+      jobId,
+      level: "error",
+      message: `Gagal membuat perbandingan/AI: ${err instanceof Error ? err.message : "Unknown"}`,
+    });
     throw err;
   }
 
   const bestProductId = fixtures.length > 0 ? fixtures[0]!.productId : null;
   console.log(`[jobProcessor] Updating session status`);
+  await createJobLog(env.DB, {
+    id: generateId("log"),
+    jobId,
+    level: "info",
+    message: `Job ${jobId} selesai. Produk terbaik: ${bestProductId ?? "N/A"}`,
+  });
   await updateResearchSessionStatus(env.DB, message.researchSessionId, jobStatus.completed, {
     bestProductId: bestProductId ?? undefined,
     totalProducts: fixtures.length,

@@ -18,7 +18,7 @@ import { findProductById } from "@shopee-research/db";
 import { findShopById } from "@shopee-research/db";
 import { processJobSync } from "@shopee-research/ai";
 import { parseShopeeUrl } from "@shopee-research/shopee";
-import { authenticate, authErrorResponse } from "../lib/auth.js";
+import { authenticate, authErrorResponse, requireAdmin } from "../lib/auth.js";
 import { errorResponse, forbiddenResponse, invalidJsonResponse, notFoundResponse, validationErrorResponse } from "../lib/errors.js";
 
 type Bindings = {
@@ -295,6 +295,40 @@ researchRouter.get("/jobs/:id", async (c) => {
   );
 });
 
+researchRouter.get("/jobs/:id/logs", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const { findJobById, listJobLogsByJob } = await import("@shopee-research/db");
+  const job = await findJobById(c.env.DB, id);
+  if (!job) {
+    return notFoundResponse(c, "JOB_NOT_FOUND", "Job not found");
+  }
+
+  if (job.userId !== auth.user.userId) {
+    return forbiddenResponse(c, "Cannot access this job");
+  }
+
+  const logs = await listJobLogsByJob(c.env.DB, id, 200);
+  return c.json(
+    {
+      items: logs.map((l) => ({
+        id: l.id,
+        jobId: l.jobId,
+        level: l.level,
+        message: l.message,
+        metadataJson: l.metadataJson,
+        createdAt: l.createdAt,
+      })),
+    },
+    200
+  );
+});
+
 researchRouter.get("/sessions/:id", async (c) => {
   const auth = await authenticate(c.env.DB, c.req.header("cookie"));
   if (!auth.authenticated) {
@@ -514,4 +548,76 @@ researchRouter.get("/shops/:id", async (c) => {
   }
 
   return c.json(shop, 200);
+});
+
+researchRouter.get("/admin/jobs", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const status = c.req.query("status") ?? "failed";
+  const limit = Number(c.req.query("limit") ?? "50");
+  const { listJobsByStatus } = await import("@shopee-research/db");
+
+  const jobs = await listJobsByStatus(c.env.DB, status, Math.min(limit, 200));
+  return c.json(
+    {
+      items: jobs.map((j) => ({
+        id: j.id,
+        userId: j.userId,
+        researchSessionId: j.researchSessionId,
+        type: j.type,
+        status: j.status,
+        progressCurrent: j.progressCurrent,
+        progressTotal: j.progressTotal,
+        currentStep: j.currentStep,
+        errorMessage: j.errorMessage,
+        createdAt: j.createdAt,
+        updatedAt: j.updatedAt,
+      })),
+    },
+    200
+  );
+});
+
+researchRouter.get("/admin/logs", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+  const adminCheck = requireAdmin(auth);
+  if (!adminCheck.authenticated) {
+    const err = authErrorResponse(adminCheck);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const level = c.req.query("level");
+  const limit = Number(c.req.query("limit") ?? "100");
+  const { listJobLogs } = await import("@shopee-research/db");
+
+  const logs = await listJobLogs(c.env.DB, {
+    level: (level as "info" | "warn" | "error" | "debug") || undefined,
+    limit: Math.min(limit, 500),
+  });
+  return c.json(
+    {
+      items: logs.map((l) => ({
+        id: l.id,
+        jobId: l.jobId,
+        level: l.level,
+        message: l.message,
+        metadataJson: l.metadataJson,
+        createdAt: l.createdAt,
+      })),
+    },
+    200
+  );
 });

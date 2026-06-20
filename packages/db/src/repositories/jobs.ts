@@ -96,3 +96,15 @@ export async function listJobsByUser(db: D1Database, userId: string): Promise<Jo
     .all<JobRow>();
   return result.results ?? [];
 }
+
+export async function listJobsByStatus(
+  db: D1Database,
+  status: string,
+  limit = 50
+): Promise<JobRow[]> {
+  const result = await db
+    .prepare("SELECT * FROM sh_jobs WHERE status = ? ORDER BY createdAt DESC LIMIT ?")
+    .bind(status, limit)
+    .all<JobRow>();
+  return result.results ?? [];
+}

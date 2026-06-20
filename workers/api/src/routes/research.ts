@@ -17,8 +17,9 @@ import {
 import { findProductById } from "@shopee-research/db";
 import { findShopById } from "@shopee-research/db";
 import { processJobSync } from "@shopee-research/ai";
+import { parseShopeeUrl } from "@shopee-research/shopee";
 import { authenticate, authErrorResponse } from "../lib/auth.js";
-import { forbiddenResponse, invalidJsonResponse, notFoundResponse, validationErrorResponse } from "../lib/errors.js";
+import { errorResponse, forbiddenResponse, invalidJsonResponse, notFoundResponse, validationErrorResponse } from "../lib/errors.js";
 
 type Bindings = {
   DB: D1Database;
@@ -59,6 +60,23 @@ researchRouter.post("/compare-links", async (c) => {
     return validationErrorResponse(c, "Invalid compare links input", parsed.error.issues);
   }
 
+  const normalizedLinks: string[] = [];
+  const seenNormalized = new Set<string>();
+  for (const link of parsed.data.links) {
+    const parseResult = parseShopeeUrl({ url: link });
+    if (!parseResult.isValid || (!parseResult.isShopeeHost && !parseResult.isShortUrl)) {
+      return errorResponse(c, 400, "INVALID_INPUT", `URL bukan Shopee yang valid: ${link}`);
+    }
+    const canonical = parseResult.normalizedUrl ?? link;
+    if (seenNormalized.has(canonical)) continue;
+    seenNormalized.add(canonical);
+    normalizedLinks.push(canonical);
+  }
+
+  if (normalizedLinks.length === 0) {
+    return errorResponse(c, 400, "INVALID_INPUT", "Tidak ada link valid setelah deduplication");
+  }
+
   const sessionId = generateId("rsr");
   const jobId = generateId("job");
 
@@ -86,7 +104,7 @@ researchRouter.post("/compare-links", async (c) => {
       userId: auth.user.userId,
       researchSessionId: sessionId,
       mode: researchMode.compareLinks,
-      links: parsed.data.links,
+      links: normalizedLinks,
     },
   }).catch((err) => {
     console.warn("Failed to enqueue (will process sync):", err);
@@ -99,7 +117,7 @@ researchRouter.post("/compare-links", async (c) => {
         userId: auth.user.userId,
         researchSessionId: sessionId,
         mode: researchMode.compareLinks,
-        links: parsed.data.links,
+        links: normalizedLinks,
       },
       jobId
     );
@@ -313,6 +331,45 @@ researchRouter.get("/sessions/:id", async (c) => {
   );
 });
 
+researchRouter.get("/sessions/:id/status", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const id = c.req.param("id");
+  const { findResearchSessionById, findJobById } = await import("@shopee-research/db");
+  const session = await findResearchSessionById(c.env.DB, id);
+  if (!session) {
+    return notFoundResponse(c, "SESSION_NOT_FOUND", "Session not found");
+  }
+
+  if (session.userId !== auth.user.userId) {
+    return forbiddenResponse(c, "Cannot access this session");
+  }
+
+  const job = await findJobById(c.env.DB, id);
+  let currentStep: string = "queued";
+  let progressCurrent = 0;
+  let progressTotal = 0;
+  if (job) {
+    currentStep = job.currentStep ?? (job.status === "completed" ? "completed" : job.status === "failed" ? "failed" : "queued");
+    progressCurrent = job.progressCurrent ?? 0;
+    progressTotal = job.progressTotal ?? 0;
+  }
+
+  return c.json({
+    id: session.id,
+    status: session.status,
+    completedProducts: session.completedProducts ?? progressCurrent,
+    totalProducts: session.totalProducts ?? progressTotal,
+    currentStep,
+    errorMessage: session.errorMessage ?? null,
+    updatedAt: session.updatedAt,
+  });
+});
+
 researchRouter.get("/comparisons/by-session/:sessionId", async (c) => {
   const auth = await authenticate(c.env.DB, c.req.header("cookie"));
   if (!auth.authenticated) {
@@ -335,10 +392,24 @@ researchRouter.get("/comparisons/by-session/:sessionId", async (c) => {
 
   const comparison = await findComparisonBySession(c.env.DB, sessionId);
   if (!comparison) {
-    return c.json({ comparison: null, items: [] }, 200);
+    return c.json({ comparison: null, items: [], shops: {}, products: {} }, 200);
   }
 
   const items = await listComparisonItemsByComparisonDb(c.env.DB, comparison.id);
+  const { findProductById, findShopById } = await import("@shopee-research/db");
+  const productMap: Record<string, unknown> = {};
+  const shopMap: Record<string, unknown> = {};
+  for (const item of items) {
+    if (!productMap[item.productId]) {
+      const product = await findProductById(c.env.DB, item.productId);
+      if (product) productMap[item.productId] = product;
+    }
+    if (item.shopId && !shopMap[item.shopId]) {
+      const shop = await findShopById(c.env.DB, item.shopId);
+      if (shop) shopMap[item.shopId] = shop;
+    }
+  }
+
   return c.json(
     {
       comparison: {
@@ -366,6 +437,8 @@ researchRouter.get("/comparisons/by-session/:sessionId", async (c) => {
         consJson: i.consJson ? JSON.parse(i.consJson) : null,
         riskJson: i.riskJson ? JSON.parse(i.riskJson) : null,
       })),
+      products: productMap,
+      shops: shopMap,
     },
     200
   );

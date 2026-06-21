@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { apiRequest } from "../lib/api.js";
@@ -119,18 +118,25 @@ export function ResultPage() {
   const params = useParams({ strict: false }) as { researchSessionId?: string };
   const navigate = useNavigate();
   const sessionId = params.researchSessionId ?? "";
-  const [error, setError] = useState<string | null>(null);
 
   const sessionQuery = useQuery({
     queryKey: ["session", sessionId],
     queryFn: () => apiRequest<ResearchSession>(`/research/sessions/${sessionId}`),
     enabled: !!sessionId,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 
   const comparisonQuery = useQuery({
     queryKey: ["comparison", sessionId],
     queryFn: () => apiRequest<ComparisonResponse>(`/research/comparisons/by-session/${sessionId}`),
-    enabled: !!sessionId,
+    enabled: !!sessionId && !sessionQuery.isError,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 
   const aiReportQuery = useQuery({
@@ -141,13 +147,10 @@ export function ResultPage() {
       return apiRequest<AiReportResponse>(`/research/comparisons/${id}/ai-report`);
     },
     enabled: !!comparisonQuery.data?.comparison?.id,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
   });
-
-  useEffect(() => {
-    if (sessionQuery.data?.status === "failed") {
-      setError(sessionQuery.data.errorMessage ?? "Research session failed");
-    }
-  }, [sessionQuery.data]);
 
   if (!sessionId) {
     return (
@@ -165,10 +168,30 @@ export function ResultPage() {
     );
   }
 
+  if (sessionQuery.isError) {
+    const err = sessionQuery.error as { code?: string; message?: string } | null;
+    const isNotFound = err?.code === "SESSION_NOT_FOUND" || sessionQuery.error instanceof Error && /not.?found|404/i.test(sessionQuery.error.message);
+    return (
+      <section className="pageStack">
+        <div className="formError">
+          {isNotFound
+            ? "Sesi riset ini tidak ada atau telah dihapus dari database. Mungkin data Anda sudah dibersihkan. Hard refresh (Ctrl+Shift+R) untuk memuat ulang."
+            : `Gagal memuat sesi: ${err?.message ?? "Unknown error"}`}
+        </div>
+        <button onClick={() => navigate({ to: "/history" })} className="primaryButton">
+          Lihat History
+        </button>
+      </section>
+    );
+  }
+
   if (!sessionQuery.data) {
     return (
       <section className="pageStack">
-        <div className="formError">Session not found</div>
+        <div className="formError">Sesi riset tidak ditemukan</div>
+        <button onClick={() => navigate({ to: "/history" })} className="primaryButton">
+          Lihat History
+        </button>
       </section>
     );
   }
@@ -185,6 +208,18 @@ export function ResultPage() {
       <div>
         <p className="eyebrow">{isKeywordSearch ? "Keyword Search Results" : "Compare Results"}</p>
         <h1>{isKeywordSearch ? `Top ${items.length} untuk "${session.keyword ?? ""}"` : "Comparison Results"}</h1>
+        {session.status === "failed" && (
+          <div className="formError" role="alert">
+            <strong>Riset gagal.</strong> {session.errorMessage ?? "Unknown error"}
+            <br />
+            <small>Data tidak diarang. Sesuai PRD §8.6, field kosong disimpan null dengan confidence 0.</small>
+          </div>
+        )}
+        {session.status === "partialSuccess" && (
+          <div className="partialSuccessBanner">
+            Beberapa item gagal di-enrich. Menampilkan hasil sebagian.
+          </div>
+        )}
         <p className="lede">
           {isKeywordSearch && (
             <>
@@ -199,16 +234,6 @@ export function ResultPage() {
             </>
           )}
         </p>
-        {error && (
-          <div className="formError" role="alert">
-            {error}
-          </div>
-        )}
-        {session.status === "partialSuccess" && (
-          <div className="partialSuccessBanner">
-            Beberapa item gagal di-enrich. Menampilkan hasil sebagian.
-          </div>
-        )}
       </div>
 
       {bestItem && (

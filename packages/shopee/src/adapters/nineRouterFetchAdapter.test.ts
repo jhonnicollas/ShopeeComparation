@@ -18,10 +18,12 @@ function createConfig(overrides: Partial<NineRouterFetchConfig> = {}): NineRoute
 }
 
 function createMockResponse(body: unknown, status = 200) {
+  const text = typeof body === "string" ? body : JSON.stringify(body);
   return {
     ok: status >= 200 && status < 300,
     status,
-    json: async () => body,
+    json: async () => (typeof body === "string" ? JSON.parse(body) : body),
+    text: async () => text,
   } as unknown as Response;
 }
 
@@ -279,6 +281,124 @@ describe("NineRouterFetchAdapter", () => {
         limit: 10,
       });
       expect(candidates).toHaveLength(0);
+    });
+
+    it("handles SSE-style response with data: prefix and [DONE] suffix", async () => {
+      const body =
+        'data: {"choices":[{"message":{"tool_calls":[{"function":{"arguments":"{\\"content\\":\\"https://shopee.co.id/product/111/222\\"}"}}]}}]}\n\ndata: [DONE]';
+      mockFetch.mockResolvedValue(createMockResponse(body));
+      const adapter = new NineRouterFetchAdapter({
+        config: createConfig(),
+        fetchImpl: mockFetch as unknown as typeof fetch,
+      });
+      const candidates = await adapter.searchProducts({
+        keyword: "tester",
+        shippedFrom: "DKI Jakarta",
+        limit: 10,
+      });
+      expect(candidates.length).toBeGreaterThanOrEqual(1);
+      expect(candidates[0]?.itemId).toBe("222");
+      expect(candidates[0]?.shopId).toBe("111");
+    });
+
+    it("tolerates trailing characters after JSON (production bug)", async () => {
+      const body =
+        '{"choices":[{"message":{"tool_calls":[{"function":{"arguments":"{\\"content\\":\\"https://shopee.co.id/product/333/444\\"}"}}]}}]}\nextra trailing';
+      mockFetch.mockResolvedValue(createMockResponse(body));
+      const adapter = new NineRouterFetchAdapter({
+        config: createConfig(),
+        fetchImpl: mockFetch as unknown as typeof fetch,
+      });
+      const candidates = await adapter.searchProducts({
+        keyword: "tester",
+        shippedFrom: "DKI Jakarta",
+        limit: 10,
+      });
+      expect(candidates.length).toBeGreaterThanOrEqual(1);
+      expect(candidates[0]?.itemId).toBe("444");
+    });
+
+    it("tolerates malformed tool_call arguments JSON", async () => {
+      const body = JSON.stringify({
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  function: {
+                    arguments: '{"content":"https://shopee.co.id/product/555/666",}',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+      mockFetch.mockResolvedValue(createMockResponse(body));
+      const adapter = new NineRouterFetchAdapter({
+        config: createConfig(),
+        fetchImpl: mockFetch as unknown as typeof fetch,
+      });
+      const candidates = await adapter.searchProducts({
+        keyword: "tester",
+        shippedFrom: "DKI Jakarta",
+        limit: 10,
+      });
+      expect(candidates.length).toBeGreaterThanOrEqual(1);
+      expect(candidates[0]?.itemId).toBe("666");
+    });
+
+    it("executes web_fetch tool call agentically when model returns tool_calls with url", async () => {
+      mockFetch
+        .mockResolvedValueOnce(
+          createMockResponse({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  tool_calls: [
+                    {
+                      id: "call_1",
+                      function: {
+                        name: "web_fetch",
+                        arguments: JSON.stringify({ url: "https://shopee.co.id/search?keyword=tester" }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          })
+        )
+        .mockResolvedValueOnce(
+          createMockResponse(
+            '<html><a href="https://shopee.co.id/product/777/888">Product</a></html>'
+          )
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  content: "Found product at https://shopee.co.id/product/777/888",
+                },
+              },
+            ],
+          })
+        );
+      const adapter = new NineRouterFetchAdapter({
+        config: createConfig(),
+        fetchImpl: mockFetch as unknown as typeof fetch,
+      });
+      const candidates = await adapter.searchProducts({
+        keyword: "tester",
+        shippedFrom: "DKI Jakarta",
+        limit: 10,
+      });
+      expect(candidates.length).toBeGreaterThanOrEqual(1);
+      expect(candidates[0]?.itemId).toBe("888");
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
   });
 

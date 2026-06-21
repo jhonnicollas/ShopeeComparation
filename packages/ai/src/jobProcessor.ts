@@ -13,11 +13,13 @@ import {
   findShopByShopeeId,
   createExtractionFailure,
   listEnabledSearchProviders,
+  findDefaultModelByUsageType,
 } from "@shopee-research/db";
 import {
   parseShopeeUrl,
   BrowserRunAdapter,
   NineRouterFetchAdapter,
+  CloudflareBrowserRenderingAdapter,
   type ShopeeExtractorLike,
 } from "@shopee-research/shopee";
 import { calculateProductScore, detectRisks, rankProducts } from "@shopee-research/core";
@@ -31,6 +33,8 @@ export interface JobProcessorEnv {
   NINEROUTER_API_KEY?: string;
   BROWSER_RUN_BASE_URL?: string;
   BROWSER_RUN_API_KEY?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  CLOUDFLARE_API_TOKEN?: string;
 }
 
 export interface ProcessJobResult {
@@ -69,23 +73,60 @@ export interface ExtractedItem {
   shopeeItemId: string;
 }
 
-async function loadBrowserRunConfig(
+async function loadSearchConfig(
   env: JobProcessorEnv
-): Promise<{ baseUrl: string; apiKey: string; providerType: "browserRun" | "webFetch" } | null> {
-  if (env.BROWSER_RUN_BASE_URL) {
-    return { baseUrl: env.BROWSER_RUN_BASE_URL, apiKey: env.BROWSER_RUN_API_KEY ?? "", providerType: "browserRun" };
-  }
+): Promise<
+  | {
+      baseUrl: string;
+      apiKey: string;
+      providerType: "browserRun" | "webFetch";
+      modelName: string | null;
+      timeoutMs: number;
+      retryCount: number;
+      providerKey: string;
+    }
+  | null
+> {
   try {
     const providers = await listEnabledSearchProviders(env.DB);
-    const browserRun = providers.find((p) => p.providerType === "browserRun" && p.baseUrl);
-    if (browserRun) {
-      const apiKey = browserRun.secretRef ? env[browserRun.secretRef as keyof JobProcessorEnv] as string ?? "" : "";
-      return { baseUrl: browserRun.baseUrl!, apiKey, providerType: "browserRun" };
-    }
     const webFetch = providers.find((p) => p.providerType === "webFetch" && p.baseUrl);
     if (webFetch) {
-      const apiKey = webFetch.secretRef ? env[webFetch.secretRef as keyof JobProcessorEnv] as string ?? "" : "";
-      return { baseUrl: webFetch.baseUrl!, apiKey, providerType: "webFetch" };
+      const apiKey = webFetch.secretRef
+        ? (env[webFetch.secretRef as keyof JobProcessorEnv] as string) ?? ""
+        : "";
+      let modelName: string | null = null;
+      try {
+        const modelRow = await findDefaultModelByUsageType(env.DB, "extraction");
+        if (modelRow && modelRow.providerKey === "9router" && modelRow.modelName) {
+          modelName = modelRow.modelName;
+        }
+      } catch {
+        modelName = null;
+      }
+      return {
+        baseUrl: webFetch.baseUrl!,
+        apiKey,
+        providerType: "webFetch",
+        modelName,
+        timeoutMs: webFetch.timeoutMs ?? 60000,
+        retryCount: webFetch.retryCount ?? 1,
+        providerKey: webFetch.providerKey,
+      };
+    }
+    const browserRun = providers.find((p) => p.providerType === "browserRun" && p.baseUrl);
+    if (browserRun) {
+      const apiKey = browserRun.secretRef
+        ? (env[browserRun.secretRef as keyof JobProcessorEnv] as string) ?? ""
+        : "";
+      return {
+        baseUrl: browserRun.baseUrl!,
+        apiKey,
+        providerType: "browserRun",
+        modelName: null,
+        timeoutMs: browserRun.timeoutMs ?? 30000,
+        retryCount: browserRun.retryCount ?? 1,
+        providerKey: browserRun.providerKey,
+      };
     }
     return null;
   } catch {
@@ -431,7 +472,7 @@ export async function processJobSync(
     linkCount: message.links?.length ?? 0,
   });
 
-  const searchConfig = await loadBrowserRunConfig(env);
+  const searchConfig = await loadSearchConfig(env);
   if (!searchConfig) {
     const msg = "Konfigurasi Browser Run / Web Fetch belum tersedia. Set di admin UI (/settings/config) atau env BROWSER_RUN_BASE_URL.";
     await log("error", msg);
@@ -445,15 +486,42 @@ export async function processJobSync(
     return { comparisonId: null, bestProductId: null, totalProducts: 0, failed: 1, partial: false };
   }
 
+  if (searchConfig.providerType === "webFetch" && !searchConfig.modelName) {
+    const msg =
+      "Model AI untuk 9router extraction belum dikonfigurasi. Tambahkan model default usageType=extraction pada sh_aiModelConfigs melalui admin UI (/settings/config).";
+    await log("error", msg);
+    await updateJobStatus(env.DB, jobId, jobStatus.failed, {
+      currentStep: "modelConfigMissing",
+      errorMessage: msg,
+    });
+    await updateResearchSessionStatus(env.DB, message.researchSessionId, jobStatus.failed, {
+      errorMessage: msg,
+    });
+    return { comparisonId: null, bestProductId: null, totalProducts: 0, failed: 1, partial: false };
+  }
+
   let extractor: ShopeeExtractorLike;
-  if (searchConfig.providerType === "webFetch") {
+  if (env.CLOUDFLARE_ACCOUNT_ID && env.CLOUDFLARE_API_TOKEN) {
+    await log("info", "Using CloudflareBrowserRenderingAdapter for search and extraction", {
+      accountId: env.CLOUDFLARE_ACCOUNT_ID.slice(0, 8),
+      hasToken: Boolean(env.CLOUDFLARE_API_TOKEN),
+    });
+    extractor = new CloudflareBrowserRenderingAdapter({
+      config: {
+        accountId: env.CLOUDFLARE_ACCOUNT_ID,
+        apiToken: env.CLOUDFLARE_API_TOKEN,
+        timeoutMs: 60000,
+        providerKey: "cloudflareBrowserRendering",
+      },
+    });
+  } else if (searchConfig.providerType === "webFetch") {
     extractor = new NineRouterFetchAdapter({
       config: {
         baseUrl: searchConfig.baseUrl,
         apiKey: searchConfig.apiKey,
-        modelName: "nvidia/moonshotai/kimi-k2.6",
-        timeoutMs: 60000,
-        retryCount: 1,
+        modelName: searchConfig.modelName ?? "",
+        timeoutMs: searchConfig.timeoutMs,
+        retryCount: searchConfig.retryCount,
         providerKey: "9routerWebFetch",
       },
     });
@@ -462,7 +530,7 @@ export async function processJobSync(
       config: {
         baseUrl: searchConfig.baseUrl,
         apiKey: searchConfig.apiKey,
-        timeoutMs: 30000,
+        timeoutMs: searchConfig.timeoutMs,
         providerKey: "browserRun",
       },
     });

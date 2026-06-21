@@ -50,6 +50,20 @@ function generateId(prefix: string): string {
   return `${prefix}_${btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
 }
 
+function parseJsonArray(value: unknown): string[] | null {
+  if (value === null || value === undefined) return null;
+  if (Array.isArray(value)) return value as string[];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export const researchRouter = new Hono<{ Bindings: Bindings }>();
 
 function sanitizeQueueError(err: unknown): string {
@@ -450,7 +464,7 @@ researchRouter.get("/comparisons/by-session/:sessionId", async (c) => {
     }
     if (item.shopId && !shopMap[item.shopId]) {
       const shop = await findShopById(c.env.DB, item.shopId);
-      if (shop) shopMap[item.shopId] = shop;
+      if (shop) shopMap[item.shopId] = { ...shop, statusJson: parseJsonArray(shop.statusJson) };
     }
   }
 
@@ -556,7 +570,7 @@ researchRouter.get("/shops/:id", async (c) => {
     return notFoundResponse(c, "SHOP_NOT_FOUND", "Shop not found");
   }
 
-  return c.json(shop, 200);
+  return c.json({ ...shop, statusJson: parseJsonArray(shop.statusJson) }, 200);
 });
 
 researchRouter.get("/admin/jobs", async (c) => {

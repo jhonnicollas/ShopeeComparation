@@ -16,10 +16,12 @@ function createConfig(overrides: Partial<BrowserRunConfig> = {}): BrowserRunConf
 }
 
 function createMockResponse(body: unknown, status = 200) {
+  const text = typeof body === "string" ? body : JSON.stringify(body);
   return {
     ok: status >= 200 && status < 300,
     status,
-    json: async () => body,
+    json: async () => (typeof body === "string" ? JSON.parse(body) : body),
+    text: async () => text,
   } as unknown as Response;
 }
 

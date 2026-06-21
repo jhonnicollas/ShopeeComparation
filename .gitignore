@@ -21,3 +21,4 @@ coverage/
 *.log
 *.local
 .commandcode/
+key.md

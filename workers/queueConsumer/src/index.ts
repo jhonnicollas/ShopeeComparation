@@ -18,6 +18,8 @@ type Bindings = {
   NINEROUTER_API_KEY?: string;
   BROWSER_RUN_BASE_URL?: string;
   BROWSER_RUN_API_KEY?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  CLOUDFLARE_API_TOKEN?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -130,6 +132,8 @@ export async function processQueueBatch(batch: QueueMessageBatch, env: Bindings)
           ...(env.NINEROUTER_API_KEY ? { NINEROUTER_API_KEY: env.NINEROUTER_API_KEY } : {}),
           ...(env.BROWSER_RUN_BASE_URL ? { BROWSER_RUN_BASE_URL: env.BROWSER_RUN_BASE_URL } : {}),
           ...(env.BROWSER_RUN_API_KEY ? { BROWSER_RUN_API_KEY: env.BROWSER_RUN_API_KEY } : {}),
+          ...(env.CLOUDFLARE_ACCOUNT_ID ? { CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID } : {}),
+          ...(env.CLOUDFLARE_API_TOKEN ? { CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN } : {}),
         },
         m,
         jobId

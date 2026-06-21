@@ -10,6 +10,7 @@ import type {
 } from "@shopee-research/shared";
 import * as cheerio from "cheerio";
 import { findSearchProviderByKey } from "@shopee-research/db";
+import { parseResponseBody } from "@shopee-research/shared";
 
 const SECRET_PATTERNS = [
   /api[_-]?key\s*[:=]\s*\S+/gi,
@@ -165,10 +166,10 @@ export class BrowserRunAdapter {
     }
     let data: { html?: string; content?: string };
     try {
-      data = (await response.json()) as { html?: string; content?: string };
+      const rawText = await response.text();
+      data = parseResponseBody(rawText) as { html?: string; content?: string };
     } catch (parseErr) {
-      const text = await response.text().catch(() => "");
-      throw new Error(`Browser Run JSON parse failed: ${sanitizeForLog(parseErr instanceof Error ? parseErr.message : String(parseErr))} body=${text.slice(0, 200)}`);
+      throw new Error(`Browser Run JSON parse failed: ${sanitizeForLog(parseErr instanceof Error ? parseErr.message : String(parseErr))}`);
     }
     return data.html ?? data.content ?? "";
   }

@@ -94,9 +94,16 @@ export function ShopDetailPage({ shopId }: { shopId: string }) {
             <tr><td>Response Time</td><td>{shop.responseTime ?? "-"}</td></tr>
             <tr><td>Joined Age</td><td>{shop.joinedAgeText ?? "-"}</td></tr>
             <tr><td>Shop URL</td><td>{shop.shopUrl ? <a href={shop.shopUrl} target="_blank" rel="noopener noreferrer">{shop.shopUrl}</a> : "-"}</td></tr>
-            {shop.statusJson && shop.statusJson.length > 0 && (
-              <tr><td>Status Labels</td><td>{shop.statusJson.join(", ")}</td></tr>
-            )}
+            {(() => {
+              const labels = Array.isArray(shop.statusJson)
+                ? shop.statusJson
+                : typeof shop.statusJson === "string"
+                ? (() => { try { const parsed = JSON.parse(shop.statusJson as string); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
+                : [];
+              return labels.length > 0 ? (
+                <tr><td>Status Labels</td><td>{labels.join(", ")}</td></tr>
+              ) : null;
+            })()}
             <tr><td>Last Checked</td><td>{formatDate(shop.lastCheckedAt)}</td></tr>
             <tr><td>Created</td><td>{formatDate(shop.createdAt)}</td></tr>
             <tr><td>Updated</td><td>{formatDate(shop.updatedAt)}</td></tr>

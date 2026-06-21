@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node ./scripts/copy-pages-function.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "deploy:pages": "pnpm build && wrangler pages deploy dist --project-name shopee-product-research-web --branch main --commit-dirty=true --skip-caching"
   },
   "dependencies": {
     "@shopee-research/core": "workspace:*",

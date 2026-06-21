@@ -9,6 +9,7 @@ import type {
   ShopSnapshot,
 } from "@shopee-research/shared";
 import { findSearchProviderByKey } from "@shopee-research/db";
+import { parseResponseBody, parseToolCallArguments } from "@shopee-research/shared";
 
 const SECRET_PATTERNS = [
   /api[_-]?key\s*[:=]\s*\S+/gi,
@@ -138,65 +139,110 @@ export class NineRouterFetchAdapter {
   }
 
   private async webFetch(url: string): Promise<string> {
-    const body = {
-      model: this.config.modelName,
-      messages: [
-        {
-          role: "user",
-          content: `Fetch the content of this URL and return the raw HTML/text: ${url}`,
-        },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "web_fetch",
-            description: "Fetch a web page and return its content",
-            parameters: {
-              type: "object",
-              properties: { url: { type: "string" } },
-              required: ["url"],
-            },
-          },
-        },
-      ],
-    };
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (this.config.apiKey) {
       headers.authorization = `Bearer ${this.config.apiKey}`;
     }
-    let response: Response;
-    try {
-      response = await this.fetchImpl(`${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(this.config.timeoutMs),
-      });
-    } catch (fetchErr) {
-      throw new Error(`Web fetch failed: ${sanitizeForLog(fetchErr instanceof Error ? fetchErr.message : String(fetchErr))}`);
-    }
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    let data: {
-      choices?: Array<{ message?: { tool_calls?: Array<{ function?: { arguments?: string } }>; content?: string } }>;
-    };
-    try {
-      data = (await response.json()) as typeof data;
-    } catch (parseErr) {
-      throw new Error(`JSON parse failed: ${sanitizeForLog(parseErr instanceof Error ? parseErr.message : String(parseErr))}`);
-    }
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-    if (toolCall) {
+    const endpoint = `${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`;
+    const toolDef = [
+      {
+        type: "function",
+        function: {
+          name: "web_fetch",
+          description: "Fetch a web page and return its content",
+          parameters: {
+            type: "object",
+            properties: { url: { type: "string" } },
+            required: ["url"],
+          },
+        },
+      },
+    ];
+
+    let messages: Array<Record<string, unknown>> = [
+      {
+        role: "user",
+        content: `Fetch the content of this URL and return the raw HTML/text: ${url}`,
+      },
+    ];
+
+    for (let turn = 0; turn < 3; turn++) {
+      let response: Response;
       try {
-        const parsed = JSON.parse(toolCall) as { content?: string };
-        if (parsed.content) return parsed.content;
-      } catch {
-        return toolCall;
+        response = await this.fetchImpl(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ model: this.config.modelName, messages, tools: toolDef }),
+          signal: AbortSignal.timeout(this.config.timeoutMs),
+        });
+      } catch (fetchErr) {
+        throw new Error(`Web fetch failed: ${sanitizeForLog(fetchErr instanceof Error ? fetchErr.message : String(fetchErr))}`);
       }
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      let data: {
+        choices?: Array<{
+          message?: {
+            role?: string;
+            tool_calls?: Array<{ id?: string; function?: { name?: string; arguments?: string } }>;
+            content?: string;
+          };
+        }>;
+      };
+      try {
+        data = parseResponseBody(await response.text()) as typeof data;
+      } catch (parseErr) {
+        throw new Error(`JSON parse failed: ${sanitizeForLog(parseErr instanceof Error ? parseErr.message : String(parseErr))}`);
+      }
+      const choice = data.choices?.[0];
+      const message = choice?.message;
+      const toolCalls = message?.tool_calls;
+      if (toolCalls && toolCalls.length > 0) {
+        let directContent: string | null = null;
+        const toolResults: Array<Record<string, unknown>> = [];
+        let hasFetchableToolCall = false;
+        for (const call of toolCalls) {
+          const args = parseToolCallArguments(call.function?.arguments ?? "") as
+            | { url?: string; content?: string }
+            | null;
+          if (args && typeof args.content === "string" && args.content.length > 0) {
+            directContent = args.content;
+            continue;
+          }
+          const targetUrl = args?.url ?? url;
+          hasFetchableToolCall = true;
+          let fetchedContent: string;
+          try {
+            const fetched = await this.fetchImpl(targetUrl, {
+              method: "GET",
+              signal: AbortSignal.timeout(this.config.timeoutMs),
+              headers: { "user-agent": "Mozilla/5.0 (compatible; ShopeeResearchBot/1.0)" },
+            });
+            fetchedContent = await fetched.text();
+          } catch (fetchErr) {
+            fetchedContent = `[fetch error: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}]`;
+          }
+          toolResults.push({
+            role: "tool",
+            tool_call_id: call.id ?? `call_${turn}`,
+            content: fetchedContent.slice(0, 50000),
+          });
+        }
+        if (directContent !== null) return directContent;
+        if (!hasFetchableToolCall) {
+          return toolCalls.map((c) => c.function?.arguments ?? "").join("\n");
+        }
+        messages = [
+          ...messages,
+          { role: message?.role ?? "assistant", content: message?.content ?? "", tool_calls: toolCalls },
+          ...toolResults,
+        ];
+        continue;
+      }
+      return message?.content ?? "";
     }
-    return data.choices?.[0]?.message?.content ?? "";
+    return "";
   }
 
   private parseSearchResults(text: string, input: SearchInput): SearchResultCandidate[] {

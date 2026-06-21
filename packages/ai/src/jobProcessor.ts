@@ -17,6 +17,7 @@ import {
 import {
   parseShopeeUrl,
   BrowserRunAdapter,
+  NineRouterFetchAdapter,
   type ShopeeExtractorLike,
 } from "@shopee-research/shopee";
 import { calculateProductScore, detectRisks, rankProducts } from "@shopee-research/core";
@@ -70,16 +71,23 @@ export interface ExtractedItem {
 
 async function loadBrowserRunConfig(
   env: JobProcessorEnv
-): Promise<{ baseUrl: string; apiKey: string } | null> {
+): Promise<{ baseUrl: string; apiKey: string; providerType: "browserRun" | "webFetch" } | null> {
   if (env.BROWSER_RUN_BASE_URL) {
-    return { baseUrl: env.BROWSER_RUN_BASE_URL, apiKey: env.BROWSER_RUN_API_KEY ?? "" };
+    return { baseUrl: env.BROWSER_RUN_BASE_URL, apiKey: env.BROWSER_RUN_API_KEY ?? "", providerType: "browserRun" };
   }
   try {
     const providers = await listEnabledSearchProviders(env.DB);
     const browserRun = providers.find((p) => p.providerType === "browserRun" && p.baseUrl);
-    if (!browserRun) return null;
-    const apiKey = browserRun.secretRef ? env[browserRun.secretRef as keyof JobProcessorEnv] as string ?? "" : "";
-    return { baseUrl: browserRun.baseUrl!, apiKey };
+    if (browserRun) {
+      const apiKey = browserRun.secretRef ? env[browserRun.secretRef as keyof JobProcessorEnv] as string ?? "" : "";
+      return { baseUrl: browserRun.baseUrl!, apiKey, providerType: "browserRun" };
+    }
+    const webFetch = providers.find((p) => p.providerType === "webFetch" && p.baseUrl);
+    if (webFetch) {
+      const apiKey = webFetch.secretRef ? env[webFetch.secretRef as keyof JobProcessorEnv] as string ?? "" : "";
+      return { baseUrl: webFetch.baseUrl!, apiKey, providerType: "webFetch" };
+    }
+    return null;
   } catch {
     return null;
   }
@@ -423,9 +431,9 @@ export async function processJobSync(
     linkCount: message.links?.length ?? 0,
   });
 
-  const browserConfig = await loadBrowserRunConfig(env);
-  if (!browserConfig) {
-    const msg = "Konfigurasi Browser Run belum tersedia. Set di admin UI (/settings/config) atau env BROWSER_RUN_BASE_URL.";
+  const searchConfig = await loadBrowserRunConfig(env);
+  if (!searchConfig) {
+    const msg = "Konfigurasi Browser Run / Web Fetch belum tersedia. Set di admin UI (/settings/config) atau env BROWSER_RUN_BASE_URL.";
     await log("error", msg);
     await updateJobStatus(env.DB, jobId, jobStatus.failed, {
       currentStep: "configMissing",
@@ -437,14 +445,28 @@ export async function processJobSync(
     return { comparisonId: null, bestProductId: null, totalProducts: 0, failed: 1, partial: false };
   }
 
-  const extractor: ShopeeExtractorLike = new BrowserRunAdapter({
-    config: {
-      baseUrl: browserConfig.baseUrl,
-      apiKey: browserConfig.apiKey,
-      timeoutMs: 30000,
-      providerKey: "browserRun",
-    },
-  });
+  let extractor: ShopeeExtractorLike;
+  if (searchConfig.providerType === "webFetch") {
+    extractor = new NineRouterFetchAdapter({
+      config: {
+        baseUrl: searchConfig.baseUrl,
+        apiKey: searchConfig.apiKey,
+        modelName: "nvidia/moonshotai/kimi-k2.6",
+        timeoutMs: 60000,
+        retryCount: 1,
+        providerKey: "9routerWebFetch",
+      },
+    });
+  } else {
+    extractor = new BrowserRunAdapter({
+      config: {
+        baseUrl: searchConfig.baseUrl,
+        apiKey: searchConfig.apiKey,
+        timeoutMs: 30000,
+        providerKey: "browserRun",
+      },
+    });
+  }
 
   await updateJobStatus(env.DB, jobId, jobStatus.processing, {
     currentStep: "extracting",

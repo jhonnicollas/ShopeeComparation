@@ -47,7 +47,11 @@ export class NineRouterFetchAdapter {
 
   constructor(options: NineRouterFetchAdapterOptions) {
     this.config = options.config;
-    this.fetchImpl = options.fetchImpl ?? fetch;
+    if (options.fetchImpl) {
+      this.fetchImpl = options.fetchImpl.bind(globalThis);
+    } else {
+      this.fetchImpl = ((url, init) => fetch(url, init)) as typeof fetch;
+    }
   }
 
   async resolveUrl(input: ResolveUrlInput): Promise<ResolveUrlResult> {
@@ -134,63 +138,65 @@ export class NineRouterFetchAdapter {
   }
 
   private async webFetch(url: string): Promise<string> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.config.timeoutMs);
-    try {
-      const body = {
-        model: this.config.modelName,
-        messages: [
-          {
-            role: "user",
-            content: `Fetch the content of this URL and return the raw HTML/text: ${url}`,
-          },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "web_fetch",
-              description: "Fetch a web page and return its content",
-              parameters: {
-                type: "object",
-                properties: { url: { type: "string" } },
-                required: ["url"],
-              },
+    const body = {
+      model: this.config.modelName,
+      messages: [
+        {
+          role: "user",
+          content: `Fetch the content of this URL and return the raw HTML/text: ${url}`,
+        },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "web_fetch",
+            description: "Fetch a web page and return its content",
+            parameters: {
+              type: "object",
+              properties: { url: { type: "string" } },
+              required: ["url"],
             },
           },
-        ],
-      };
-      const headers: Record<string, string> = { "content-type": "application/json" };
-      if (this.config.apiKey) {
-        headers.authorization = `Bearer ${this.config.apiKey}`;
-      }
-      const response = await this.fetchImpl(`${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+        },
+      ],
+    };
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    if (this.config.apiKey) {
+      headers.authorization = `Bearer ${this.config.apiKey}`;
+    }
+    let response: Response;
+    try {
+      response = await this.fetchImpl(`${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`, {
         method: "POST",
         headers,
         body: JSON.stringify(body),
-        signal: controller.signal,
+        signal: AbortSignal.timeout(this.config.timeoutMs),
       });
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const data = (await response.json()) as {
-        choices?: Array<{ message?: { tool_calls?: Array<{ function?: { arguments?: string } }>; content?: string } }>;
-      };
-      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-      if (toolCall) {
-        try {
-          const parsed = JSON.parse(toolCall) as { content?: string };
-          if (parsed.content) return parsed.content;
-        } catch {
-          return toolCall;
-        }
-      }
-      return data.choices?.[0]?.message?.content ?? "";
-    } catch (error) {
-      clearTimeout(timeoutId);
-      throw new Error(sanitizeForLog(error instanceof Error ? error.message : "Unknown error"));
+    } catch (fetchErr) {
+      throw new Error(`Web fetch failed: ${sanitizeForLog(fetchErr instanceof Error ? fetchErr.message : String(fetchErr))}`);
     }
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    let data: {
+      choices?: Array<{ message?: { tool_calls?: Array<{ function?: { arguments?: string } }>; content?: string } }>;
+    };
+    try {
+      data = (await response.json()) as typeof data;
+    } catch (parseErr) {
+      throw new Error(`JSON parse failed: ${sanitizeForLog(parseErr instanceof Error ? parseErr.message : String(parseErr))}`);
+    }
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    if (toolCall) {
+      try {
+        const parsed = JSON.parse(toolCall) as { content?: string };
+        if (parsed.content) return parsed.content;
+      } catch {
+        return toolCall;
+      }
+    }
+    return data.choices?.[0]?.message?.content ?? "";
   }
 
   private parseSearchResults(text: string, input: SearchInput): SearchResultCandidate[] {

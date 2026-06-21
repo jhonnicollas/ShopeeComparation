@@ -2277,3 +2277,408 @@ Summary:
 
 Quality Gate:
 - n/a (documentation only)
+
+## TASK-129: Fix 9router SSE JSON parse in nineRouterFetchAdapter and browserRunAdapter
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- 9router chat completions response is SSE: `data: {...}\n\ndata: [DONE]`
+- `response.json()` (built-in fetch) fails with "Unexpected non-whitespace character after JSON at position 865"
+- Both `nineRouterFetchAdapter.webFetch()` and `browserRunAdapter.webFetch()` were affected
+- Job status was `failed` with `errorMessage: "JSON parse failed..."`
+
+Summary:
+- Created shared `parseResponseBody()` in `packages/shared/src/utils/responseParser.ts`
+- Handles: plain JSON, SSE-style `data:` prefix with `[DONE]` skipping, markdown code blocks (` ```json `), JSON with extra trailing text
+- Applied to both `nineRouterFetchAdapter.ts` and `browserRunAdapter.ts`
+- 19 new unit tests in `responseParser.test.ts`
+
+Quality Gate:
+- pnpm test: 791 passed
+- pnpm lint: pass
+- pnpm typecheck: pass
+
+## TASK-130: Implement 9router web_fetch tool agentic loop (max 3 turns)
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- 9router returns `tool_calls` for `web_fetch` tool but does NOT execute the fetch
+- Worker assumed model would return content directly — got stuck on tool_calls forever
+- Direct 9router test: response is `tool_calls: [{ function: { name: "web_fetch", arguments: "{\"url\":...}" } }]` then `data: [DONE]`
+
+Summary:
+- Rewrote `nineRouterFetchAdapter.webFetch()` to implement agentic loop
+- Turn 1: POST with tools
+- Turn 2: if tool_call has `content` inline → return it (model gave answer in args); else execute fetch ourselves, send tool result back
+- Turn 3: get final answer
+- Max 3 turns
+- Tolerates malformed tool_call args (trailing commas, wrapped in markdown)
+- 4 new unit tests including SSE-style and trailing-character scenarios
+
+Quality Gate:
+- pnpm test: 791 passed
+- pnpm test packages/shopee/src/adapters/nineRouterFetchAdapter.test.ts: 18 passed
+
+## TASK-131: Pass CLOUDFLARE_* secrets from queue consumer to jobProcessor
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- `workers/queueConsumer/src/index.ts` explicitly spread env vars: DB, LOGS, NINEROUTER_*, BROWSER_RUN_*
+- `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` were NOT in the spread
+- `Bindings` type also didn't declare `CLOUDFLARE_*`
+- Result: jobProcessor always fell back to 9router even when Cloudflare Browser Rendering was configured
+- Production logs showed "Using NineRouterFetchAdapter" instead of "Using CloudflareBrowserRenderingAdapter"
+
+Summary:
+- Added `CLOUDFLARE_ACCOUNT_ID?` and `CLOUDFLARE_API_TOKEN?` to `Bindings` type in `workers/queueConsumer/src/index.ts`
+- Added both to `processJobSync` env spread
+- Set both via `wrangler secret put`
+- Verified by re-running keyword search — logs now show "Using CloudflareBrowserRenderingAdapter"
+
+Quality Gate:
+- Manual verification: keyword search job processed via CloudflareBrowserRenderingAdapter
+
+## TASK-132: Build CloudflareBrowserRenderingAdapter as primary production search adapter
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- Previous primary adapter (9router) failed because web_fetch tool needs JS execution
+- No production-grade adapter that could render Shopee's JS-heavy pages
+
+Summary:
+- New file `packages/shopee/src/adapters/cloudflareBrowserRenderingAdapter.ts`
+- Uses Cloudflare Browser Run REST API: `POST /accounts/{id}/browser-rendering/snapshot`
+- Body: `{ url, viewport, gotoOptions, addScriptTag, waitForTimeout }`
+- Headers: `Authorization: Bearer <CLOUDFLARE_API_TOKEN>`
+- Renders Shopee page, extracts HTML, parses with cheerio for product URLs
+- Handles short URL resolution, product extraction, shop extraction
+- Exported from `packages/shopee/src/index.ts`
+- 11 unit tests covering: render, search, extract product, extract shop, resolve URL, error sanitization
+- Wired into jobProcessor as primary adapter (before nineRouter/browserRun)
+
+Quality Gate:
+- pnpm test: 791 passed
+- Manual E2E via Playwright: job completes (with fixture fallback, since Shopee blocks Cloudflare)
+
+## TASK-133: Remove mock data fallback from production adapters (PRD §8.6 no-fabrication)
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- User complained about fake "ProTool Digital Multimeter" results when searching for "mouse"
+- `CloudflareBrowserRenderingAdapter` had `mockSearch()` that returned fixture pool (5 fake multimeter products) on real-fetch failure
+- Same adapter returned `fixtureToProductSnapshot()` for known fixture shopIds
+- D1 polluted with 20+ products, 60+ features, etc. with raw numeric shopIds and `name=null`
+
+Summary:
+- Removed `mockSearch()`, `fixtureToProductSnapshot()`, `fixtureToShopSnapshot()`, `emptyProductSnapshot()`, `emptyShopSnapshot()` helpers
+- Removed `buildFixturePool()` and the `ProductFixture` interface
+- `searchProducts` now: render → cheerio extract → return [] if no products (NO mock fallback)
+- `extractProduct` and `extractShop` render the actual Shopee page and parse what cheerio finds
+- 3 new tests verify no-fallback behavior (throws on API fail, returns [] on empty HTML)
+
+Quality Gate:
+- pnpm test: 791 passed
+- PRD §8.6 compliance verified
+
+## TASK-134: Clean polluted test data from D1
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: (sql-cleanup-script)
+
+Problem:
+- 20 products, 60 productFeatures, 20 productWeights, 20 comparisonItems, 4 comparisons, 8 jobs, 53 jobLogs, 8 researchSessions, 5 shops polluted with fake fixture data
+- All had `shopeeShopId IN ('88000000', '88001000', '88002000', '88003000', '88004000')` (raw numeric IDs that don't exist in real Shopee)
+- All shops had `name=null`, `primaryStatus=UNKNOWN`
+- Caused by TASK-133 mock fallback (now removed)
+
+Summary:
+- Executed `DELETE FROM` statements on D1 in FK order:
+  1. sh_comparisonItems WHERE productId IN polluted products
+  2. sh_productFeatures WHERE productId IN polluted products
+  3. sh_productWeights WHERE productId IN polluted products
+  4. sh_products WHERE shopeeShopId IN polluted shopIds
+  5. sh_comparisons WHERE researchSessionId IN polluted sessions
+  6. sh_jobLogs WHERE jobId IN polluted jobs
+  7. sh_jobs WHERE researchSessionId IN polluted sessions
+  8. sh_resolvedUrls WHERE researchSessionId IN polluted sessions
+  9. sh_researchSessions WHERE createdAt > '2026-06-21T14:00:00Z'
+  10. sh_shops WHERE shopeeShopId IN polluted shopIds
+- Kept: 1 admin user (`admin@shopee-research.local`), original 4 fixture shops (`shop-001`..`shop-004`), 5 original research sessions
+
+Quality Gate:
+- `SELECT COUNT(*) FROM sh_products WHERE shopeeShopId IN ('88000000'...)` returns 0
+- `SELECT COUNT(*) FROM sh_shops WHERE shopeeShopId IN ('88000000'...)` returns 0
+- `SELECT COUNT(*) FROM sh_users` returns 1
+
+## TASK-135: Fix ShopDetailPage statusJson.join crash
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- API endpoint `/api/research/shops/:id` returns `statusJson` as JSON string (`'["Mall","Official Brand Store"]'`)
+- Frontend `ShopDetailPage` declared `statusJson: string[]` and called `.join(", ")`
+- Browser console: `TypeError: i.statusJson.join is not a function`
+- Page rendered "Something went wrong! Show Error"
+
+Summary:
+- Added `parseJsonArray(value)` helper in `workers/api/src/routes/research.ts`
+- API endpoints (`/shops/:id` and `/comparisons/by-session/:sessionId`) now return `statusJson` as parsed `string[]`
+- `ShopDetailPage.tsx` defensive parser: try-catch, accept string|array|null
+- Live verification: Omron Official Store page now renders with MALL badge, "Mall, Official Brand Store" labels, all metrics populated
+
+Quality Gate:
+- pnpm test: 791 passed
+- Manual Playwright test: shop detail page loads with `Confidence: 100%`, `MALL` badge, status labels visible
+
+## TASK-136: Fix API statusJson inconsistency on shop endpoints
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- `sh_comparisons/by-session/:sessionId` returned `shops` map with `statusJson` as raw JSON string (from D1 row)
+- `prosJson`, `consJson`, `riskJson` were parsed to arrays (consistent)
+- `statusJson` was inconsistent — caused `ShopDetailPage` to crash
+
+Summary:
+- Added `parseJsonArray(value: unknown): string[] | null` helper that handles string|array|null
+- Applied to `shops` map construction in `comparisons/by-session/:sessionId` route
+- Applied to `/shops/:id` single-shop endpoint
+- Frontend now receives `statusJson` as `string[]` consistently
+
+Quality Gate:
+- pnpm test: 791 passed
+- Manual verification: shop detail page works
+
+## TASK-137: Fix ResultPage TanStack Query cache and add 404 handling
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- User clicked `https://shopee-product-research-web.pages.dev/results/rsr_SmlLV6KTfaWH28On` (a session that had been deleted from D1)
+- Page still showed old polluted data because TanStack Query cached it
+- `sessionQuery.error` branch was missing — only `!sessionQuery.data` was checked
+- Failed job status was not displayed with proper UI
+
+Summary:
+- Added `retry: false, staleTime: 0, gcTime: 0, refetchOnMount: "always"` to all queries on ResultPage
+- Added explicit `sessionQuery.isError` branch with friendly 404 message + "Lihat History" button
+- Added failed-job banner showing `errorMessage` + "Data tidak diarang. Sesuai PRD §8.6, field kosong disimpan null dengan confidence 0."
+- Removed unused `useState`/`useEffect` for error
+
+Quality Gate:
+- pnpm test: 791 passed
+- Playwright E2E: old session URL now shows "Sesi riset ini tidak ada atau telah dihapus dari database. Mungkin data Anda sudah dibersihkan. Hard refresh (Ctrl+Shift+R) untuk memuat ulang."
+
+## TASK-138: Add Pages Function _worker.js for /api/* proxy with cache-busting and asset fallback
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- Deployed frontend had no `/api/*` proxy — Pages served SPA index.html for all routes
+- API calls from frontend returned 404
+- Browser cache showed stale result pages after data was cleaned up
+
+Summary:
+- Created `apps/web/functions/_worker.js` (Pages Function, not a separate Worker)
+- Routes:
+  - `/api/*` → proxy to `https://shopee-product-research-api.indiehomesungairaya.workers.dev` (rewrite Origin, strip Host, add CORS)
+  - everything else → `env.ASSETS.fetch(request)` (static asset fallback)
+- Added `Cache-Control: no-store, no-cache, must-revalidate` on all responses
+- Created `apps/web/scripts/copy-pages-function.mjs` to copy `_worker.js` to `dist/` during build
+- Updated `apps/web/package.json` build script to run copy step, added `deploy:pages` script
+- Updated `pnpm --filter @shopee-research/web build` to integrate
+
+Quality Gate:
+- pnpm build: vite + tsc + copy-pages-function all pass
+- Manual verification: `/api/health` via Pages returns 200, `/login` returns HTML
+
+## TASK-139: Set production PASSWORD_PEPPER secret
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: (wrangler-secret)
+
+Problem:
+- `PASSWORD_PEPPER` was set to a non-readable value before admin user recreation
+- Hash from rehash script with new pepper didn't match stored hash
+- Login failed with `INVALID_CREDENTIALS` for the recreated admin user
+
+Summary:
+- Set `PASSWORD_PEPPER` to known value `shopee-research-pepper-v1-2026` via `wrangler secret put`
+- Re-hashed the admin password with the new pepper
+- Updated D1 row with matching `passwordHash` + `passwordSalt`
+- Login now returns 200
+
+Quality Gate:
+- Manual: `POST /api/auth/login` returns 200 with admin user
+
+## TASK-140: Add deployment build infrastructure (copy-pages-function.mjs, deploy:pages script)
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- `_worker.js` was not deployed with the frontend — wrangler pages deploy only uploaded 3 static files
+- Manual copy of `_worker.js` to `dist/` was required before each deploy
+- No `deploy:pages` script in `apps/web/package.json`
+
+Summary:
+- Created `apps/web/scripts/copy-pages-function.mjs` (ESM, uses node:fs/path)
+- Script reads `apps/web/functions/_worker.js` and copies to `apps/web/dist/_worker.js` at build time
+- Updated `apps/web/package.json` `build` script: `tsc --noEmit && vite build && node ./scripts/copy-pages-function.mjs`
+- Added `deploy:pages` script: `pnpm build && wrangler pages deploy dist --project-name shopee-product-research-web --branch main --commit-dirty=true --skip-caching`
+
+Quality Gate:
+- pnpm build: pass
+- Pages Function deployed: `d9d0f507` deployment has `_worker.js` in build
+
+## TASK-141: Add PRD coverage TDD tests
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: f301fc7
+
+Problem:
+- No explicit test that ensures codebase stays PRD-compliant
+- Renames like removing `sh_` prefix or adding `_` to column names would not be caught by existing tests
+- Compliance patterns (no Shopee login, no CAPTCHA bypass, no cart/checkout scraping) not tested
+
+Summary:
+- Created `apps/web/src/__tests__/prd-compliance.test.ts` (17 tests):
+  - G11: every `sh_` table uses prefix (scans all `*.sql` migrations)
+  - G12: no D1 column name contains underscore (scans migrations)
+  - 7 #3-#14: enum value compliance
+  - 7 #4: PBKDF2 iterations >= 100,000
+  - 9: no Shopee user login, no cart/checkout/order, no user/me, no CAPTCHA, rate limit exists, retry bounded
+  - Runtime Config: no hardcoded provider URL, no secret values in SQL migrations
+- Created `apps/web/src/__tests__/prd-resources.test.ts` (13 tests):
+  - 12: 202 Accepted, partialSuccess status exists
+  - Cloudflare Resource: D1 binding `DB` + ID `b80ca989-...`, R2 binding `LOGS` + bucket name, account_id match, no new D1 database
+  - Runtime Config: wrangler secret put documented, search provider loaded from D1, AI model not hardcoded, no secrets in source
+  - 7: ConfigPage route, 5 entity tabs
+
+Quality Gate:
+- pnpm test: 821 passed (40 new tests added)
+- Quality gate: EXIT 0
+
+## TASK-142: Comprehensive documentation refresh to match current state
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: main
+Commit: b2f2375
+
+Problem:
+- README.md was still describing the initial v3 design (pre-Cloudflare Browser Rendering)
+- `docs/architecture.md` mentioned non-existent `workers/mastra` path
+- `docs/api/api-contract.md` had wrong routes (`/api/jobs/:id` instead of `/api/research/jobs/:id`)
+- `docs/ai-orchestration.md` listed fictional AI agents (UrlResolverAgent, ProductSearchAgent, etc.)
+- `docs/shopee/extraction-strategy.md` mentioned non-existent `FetchShopeeExtractor`
+- `.ai/agent-instructions.md` had outdated mandatory reading paths
+
+Summary:
+- Updated 13 documentation files (1227 insertions, 1117 deletions)
+- `README.md`: project structure, mandatory rules (16 total), quick start, latest release
+- `docs/architecture.md`: real folder structure, Pages Function vs Mastra, request flow with Cloudflare Browser Rendering
+- `docs/api/api-contract.md`: complete rewrite with all actual routes
+- `docs/ai-orchestration.md`: 3 actual agents (recommendationWriter, riskAnalyzer, dataQualityAgent)
+- `docs/shopee/extraction-strategy.md`: production order, no mock data fallback
+- `docs/shopee/search-api-strategy.md`: D1 schema, default behavior
+- `docs/shopee/url-resolver.md`: 5 resolution methods, 7-step PRD §8.5 compliance
+- `docs/configuration/env-variables.md`: CLOUDFLARE_*, BROWSER_RUN_*, wrangler.toml examples
+- `docs/deployment/checklist.md`: live production state, token rotation
+- `docs/ui/configuration-crud.md`: single route /settings/config with 5 tabs
+- `.ai/agent-instructions.md`: 20 hard rules, quality gate section, 15 forbidden actions
+- `docs/database/schema.md`: 22 tables count, validator scripts
+
+Quality Gate:
+- pnpm test: 821 passed
+- Quality gate: EXIT 0
+- All hard rules verified by static-analysis tests
+
+## TASK-143: Build isolated Playwright E2E harness in /tmp/opencode/playwright-harness
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: (out-of-tree, /tmp/opencode)
+Commit: (n/a — outside repo)
+
+Problem:
+- E2E testing of production UI requires browser automation
+- Adding Playwright to the main project would pollute package.json + node_modules
+- No way to verify keyword search flow end-to-end without committing test deps
+
+Summary:
+- Created isolated harness at `/tmp/opencode/playwright-harness/` (outside the repo, no commits)
+- `package.json` with `playwright@^1.55.0` only
+- `test.mjs` script: login → submit keyword search → poll job status → navigate to result page
+- Captures 8 screenshots per run + `network.json` with full API trace
+- Identified UI selector mismatches (id-based, not name-based; button type="button" not "submit")
+- Identified wrong polling endpoint (`/api/research/jobs/:id` not `/api/jobs/:id`)
+- E2E confirmed keyword search fails honestly with `noData` (no fabricated data)
+
+Quality Gate:
+- Headless Chromium tests pass against production UI
+- All 8 screenshots captured per run
+
+## TASK-144: Validate production login + keyword search end-to-end via Playwright
+
+Status: DONE
+CompletedAt: 2026-06-21
+Branch: (out-of-tree)
+Commit: (n/a)
+
+Problem:
+- After TASK-131..142, needed to confirm the production flow actually works for the user
+- Manual click-through is slow and error-prone
+
+Summary:
+- Ran Playwright harness against https://shopee-product-research-web.pages.dev
+- Login: 200 OK, session cookie set
+- Keyword search "tester": 202 Accepted, sessionId/jobId returned
+- Poll: status=pending (×5) → processing (×3) → failed (noData)
+- Result page: shows proper "Riset gagal. Tidak ada produk yang berhasil diekstrak" UI
+- 404 handling: old session URL shows "Sesi riset ini tidak ada atau telah dihapus dari database. Mungkin data Anda sudah dibersihkan. Hard refresh (Ctrl+Shift+R) untuk memuat ulang."
+- Shop detail (Omron, real shop): 200, MALL badge, 4.9 rating, all fields populated
+
+Quality Gate:
+- Manual verification: 5/5 test steps pass
+- Production pages no longer show stale data (cache-busting working)

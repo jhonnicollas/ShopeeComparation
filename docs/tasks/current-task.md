@@ -1,13 +1,20 @@
-# TASK-128: Add final README runbook
+# Current Task
 
 ## Status
 
-DONE
+**No active task.** All Phase 0–14 tasks complete (TASK-001..144). Phase 15 (TASK-145..147) is blocked by external dependencies that require human action.
 
-## Goal
+## Active Blocker
 
-Update README with development runbook including setup, commands, project structure, and key technologies.
+**TASK-145: Real Shopee data acquisition via Shopee Open Platform partnership**
 
-## Completion Rule
+- Shopee.co.id blocks Cloudflare Workers (Browser Run identifies as bot and serves empty SPA shell)
+- App fails honestly with `noData` rather than fabricating data (PRD §8.6 compliance)
+- Need to apply for Shopee Open Platform partnership at https://openplatform.shopee.com
+- After approval: integrate official API as primary adapter
 
-Task is complete only when all quality gates pass and task is committed.
+See `docs/tasks/backlog.md` for the full outstanding task list and `docs/deployment/checklist.md` for known production constraints.
+
+## Last Completed
+
+`b2f2375 docs: update entire documentation to match current state`

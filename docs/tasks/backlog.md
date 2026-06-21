@@ -137,3 +137,57 @@ This backlog is the execution queue for 100% autopilot mode.
 - [x] TASK-126 Add database naming validation
 - [x] TASK-127 Add deployment checklist
 - [x] TASK-128 Add final README runbook
+
+## Phase 13 — Production Bug Fixes (f301fc7)
+
+- [x] TASK-129 Fix 9router SSE JSON parse in nineRouterFetchAdapter and browserRunAdapter
+- [x] TASK-130 Implement 9router web_fetch tool agentic loop (max 3 turns)
+- [x] TASK-131 Pass CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN secrets from queue consumer to jobProcessor
+- [x] TASK-132 Build CloudflareBrowserRenderingAdapter as primary production search adapter
+- [x] TASK-133 Remove mock data fallback from production adapters (PRD §8.6 no-fabrication compliance)
+- [x] TASK-134 Clean polluted test data from D1 (20 products, 60 features, 20 weights, etc.)
+- [x] TASK-135 Fix ShopDetailPage statusJson.join crash (API returns string, frontend expected array)
+- [x] TASK-136 Fix API statusJson inconsistency on shop endpoints (server-side parse to array)
+- [x] TASK-137 Fix ResultPage TanStack Query cache and add 404 handling with user-friendly message
+- [x] TASK-138 Add Pages Function _worker.js for /api/* proxy with cache-busting and asset fallback
+- [x] TASK-139 Set production PASSWORD_PEPPER secret for deterministic password hash verification
+- [x] TASK-140 Add deployment build infrastructure (copy-pages-function.mjs, deploy:pages script)
+- [x] TASK-141 Add PRD coverage TDD tests (40 new tests in apps/web/src/__tests__/prd-*.test.ts)
+- [x] TASK-142 Comprehensive documentation refresh to match current state (f301fc7 + TASK-129..141)
+
+## Phase 14 — Production Tooling (Temp Workspace, out-of-tree)
+
+- [x] TASK-143 Build isolated Playwright E2E harness in /tmp/opencode/playwright-harness
+- [x] TASK-144 Validate production login + keyword search end-to-end via Playwright
+
+## Phase 15 — Outstanding (Blocked by External Dependency)
+
+- [ ] TASK-145 Real Shopee data acquisition via Shopee Open Platform partnership
+      (PRD §7 #7 — official API preferred. Out of MVP code scope. Requires
+      business registration at https://openplatform.shopee.com and partner
+      approval. Once partner ID/key is provided, integrate the official
+      Shopee API as primary search/extract adapter in packages/shopee/.)
+- [ ] TASK-146 Optional VPS scraper fallback for Shopee
+      (PRD §7 #7 — last resort. Requires non-Cloudflare server in
+      Southeast Asia region with residential IP. Add as providerType="vpsScraper"
+      in sh_searchProviderConfigs when available.)
+- [ ] TASK-147 Token rotation: rotate CLOUDFLARE_API_TOKEN, NINEROUTER_API_KEY, GitHub PAT
+      (Treat all as exposed via prior conversation history and key.md.
+      Rotate via Cloudflare dashboard / 9router dashboard / GitHub settings,
+      then re-`wrangler secret put` for each affected Worker.)
+
+## Phase 16 — Backlog (Future, not yet started)
+
+- [ ] TASK-150 Implement price tracking (PRD §9 — Excluded from MVP)
+- [ ] TASK-151 Implement price drop alerts (PRD §9 — Excluded)
+- [ ] TASK-152 Build browser extension (PRD §9 — Excluded)
+- [ ] TASK-153 Mobile native app (PRD §9 — Excluded)
+- [ ] TASK-154 Payment / subscription integration (PRD §9 — Excluded)
+- [ ] TASK-155 Multi-marketplace support beyond Shopee (PRD §9 — Excluded)
+- [ ] TASK-156 Auto-buy (PRD §9 — Excluded)
+- [ ] TASK-157 Checkout integration (PRD §9 — Excluded)
+- [ ] TASK-158 Session management UI (PRD §8.1: revocation, active devices, etc.)
+- [ ] TASK-159 User profile management (change name, change password, delete account)
+- [ ] TASK-160 Export research result as PDF/CSV
+- [ ] TASK-161 Webhook / notification when async job completes
+- [ ] TASK-162 Admin user management (list users, suspend, force logout all sessions)

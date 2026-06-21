@@ -4,8 +4,12 @@ compatibility_date = "2026-06-17"
 account_id = "79dea2845a4b62ea5229c8676dea02c0"
 
 [vars]
-APP_ENV = "development"
+APP_ENV = "production"
 APP_NAME = "Shopee Product Research AI"
+
+# Runtime configuration (9router base URL, Browser Run base URL, models, scoring, etc.) must be configured in D1 config tables and edited from the admin UI. Secrets are set via: wrangler secret put <NAME>
+# - NINEROUTER_API_KEY (D1 secretRef)
+# - BROWSER_RUN_API_KEY (D1 secretRef)
 
 [[d1_databases]]
 binding = "DB"

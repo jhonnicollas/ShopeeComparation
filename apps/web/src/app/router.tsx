@@ -22,7 +22,9 @@ import { ResearchDetailPage } from "../pages/ResearchDetailPage";
 import { ResultPage } from "../pages/ResultPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { ShopDetailPage } from "../pages/ShopDetailPage";
+import { AdminDashboardPage } from "../pages/AdminDashboardPage";
 import { RequireAuth } from "../components/RequireAuth.js";
+import { RequireAdmin } from "../components/RequireAdmin.js";
 import { logout, useAuth } from "../lib/auth.js";
 
 const rootRoute = createRootRoute({
@@ -169,6 +171,16 @@ const shopDetailRoute = createRoute({
   },
 });
 
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin",
+  component: () => (
+    <RequireAdmin>
+      <AdminDashboardPage />
+    </RequireAdmin>
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -184,6 +196,7 @@ const routeTree = rootRoute.addChildren([
   jobLogsRoute,
   productDetailRoute,
   shopDetailRoute,
+  adminRoute,
 ]);
 
 export const router = createRouter({ routeTree });
@@ -232,11 +245,17 @@ function AppShell() {
           <Link to="/settings" activeProps={{ "aria-current": "page" }}>
             Settings
           </Link>
+          {user?.role === "admin" && (
+            <Link to="/admin" activeProps={{ "aria-current": "page" }} data-testid="admin-nav-link">
+              Admin
+            </Link>
+          )}
         </nav>
         <div className="userArea">
           {isAuthenticated && user ? (
             <>
               <span className="userEmail">{user.email}</span>
+              {user.role === "admin" && <span className="adminBadge" data-testid="admin-badge">admin</span>}
               <button
                 type="button"
                 className="secondaryButton"

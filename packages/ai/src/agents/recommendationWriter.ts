@@ -6,6 +6,7 @@ export interface RecommendationInput {
   products: ProductSnapshot[];
   shops: Map<string, ShopSnapshot>;
   userQuery: string;
+  bestReason?: string;
   scoredProducts?: Array<{
     product: ProductSnapshot;
     scoring: ScoringOutput;

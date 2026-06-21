@@ -89,6 +89,19 @@ export async function listJobsBySession(
   return result.results ?? [];
 }
 
+export async function findLatestJobByResearchSession(
+  db: D1Database,
+  researchSessionId: string
+): Promise<JobRow | null> {
+  const result = await db
+    .prepare(
+      "SELECT * FROM sh_jobs WHERE researchSessionId = ? ORDER BY createdAt DESC LIMIT 1"
+    )
+    .bind(researchSessionId)
+    .first<JobRow>();
+  return result ?? null;
+}
+
 export async function listJobsByUser(db: D1Database, userId: string): Promise<JobRow[]> {
   const result = await db
     .prepare("SELECT * FROM sh_jobs WHERE userId = ? ORDER BY createdAt DESC LIMIT 50")

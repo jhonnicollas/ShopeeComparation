@@ -13,10 +13,21 @@ import {
   createJob,
   listResearchSessionsByUser,
   sendResearchJobMessage,
+  findJobById,
+  findLatestJobByResearchSession,
+  updateJobStatus,
+  updateResearchSessionStatus,
+  listJobLogsByJob,
+  findResearchSessionById,
+  findComparisonBySession,
+  findComparisonById,
+  findAiReportByComparison,
+  listComparisonItemsByComparisonDb,
+  findProductById,
+  findShopById,
+  listJobsByStatus,
+  listJobLogs,
 } from "@shopee-research/db";
-import { findProductById } from "@shopee-research/db";
-import { findShopById } from "@shopee-research/db";
-import { processJobSync } from "@shopee-research/ai";
 import { parseShopeeUrl } from "@shopee-research/shopee";
 import { authenticate, authErrorResponse, requireAdmin } from "../lib/auth.js";
 import { errorResponse, forbiddenResponse, invalidJsonResponse, notFoundResponse, validationErrorResponse } from "../lib/errors.js";
@@ -40,6 +51,46 @@ function generateId(prefix: string): string {
 }
 
 export const researchRouter = new Hono<{ Bindings: Bindings }>();
+
+function sanitizeQueueError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  return raw
+    .replace(/api[_-]?key\s*[:=]\s*\S+/gi, "[REDACTED]")
+    .replace(/token\s*[:=]\s*\S+/gi, "[REDACTED]")
+    .replace(/secret\s*[:=]\s*\S+/gi, "[REDACTED]")
+    .replace(/bearer\s+\S+/gi, "[REDACTED]")
+    .slice(0, 200);
+}
+
+async function enqueueOrFail(
+  c: { env: Bindings },
+  payload: Parameters<typeof sendResearchJobMessage>[0]["message"],
+  jobId: string,
+  researchSessionId: string
+): Promise<Response | null> {
+  try {
+    await sendResearchJobMessage({
+      queue: c.env.RESEARCH_QUEUE,
+      message: { ...payload, jobId, researchSessionId },
+    });
+    return null;
+  } catch (err) {
+    const message = sanitizeQueueError(err) || "QUEUE_FAILED";
+    await updateJobStatus(c.env.DB, jobId, jobStatus.failed, {
+      errorMessage: message,
+      currentStep: "queueFailed",
+    });
+    await updateResearchSessionStatus(c.env.DB, researchSessionId, jobStatus.failed, {
+      errorMessage: message,
+    });
+    return errorResponse(
+      { json: (b: unknown, s: number) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } }) } as never,
+      500,
+      "QUEUE_FAILED",
+      "Gagal mengirim job ke queue. Coba lagi nanti."
+    );
+  }
+}
 
 researchRouter.post("/compare-links", async (c) => {
   const auth = await authenticate(c.env.DB, c.req.header("cookie"));
@@ -98,40 +149,26 @@ researchRouter.post("/compare-links", async (c) => {
     payloadJson: JSON.stringify({ links: parsed.data.links }),
   });
 
-  await sendResearchJobMessage({
-    queue: c.env.RESEARCH_QUEUE,
-    message: {
+  const failed = await enqueueOrFail(
+    c,
+    {
       userId: auth.user.userId,
       researchSessionId: sessionId,
       mode: researchMode.compareLinks,
       links: normalizedLinks,
     },
-  }).catch((err) => {
-    console.warn("Failed to enqueue (will process sync):", err);
-  });
-
-  try {
-    await processJobSync(
-      { DB: c.env.DB },
-      {
-        userId: auth.user.userId,
-        researchSessionId: sessionId,
-        mode: researchMode.compareLinks,
-        links: normalizedLinks,
-      },
-      jobId
-    );
-  } catch (err) {
-    console.error("Sync processing failed:", err);
-  }
+    jobId,
+    sessionId
+  );
+  if (failed) return failed;
 
   return c.json(
     compareLinksResponseSchema.parse({
       researchSessionId: sessionId,
       jobId,
-      status: jobStatus.completed,
+      status: jobStatus.pending,
     }),
-    200
+    202
   );
 });
 
@@ -188,9 +225,9 @@ researchRouter.post("/keyword-search", async (c) => {
     payloadJson: JSON.stringify(payload),
   });
 
-  await sendResearchJobMessage({
-    queue: c.env.RESEARCH_QUEUE,
-    message: {
+  const failed = await enqueueOrFail(
+    c,
+    {
       userId: auth.user.userId,
       researchSessionId: sessionId,
       mode: researchMode.keywordSearch,
@@ -202,38 +239,18 @@ researchRouter.post("/keyword-search", async (c) => {
       ...(parsed.data.minimumRating !== undefined && parsed.data.minimumRating !== null ? { minimumRating: parsed.data.minimumRating } : {}),
       ...(parsed.data.storeStatus && parsed.data.storeStatus.length > 0 ? { storeStatus: parsed.data.storeStatus } : {}),
     },
-  }).catch((err) => {
-    console.warn("Failed to enqueue (will process sync):", err);
-  });
-
-  try {
-    await processJobSync(
-      { DB: c.env.DB },
-      {
-        userId: auth.user.userId,
-        researchSessionId: sessionId,
-        mode: researchMode.keywordSearch,
-        keyword: parsed.data.keyword,
-        shippedFrom,
-        limit,
-        ...(parsed.data.priceMin !== undefined && parsed.data.priceMin !== null ? { priceMin: parsed.data.priceMin } : {}),
-        ...(parsed.data.priceMax !== undefined && parsed.data.priceMax !== null ? { priceMax: parsed.data.priceMax } : {}),
-        ...(parsed.data.minimumRating !== undefined && parsed.data.minimumRating !== null ? { minimumRating: parsed.data.minimumRating } : {}),
-        ...(parsed.data.storeStatus && parsed.data.storeStatus.length > 0 ? { storeStatus: parsed.data.storeStatus } : {}),
-      },
-      jobId
-    );
-  } catch (err) {
-    console.error("Sync processing failed:", err);
-  }
+    jobId,
+    sessionId
+  );
+  if (failed) return failed;
 
   return c.json(
     keywordSearchResponseSchema.parse({
       researchSessionId: sessionId,
       jobId,
-      status: jobStatus.completed,
+      status: jobStatus.pending,
     }),
-    200
+    202
   );
 });
 
@@ -268,7 +285,6 @@ researchRouter.get("/jobs/:id", async (c) => {
   }
 
   const id = c.req.param("id");
-  const { findJobById } = await import("@shopee-research/db");
   const job = await findJobById(c.env.DB, id);
   if (!job) {
     return notFoundResponse(c, "JOB_NOT_FOUND", "Job not found");
@@ -303,7 +319,6 @@ researchRouter.get("/jobs/:id/logs", async (c) => {
   }
 
   const id = c.req.param("id");
-  const { findJobById, listJobLogsByJob } = await import("@shopee-research/db");
   const job = await findJobById(c.env.DB, id);
   if (!job) {
     return notFoundResponse(c, "JOB_NOT_FOUND", "Job not found");
@@ -337,7 +352,6 @@ researchRouter.get("/sessions/:id", async (c) => {
   }
 
   const id = c.req.param("id");
-  const { findResearchSessionById } = await import("@shopee-research/db");
   const session = await findResearchSessionById(c.env.DB, id);
   if (!session) {
     return notFoundResponse(c, "SESSION_NOT_FOUND", "Session not found");
@@ -373,7 +387,6 @@ researchRouter.get("/sessions/:id/status", async (c) => {
   }
 
   const id = c.req.param("id");
-  const { findResearchSessionById, findJobById } = await import("@shopee-research/db");
   const session = await findResearchSessionById(c.env.DB, id);
   if (!session) {
     return notFoundResponse(c, "SESSION_NOT_FOUND", "Session not found");
@@ -383,7 +396,7 @@ researchRouter.get("/sessions/:id/status", async (c) => {
     return forbiddenResponse(c, "Cannot access this session");
   }
 
-  const job = await findJobById(c.env.DB, id);
+  const job = await findLatestJobByResearchSession(c.env.DB, id);
   let currentStep: string = "queued";
   let progressCurrent = 0;
   let progressTotal = 0;
@@ -412,8 +425,6 @@ researchRouter.get("/comparisons/by-session/:sessionId", async (c) => {
   }
 
   const sessionId = c.req.param("sessionId");
-  const { findComparisonBySession, listComparisonItemsByComparisonDb } = await import("@shopee-research/db");
-  const { findResearchSessionById } = await import("@shopee-research/db");
 
   const session = await findResearchSessionById(c.env.DB, sessionId);
   if (!session) {
@@ -430,7 +441,6 @@ researchRouter.get("/comparisons/by-session/:sessionId", async (c) => {
   }
 
   const items = await listComparisonItemsByComparisonDb(c.env.DB, comparison.id);
-  const { findProductById, findShopById } = await import("@shopee-research/db");
   const productMap: Record<string, unknown> = {};
   const shopMap: Record<string, unknown> = {};
   for (const item of items) {
@@ -486,7 +496,6 @@ researchRouter.get("/comparisons/:comparisonId/ai-report", async (c) => {
   }
 
   const comparisonId = c.req.param("comparisonId");
-  const { findComparisonById, findAiReportByComparison } = await import("@shopee-research/db");
 
   const comparison = await findComparisonById(c.env.DB, comparisonId);
   if (!comparison) {
@@ -564,7 +573,6 @@ researchRouter.get("/admin/jobs", async (c) => {
 
   const status = c.req.query("status") ?? "failed";
   const limit = Number(c.req.query("limit") ?? "50");
-  const { listJobsByStatus } = await import("@shopee-research/db");
 
   const jobs = await listJobsByStatus(c.env.DB, status, Math.min(limit, 200));
   return c.json(
@@ -601,7 +609,6 @@ researchRouter.get("/admin/logs", async (c) => {
 
   const level = c.req.query("level");
   const limit = Number(c.req.query("limit") ?? "100");
-  const { listJobLogs } = await import("@shopee-research/db");
 
   const logs = await listJobLogs(c.env.DB, {
     level: (level as "info" | "warn" | "error" | "debug") || undefined,

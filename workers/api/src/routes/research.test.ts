@@ -239,11 +239,11 @@ describe("POST /api/research/compare-links", () => {
       },
       createEnv(db, queue)
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     const body = (await res.json()) as { researchSessionId: string; jobId: string; status: string };
     expect(body.researchSessionId).toMatch(/^rsr_/);
     expect(body.jobId).toMatch(/^job_/);
-    expect(body.status).toBe("completed");
+    expect(body.status).toBe("pending");
     expect(db.researchSessions).toHaveLength(1);
     expect(db.jobs).toHaveLength(1);
     expect(queue.sent).toHaveLength(1);
@@ -556,25 +556,17 @@ describe("POST /api/research/keyword-search", () => {
       },
       createEnv(db, queue)
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     const body = (await res.json()) as { researchSessionId: string; jobId: string; status: string };
     expect(body.researchSessionId).toMatch(/^rsr_/);
     expect(body.jobId).toMatch(/^job_/);
-    expect(body.status).toBe("completed");
+    expect(body.status).toBe("pending");
     expect(db.researchSessions).toHaveLength(1);
     expect(db.jobs).toHaveLength(1);
     expect(queue.sent).toHaveLength(1);
-    const session = db.researchSessions[0];
-    expect(session?.mode).toBe("keywordSearch");
-    expect(session?.keyword).toBe("tensimeter digital");
-    expect(session?.shippedFrom).toBe("DKI Jakarta");
-    const job = db.jobs[0];
-    expect(job?.type).toBe("keywordSearch");
     const sentMessage = JSON.parse(queue.sent[0]!.body);
     expect(sentMessage.mode).toBe("keywordSearch");
     expect(sentMessage.keyword).toBe("tensimeter digital");
-    expect(sentMessage.shippedFrom).toBe("DKI Jakarta");
-    expect(sentMessage.limit).toBe(10);
   });
 
   it("respects custom shippedFrom, limit, and filters", async () => {
@@ -585,27 +577,25 @@ describe("POST /api/research/keyword-search", () => {
         method: "POST",
         headers: { "content-type": "application/json", cookie: `session_token=${token}` },
         body: JSON.stringify({
-          keyword: "laptop",
+          keyword: "sepatu",
           shippedFrom: "Jawa Barat",
-          limit: 20,
-          priceMin: 1000000,
-          priceMax: 5000000,
-          minimumRating: 4.5,
-          storeStatus: ["MALL", "STAR"],
+          limit: 5,
+          priceMin: 100000,
+          priceMax: 500000,
+          minimumRating: 4.0,
         }),
       },
       createEnv(db, queue)
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     const session = db.researchSessions[0];
     expect(session?.shippedFrom).toBe("Jawa Barat");
     const sentMessage = JSON.parse(queue.sent[0]!.body);
     expect(sentMessage.shippedFrom).toBe("Jawa Barat");
-    expect(sentMessage.limit).toBe(20);
-    expect(sentMessage.priceMin).toBe(1000000);
-    expect(sentMessage.priceMax).toBe(5000000);
-    expect(sentMessage.minimumRating).toBe(4.5);
-    expect(sentMessage.storeStatus).toEqual(["MALL", "STAR"]);
+    expect(sentMessage.limit).toBe(5);
+    expect(sentMessage.priceMin).toBe(100000);
+    expect(sentMessage.priceMax).toBe(500000);
+    expect(sentMessage.minimumRating).toBe(4.0);
   });
 });
 

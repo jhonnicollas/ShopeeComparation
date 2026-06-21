@@ -117,16 +117,42 @@ describe("processQueueBatch", () => {
     const message: QueueMessage = {
       userId: "usr_123",
       researchSessionId: "rsr_456",
+      jobId: "job_789",
       mode: "keywordSearch",
       keyword: "laptop",
     };
+    const jobRow = {
+      id: "job_789",
+      userId: "usr_123",
+      researchSessionId: "rsr_456",
+      type: "keywordSearch",
+      status: "pending",
+      progressCurrent: 0,
+      progressTotal: 0,
+      currentStep: null,
+      payloadJson: null,
+      errorMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const firstMock = vi.fn().mockResolvedValue(jobRow);
+    const stmt = {
+      bind: vi.fn().mockReturnThis(),
+      first: firstMock,
+      run: vi.fn().mockResolvedValue({ success: true }),
+      all: vi.fn().mockResolvedValue({ results: [] }),
+    };
+    const db = {
+      prepare: vi.fn().mockReturnValue(stmt),
+    } as unknown as D1Database;
+    const env = { DB: db, LOGS: {} as R2Bucket };
     const mock = createMockMessage(JSON.stringify(message));
     await processQueueBatch(
       {
         messages: [mock],
         queue: "shopee-research-queue",
       },
-      createMockEnv()
+      env
     );
     expect(console.log).toHaveBeenCalled();
   });

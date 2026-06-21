@@ -14,9 +14,11 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
+    "@mastra/core": "^1.45.0",
     "@shopee-research/core": "workspace:*",
     "@shopee-research/db": "workspace:*",
     "@shopee-research/shared": "workspace:*",
-    "@shopee-research/shopee": "workspace:*"
+    "@shopee-research/shopee": "workspace:*",
+    "zod": "^4.4.3"
   }
 }

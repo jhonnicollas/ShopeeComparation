@@ -159,6 +159,7 @@ export const aiReportStructuredSchema = z.object({
 export const queueMessageSchema = z.object({
   userId: z.string(),
   researchSessionId: z.string(),
+  jobId: z.string().optional(),
   mode: z.enum(["compareLinks", "keywordSearch"]),
   links: z.array(z.string()).optional(),
   keyword: z.string().optional(),
@@ -168,6 +169,7 @@ export const queueMessageSchema = z.object({
   priceMax: z.number().nullable().optional(),
   minimumRating: z.number().nullable().optional(),
   storeStatus: z.array(z.string()).nullable().optional(),
+  sentAt: z.string().optional(),
 });
 
 export const fieldEvidenceSchema = z.object({

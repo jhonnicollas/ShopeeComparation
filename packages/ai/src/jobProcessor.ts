@@ -1,4 +1,4 @@
-import type { QueueMessage } from "@shopee-research/shared";
+import type { QueueMessage, ProductSnapshot, ShopSnapshot, RiskItem, ExtractProductInput, ExtractShopInput } from "@shopee-research/shared";
 import {
   createComparison,
   createComparisonItem,
@@ -8,28 +8,36 @@ import {
   updateJobStatus,
   updateResearchSessionStatus,
   createJobLog,
+  saveProductWeight,
+  saveProductFeatures,
+  findShopByShopeeId,
+  createExtractionFailure,
+  listEnabledSearchProviders,
 } from "@shopee-research/db";
-import { findShopFixtureById, productFixtures, type ProductFixture, type ShopFixture } from "@shopee-research/shopee";
+import {
+  parseShopeeUrl,
+  BrowserRunAdapter,
+  type ShopeeExtractorLike,
+} from "@shopee-research/shopee";
 import { calculateProductScore, detectRisks, rankProducts } from "@shopee-research/core";
-import { generateRecommendation } from "./agents/recommendationWriter.js";
+import { runResearchWorkflow } from "./mastra/researchWorkflow.js";
 import { researchMode, jobStatus } from "@shopee-research/shared";
 
 export interface JobProcessorEnv {
   DB: D1Database;
+  LOGS: R2Bucket;
   NINEROUTER_BASE_URL?: string;
+  NINEROUTER_API_KEY?: string;
+  BROWSER_RUN_BASE_URL?: string;
+  BROWSER_RUN_API_KEY?: string;
 }
 
 export interface ProcessJobResult {
-  comparisonId: string;
+  comparisonId: string | null;
   bestProductId: string | null;
   totalProducts: number;
-}
-
-interface SelectedFixture {
-  productFixture: ProductFixture;
-  shopFixture: ShopFixture;
-  productId: string;
-  shopId: string;
+  failed: number;
+  partial: boolean;
 }
 
 function generateId(prefix: string): string {
@@ -41,391 +49,357 @@ function generateId(prefix: string): string {
   return `${prefix}_${btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
 }
 
-function selectFixtureByUrl(url: string, shopIdMap?: Map<string, string>): SelectedFixture | null {
-  const productFixture = productFixtures.find((p) => p.originalUrl === url) ?? productFixtures[0];
-  if (!productFixture) return null;
-  const shopFixture = findShopFixtureById(productFixture.shopId);
-  if (!shopFixture) return null;
-  let shopId = shopIdMap?.get(productFixture.shopId);
-  if (!shopId) {
-    shopId = generateId("shp");
-    shopIdMap?.set(productFixture.shopId, shopId);
+function sanitizeError(msg: string | undefined): string {
+  if (!msg) return "Unknown error";
+  return msg
+    .replace(/api[_-]?key\s*[:=]\s*\S+/gi, "[REDACTED]")
+    .replace(/token\s*[:=]\s*\S+/gi, "[REDACTED]")
+    .replace(/secret\s*[:=]\s*\S+/gi, "[REDACTED]")
+    .replace(/bearer\s+\S+/gi, "[REDACTED]")
+    .slice(0, 200);
+}
+
+export interface ExtractedItem {
+  productId: string;
+  shopId: string | null;
+  product: ProductSnapshot;
+  shop: ShopSnapshot | null;
+  shopeeShopId: string;
+  shopeeItemId: string;
+}
+
+async function loadBrowserRunConfig(
+  env: JobProcessorEnv
+): Promise<{ baseUrl: string; apiKey: string } | null> {
+  if (env.BROWSER_RUN_BASE_URL) {
+    return { baseUrl: env.BROWSER_RUN_BASE_URL, apiKey: env.BROWSER_RUN_API_KEY ?? "" };
+  }
+  try {
+    const providers = await listEnabledSearchProviders(env.DB);
+    const browserRun = providers.find((p) => p.providerType === "browserRun" && p.baseUrl);
+    if (!browserRun) return null;
+    const apiKey = browserRun.secretRef ? env[browserRun.secretRef as keyof JobProcessorEnv] as string ?? "" : "";
+    return { baseUrl: browserRun.baseUrl!, apiKey };
+  } catch {
+    return null;
+  }
+}
+
+async function resolveInputUrl(url: string): Promise<{ shopId: string; itemId: string; canonicalUrl: string } | null> {
+  const parsed = parseShopeeUrl({ url });
+  if (!parsed.isValid) return null;
+  if (parsed.shopId && parsed.itemId) {
+    return { shopId: parsed.shopId, itemId: parsed.itemId, canonicalUrl: parsed.normalizedUrl ?? url };
+  }
+  if (parsed.isShortUrl) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(url, { method: "HEAD", redirect: "follow", signal: controller.signal });
+      clearTimeout(timeout);
+      const finalUrl = res.url || url;
+      const finalParsed = parseShopeeUrl({ url: finalUrl });
+      if (finalParsed.shopId && finalParsed.itemId) {
+        return { shopId: finalParsed.shopId, itemId: finalParsed.itemId, canonicalUrl: finalParsed.normalizedUrl ?? finalUrl };
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return null;
+}
+
+async function extractOneUrl(
+  env: JobProcessorEnv,
+  url: string,
+  extractor: ShopeeExtractorLike
+): Promise<ExtractedItem | null> {
+  const resolved = await resolveInputUrl(url);
+  if (!resolved) return null;
+  const productInput: ExtractProductInput = {
+    shopId: resolved.shopId,
+    itemId: resolved.itemId,
+    canonicalUrl: resolved.canonicalUrl,
+  };
+  const productResult = await extractor.extractProduct(productInput);
+  let shopSnapshot: ShopSnapshot | null = null;
+  try {
+    const shopResult = await extractor.extractShop({ shopId: resolved.shopId } as ExtractShopInput);
+    shopSnapshot = {
+      shopeeShopId: shopResult.shopeeShopId,
+      name: shopResult.name,
+      shopUrl: shopResult.shopUrl,
+      statusLabels: shopResult.statusLabels,
+      primaryStatus: shopResult.primaryStatus,
+      rating: shopResult.rating,
+      ratingCount: shopResult.ratingCount,
+      responseRate: shopResult.responseRate,
+      responseTime: shopResult.responseTime,
+      followerCount: shopResult.followerCount,
+      productCount: shopResult.productCount,
+      joinedAgeText: shopResult.joinedAgeText,
+      location: shopResult.location,
+      confidenceScore: shopResult.confidenceScore,
+    };
+  } catch {
+    shopSnapshot = null;
   }
   return {
-    productFixture,
-    shopFixture,
     productId: generateId("prd"),
-    shopId,
+    shopId: null,
+    product: {
+      shopeeItemId: productResult.shopeeItemId,
+      shopeeShopId: productResult.shopeeShopId,
+      title: productResult.title,
+      brand: productResult.brand,
+      category: productResult.category,
+      originalUrl: url,
+      canonicalUrl: resolved.canonicalUrl,
+      imageUrl: productResult.imageUrl,
+      galleryJson: productResult.galleryJson,
+      videoUrl: productResult.videoUrl,
+      priceMin: productResult.priceMin,
+      priceMax: productResult.priceMax,
+      priceBeforeDiscount: productResult.priceBeforeDiscount,
+      discountText: productResult.discountText,
+      rating: productResult.rating,
+      reviewCount: productResult.reviewCount,
+      soldCount: productResult.soldCount,
+      favoriteCount: productResult.favoriteCount,
+      stock: productResult.stock,
+      shippedFrom: productResult.shippedFrom,
+      description: productResult.description,
+      specificationJson: productResult.specificationJson,
+      variationJson: productResult.variationJson,
+      weight: productResult.weight,
+      features: productResult.features,
+      confidenceScore: productResult.confidenceScore,
+    },
+    shop: shopSnapshot,
+    shopeeShopId: resolved.shopId,
+    shopeeItemId: resolved.itemId,
   };
 }
 
-function selectFixturesByKeyword(keyword: string, limit: number): SelectedFixture[] {
-  const normalized = keyword.toLowerCase().trim();
-  const filtered = productFixtures.filter((p: ProductFixture) => {
-    const text = `${p.title} ${p.brand} ${p.category}`.toLowerCase();
-    return text.includes(normalized) || normalized.length === 0;
+async function extractSearchCandidates(
+  env: JobProcessorEnv,
+  keyword: string,
+  shippedFrom: string,
+  limit: number,
+  extractor: ShopeeExtractorLike
+): Promise<ExtractedItem[]> {
+  const candidates = await extractor.searchProducts({
+    keyword,
+    shippedFrom,
+    limit: limit * 3,
   });
-  const source = filtered.length > 0 ? filtered : productFixtures;
-  const shopIdMap = new Map<string, string>();
-  return source.slice(0, limit).map((productFixture: ProductFixture) => {
-    const result = selectFixtureByUrl(productFixture.originalUrl, shopIdMap);
-    if (!result) throw new Error(`Failed to select fixture for ${productFixture.itemId}`);
-    return result;
-  });
+  const items: ExtractedItem[] = [];
+  for (const cand of candidates) {
+    if (!cand.itemId || !cand.shopId) continue;
+    try {
+      const productResult = await extractor.extractProduct({
+        shopId: cand.shopId,
+        itemId: cand.itemId,
+        canonicalUrl: cand.canonicalUrl ?? cand.originalUrl ?? undefined,
+      });
+      items.push({
+        productId: generateId("prd"),
+        shopId: null,
+        product: {
+          shopeeItemId: productResult.shopeeItemId,
+          shopeeShopId: productResult.shopeeShopId,
+          title: productResult.title ?? cand.title,
+          brand: productResult.brand,
+          category: productResult.category,
+          originalUrl: cand.originalUrl,
+          canonicalUrl: cand.canonicalUrl ?? cand.originalUrl,
+          imageUrl: productResult.imageUrl,
+          galleryJson: productResult.galleryJson,
+          videoUrl: productResult.videoUrl,
+          priceMin: productResult.priceMin ?? cand.priceMin,
+          priceMax: productResult.priceMax ?? cand.priceMax,
+          priceBeforeDiscount: productResult.priceBeforeDiscount,
+          discountText: productResult.discountText,
+          rating: productResult.rating ?? cand.rating,
+          reviewCount: productResult.reviewCount ?? cand.reviewCount,
+          soldCount: productResult.soldCount ?? cand.soldCount,
+          favoriteCount: productResult.favoriteCount,
+          stock: productResult.stock,
+          shippedFrom: productResult.shippedFrom ?? cand.shippedFrom ?? shippedFrom,
+          description: productResult.description,
+          specificationJson: productResult.specificationJson,
+          variationJson: productResult.variationJson,
+          weight: productResult.weight,
+          features: productResult.features,
+          confidenceScore: productResult.confidenceScore,
+        },
+        shop: null,
+        shopeeShopId: cand.shopId,
+        shopeeItemId: cand.itemId,
+      });
+      if (items.length >= limit) break;
+    } catch {
+      // skip candidate on failure
+    }
+  }
+  return items;
 }
 
-async function persistFixtures(env: JobProcessorEnv, fixtures: SelectedFixture[]): Promise<void> {
-  const seenShopKeys = new Set<string>();
-  for (const f of fixtures) {
-    const pf = f.productFixture;
-    await upsertProduct(env.DB, {
-      id: f.productId,
-      shopeeItemId: pf.itemId,
-      shopeeShopId: pf.shopId,
-      title: pf.title,
-      brand: pf.brand,
-      category: pf.category,
-      originalUrl: pf.originalUrl,
-      canonicalUrl: pf.originalUrl,
-      imageUrl: pf.imageUrl,
-      galleryJson: pf.galleryJson,
-      videoUrl: null,
-      priceMin: pf.priceMin,
-      priceMax: pf.priceMax,
-      priceBeforeDiscount: pf.priceBeforeDiscount,
-      discountText: pf.discountText,
-      rating: pf.rating,
-      reviewCount: pf.reviewCount,
-      soldCount: pf.soldCount,
-      favoriteCount: pf.favoriteCount,
-      stock: pf.stock,
-      shippedFrom: pf.shippedFrom,
-      description: pf.description,
-      specificationJson: pf.specificationJson,
-      variationJson: null,
-      confidenceScore: 1.0,
-    });
+async function persistExtractedItem(
+  env: JobProcessorEnv,
+  item: ExtractedItem
+): Promise<{ productId: string; shopId: string | null }> {
+  const shopeeShopId = item.shopeeShopId;
+  let shopId = item.shopId;
+  if (!shopId) {
+    const existing = await findShopByShopeeId(env.DB, shopeeShopId);
+    shopId = existing ? existing.id : generateId("shp");
+  }
 
-    if (seenShopKeys.has(f.shopId)) continue;
-    seenShopKeys.add(f.shopId);
-
-    const sf = f.shopFixture;
+  if (item.shop) {
     await upsertShop(env.DB, {
-      id: f.shopId,
-      shopeeShopId: sf.shopId,
-      name: sf.name,
-      shopUrl: sf.shopUrl,
-      statusJson: sf.statusLabels,
-      primaryStatus: sf.primaryStatus,
-      rating: sf.rating,
-      ratingCount: sf.ratingCount,
-      responseRate: sf.responseRate,
-      responseTime: sf.responseTime,
-      followerCount: sf.followerCount,
-      productCount: sf.productCount,
-      joinedAgeText: sf.joinedAgeText,
-      location: sf.location,
-      confidenceScore: 1.0,
+      id: shopId,
+      shopeeShopId,
+      name: item.shop.name,
+      shopUrl: item.shop.shopUrl,
+      statusJson: item.shop.statusLabels,
+      primaryStatus: item.shop.primaryStatus ?? "UNKNOWN",
+      rating: item.shop.rating,
+      ratingCount: item.shop.ratingCount,
+      responseRate: item.shop.responseRate,
+      responseTime: item.shop.responseTime,
+      followerCount: item.shop.followerCount,
+      productCount: item.shop.productCount,
+      joinedAgeText: item.shop.joinedAgeText,
+      location: item.shop.location,
+      confidenceScore: item.shop.confidenceScore,
+    });
+  } else {
+    await upsertShop(env.DB, {
+      id: shopId,
+      shopeeShopId,
+      name: null,
+      shopUrl: `https://shopee.co.id/shop/${shopeeShopId}`,
+      statusJson: null,
+      primaryStatus: "UNKNOWN",
+      rating: null,
+      ratingCount: null,
+      responseRate: null,
+      responseTime: null,
+      followerCount: null,
+      productCount: null,
+      joinedAgeText: null,
+      location: null,
+      confidenceScore: 0,
     });
   }
 
-  const shopKeyToId = new Map<string, string>();
-  const shopResult = await env.DB
-    .prepare("SELECT id, shopeeShopId FROM sh_shops")
-    .all<{ id: string; shopeeShopId: string }>();
-  for (const row of shopResult.results ?? []) {
-    if (row.shopeeShopId) {
-      shopKeyToId.set(row.shopeeShopId, row.id);
-    }
+  await upsertProduct(env.DB, {
+    id: item.productId,
+    shopeeItemId: item.product.shopeeItemId ?? item.shopeeItemId,
+    shopeeShopId: item.product.shopeeShopId ?? shopeeShopId,
+    title: item.product.title,
+    brand: item.product.brand,
+    category: item.product.category,
+    originalUrl: item.product.originalUrl,
+    canonicalUrl: item.product.canonicalUrl,
+    imageUrl: item.product.imageUrl,
+    galleryJson: item.product.galleryJson,
+    videoUrl: item.product.videoUrl,
+    priceMin: item.product.priceMin,
+    priceMax: item.product.priceMax,
+    priceBeforeDiscount: item.product.priceBeforeDiscount,
+    discountText: item.product.discountText,
+    rating: item.product.rating,
+    reviewCount: item.product.reviewCount,
+    soldCount: item.product.soldCount,
+    favoriteCount: item.product.favoriteCount,
+    stock: item.product.stock,
+    shippedFrom: item.product.shippedFrom,
+    description: item.product.description,
+    specificationJson: item.product.specificationJson,
+    variationJson: item.product.variationJson,
+    confidenceScore: item.product.confidenceScore,
+  });
+
+  if (item.product.weight && (item.product.weight.value !== null || item.product.weight.rawText !== null)) {
+    await saveProductWeight(env.DB, {
+      id: generateId("wgt"),
+      productId: item.productId,
+      weight: item.product.weight,
+    });
   }
-  for (const f of fixtures) {
-    const actualId = shopKeyToId.get(f.productFixture.shopId);
-    if (actualId) {
-      f.shopId = actualId;
-    }
+  if (item.product.features && item.product.features.length > 0) {
+    await saveProductFeatures(env.DB, { productId: item.productId, features: item.product.features });
   }
+
+  return { productId: item.productId, shopId };
 }
 
 interface ScoredItem {
-  fixture: SelectedFixture;
+  productId: string;
+  shopId: string | null;
+  product: ProductSnapshot;
+  shop: ShopSnapshot | null;
   scoring: ReturnType<typeof calculateProductScore>;
+  risks: RiskItem[];
 }
 
-function scoreFixtures(fixtures: SelectedFixture[]): ScoredItem[] {
-  return fixtures.map((f) => {
-    const pf = f.productFixture;
-    const sf = f.shopFixture;
-    const riskItems = detectRisks({
-      product: {
-        shopeeItemId: pf.itemId,
-        shopeeShopId: pf.shopId,
-        title: pf.title,
-        brand: pf.brand,
-        category: pf.category,
-        originalUrl: pf.originalUrl,
-        canonicalUrl: pf.originalUrl,
-        imageUrl: pf.imageUrl,
-        galleryJson: pf.galleryJson,
-        videoUrl: null,
-        priceMin: pf.priceMin,
-        priceMax: pf.priceMax,
-        priceBeforeDiscount: pf.priceBeforeDiscount,
-        discountText: pf.discountText,
-        rating: pf.rating,
-        reviewCount: pf.reviewCount,
-        soldCount: pf.soldCount,
-        favoriteCount: pf.favoriteCount,
-        stock: pf.stock,
-        shippedFrom: pf.shippedFrom,
-        description: pf.description,
-        specificationJson: pf.specificationJson,
-        variationJson: null,
-        weight: {
-          value: pf.weight.value,
-          unit: pf.weight.unit,
-          rawText: pf.weight.rawText,
-          source: pf.weight.source,
-          confidence: pf.weight.confidence,
-        },
-        features: pf.features,
-        confidenceScore: 1.0,
-      },
-      shop: {
-        shopeeShopId: sf.shopId,
-        name: sf.name,
-        shopUrl: sf.shopUrl,
-        statusLabels: sf.statusLabels,
-        primaryStatus: sf.primaryStatus,
-        rating: sf.rating,
-        ratingCount: sf.ratingCount,
-        responseRate: sf.responseRate,
-        responseTime: sf.responseTime,
-        followerCount: sf.followerCount,
-        productCount: sf.productCount,
-        joinedAgeText: sf.joinedAgeText,
-        location: sf.location,
-        confidenceScore: 1.0,
-      },
-    });
-
-    const scoreInput: Parameters<typeof calculateProductScore>[0] = {
-      productId: f.productId,
-      rating: pf.rating,
-      reviewCount: pf.reviewCount,
-      soldCount: pf.soldCount,
-      priceMin: pf.priceMin,
-      priceMax: pf.priceMax,
-      shopStatus: sf.primaryStatus,
-      shopRating: sf.rating,
-      responseRate: sf.responseRate,
-      featureCount: pf.features.length,
-      featureMatchCount: pf.features.length,
-      risks: riskItems,
-    };
-    return { fixture: f, scoring: calculateProductScore(scoreInput) };
+function scoreItem(item: ExtractedItem, persistedShopId: string | null): ScoredItem {
+  const shopSnapshot: ShopSnapshot = item.shop ?? {
+    shopeeShopId: item.shopeeShopId,
+    name: null,
+    shopUrl: `https://shopee.co.id/shop/${item.shopeeShopId}`,
+    statusLabels: [],
+    primaryStatus: "UNKNOWN",
+    rating: null,
+    ratingCount: null,
+    responseRate: null,
+    responseTime: null,
+    followerCount: null,
+    productCount: null,
+    joinedAgeText: null,
+    location: null,
+    confidenceScore: 0,
+  };
+  const risks = detectRisks({ product: item.product, shop: shopSnapshot });
+  const scoring = calculateProductScore({
+    productId: item.productId,
+    rating: item.product.rating,
+    reviewCount: item.product.reviewCount,
+    soldCount: item.product.soldCount,
+    priceMin: item.product.priceMin,
+    priceMax: item.product.priceMax,
+    shopStatus: shopSnapshot.primaryStatus,
+    shopRating: shopSnapshot.rating,
+    responseRate: shopSnapshot.responseRate,
+    featureCount: item.product.features?.length ?? 0,
+    featureMatchCount: item.product.features?.length ?? 0,
+    risks,
   });
+  return {
+    productId: item.productId,
+    shopId: persistedShopId,
+    product: item.product,
+    shop: shopSnapshot,
+    scoring,
+    risks,
+  };
 }
 
-async function saveComparison(
-  env: JobProcessorEnv,
-  message: QueueMessage,
-  title: string,
-  scored: ScoredItem[],
-  ranked: ReturnType<typeof rankProducts>,
-  keyword: string | null,
-  shippedFrom: string | null
-): Promise<string> {
-  const comparisonId = generateId("cmp");
-  const bestProductId = ranked.length > 0 ? scored[0]!.fixture.productId : null;
-  await createComparison(env.DB, {
-    id: comparisonId,
-    researchSessionId: message.researchSessionId,
-    userId: message.userId,
-    title,
-    mode: message.mode,
-    keyword,
-    shippedFrom,
-    bestProductId,
-    summary: null,
-  });
-
-  for (let i = 0; i < ranked.length; i++) {
-    const scoredItem = scored[i]!;
-    const fixture = scoredItem.fixture;
-    const sf = fixture.shopFixture;
-    const riskItems = detectRisks({
-      product: {
-        shopeeItemId: fixture.productFixture.itemId,
-        shopeeShopId: fixture.productFixture.shopId,
-        title: fixture.productFixture.title,
-        brand: fixture.productFixture.brand,
-        category: fixture.productFixture.category,
-        originalUrl: fixture.productFixture.originalUrl,
-        canonicalUrl: fixture.productFixture.originalUrl,
-        imageUrl: fixture.productFixture.imageUrl,
-        galleryJson: fixture.productFixture.galleryJson,
-        videoUrl: null,
-        priceMin: fixture.productFixture.priceMin,
-        priceMax: fixture.productFixture.priceMax,
-        priceBeforeDiscount: fixture.productFixture.priceBeforeDiscount,
-        discountText: fixture.productFixture.discountText,
-        rating: fixture.productFixture.rating,
-        reviewCount: fixture.productFixture.reviewCount,
-        soldCount: fixture.productFixture.soldCount,
-        favoriteCount: fixture.productFixture.favoriteCount,
-        stock: fixture.productFixture.stock,
-        shippedFrom: fixture.productFixture.shippedFrom,
-        description: fixture.productFixture.description,
-        specificationJson: fixture.productFixture.specificationJson,
-        variationJson: null,
-        weight: {
-          value: fixture.productFixture.weight.value,
-          unit: fixture.productFixture.weight.unit,
-          rawText: fixture.productFixture.weight.rawText,
-          source: fixture.productFixture.weight.source,
-          confidence: fixture.productFixture.weight.confidence,
-        },
-        features: fixture.productFixture.features,
-        confidenceScore: 1.0,
-      },
-      shop: {
-        shopeeShopId: sf.shopId,
-        name: sf.name,
-        shopUrl: sf.shopUrl,
-        statusLabels: sf.statusLabels,
-        primaryStatus: sf.primaryStatus,
-        rating: sf.rating,
-        ratingCount: sf.ratingCount,
-        responseRate: sf.responseRate,
-        responseTime: sf.responseTime,
-        followerCount: sf.followerCount,
-        productCount: sf.productCount,
-        joinedAgeText: sf.joinedAgeText,
-        location: sf.location,
-        confidenceScore: 1.0,
-      },
-    });
-    await createComparisonItem(env.DB, {
-      id: generateId("cim"),
-      comparisonId,
-      productId: fixture.productId,
-      shopId: fixture.shopId,
-      rank: i + 1,
-      finalScore: scoredItem.scoring.finalScore,
-      ratingScore: scoredItem.scoring.ratingScore,
-      reviewCountScore: scoredItem.scoring.reviewCountScore,
-      soldCountScore: scoredItem.scoring.soldCountScore,
-      priceScore: scoredItem.scoring.priceScore,
-      shopTrustScore: scoredItem.scoring.shopTrustScore,
-      responseRateScore: scoredItem.scoring.responseRateScore,
-      featureMatchScore: scoredItem.scoring.featureMatchScore,
-      riskPenalty: scoredItem.scoring.riskPenalty,
-      prosJson: null,
-      consJson: null,
-      riskJson: riskItems.map((r) => JSON.stringify(r)),
-    });
+function generateBestReason(scored: ScoredItem[]): string {
+  if (scored.length === 0) return "";
+  const best = scored[0];
+  if (!best) return "";
+  const parts: string[] = [];
+  if (best.product.rating && best.product.rating >= 4.5) parts.push(`rating ${best.product.rating}/5`);
+  if (best.product.reviewCount && best.product.reviewCount >= 500) parts.push(`${best.product.reviewCount} review`);
+  if (best.product.soldCount && best.product.soldCount >= 1000) parts.push(`${best.product.soldCount} terjual`);
+  if (best.shop?.primaryStatus && best.shop.primaryStatus !== "REGULAR" && best.shop.primaryStatus !== "UNKNOWN") {
+    parts.push(`toko ${best.shop.primaryStatus}`);
   }
-
-  return comparisonId;
-}
-
-async function generateAiReport(
-  env: JobProcessorEnv,
-  message: QueueMessage,
-  comparisonId: string,
-  scored: ScoredItem[]
-): Promise<void> {
-  try {
-    const aiReport = await generateRecommendation(env.DB, env as unknown as Record<string, string | undefined>, {
-      userQuery: message.keyword ?? `Compare ${message.links?.length ?? 0} products`,
-      products: scored.map((s) => ({
-        shopeeItemId: s.fixture.productFixture.itemId,
-        shopeeShopId: s.fixture.productFixture.shopId,
-        title: s.fixture.productFixture.title,
-        originalUrl: s.fixture.productFixture.originalUrl,
-        canonicalUrl: s.fixture.productFixture.originalUrl,
-        priceMin: s.fixture.productFixture.priceMin,
-        priceMax: s.fixture.productFixture.priceMax,
-        rating: s.fixture.productFixture.rating,
-        reviewCount: s.fixture.productFixture.reviewCount,
-        soldCount: s.fixture.productFixture.soldCount,
-        shippedFrom: s.fixture.productFixture.shippedFrom,
-        imageUrl: s.fixture.productFixture.imageUrl,
-        brand: s.fixture.productFixture.brand,
-        category: s.fixture.productFixture.category,
-        galleryJson: s.fixture.productFixture.galleryJson,
-        videoUrl: null,
-        priceBeforeDiscount: s.fixture.productFixture.priceBeforeDiscount,
-        discountText: s.fixture.productFixture.discountText,
-        favoriteCount: s.fixture.productFixture.favoriteCount,
-        stock: s.fixture.productFixture.stock,
-        description: s.fixture.productFixture.description,
-        specificationJson: s.fixture.productFixture.specificationJson,
-        variationJson: null,
-        weight: {
-          value: s.fixture.productFixture.weight.value,
-          unit: s.fixture.productFixture.weight.unit,
-          rawText: s.fixture.productFixture.weight.rawText,
-          source: s.fixture.productFixture.weight.source,
-          confidence: s.fixture.productFixture.weight.confidence,
-        },
-        features: s.fixture.productFixture.features,
-        confidenceScore: 1.0,
-      })),
-      shops: new Map(),
-      scoredProducts: scored.map((s) => ({
-        product: {
-          shopeeItemId: s.fixture.productFixture.itemId,
-          shopeeShopId: s.fixture.productFixture.shopId,
-          title: s.fixture.productFixture.title,
-          originalUrl: s.fixture.productFixture.originalUrl,
-          canonicalUrl: s.fixture.productFixture.originalUrl,
-          priceMin: s.fixture.productFixture.priceMin,
-          priceMax: s.fixture.productFixture.priceMax,
-          rating: s.fixture.productFixture.rating,
-          reviewCount: s.fixture.productFixture.reviewCount,
-          soldCount: s.fixture.productFixture.soldCount,
-          shippedFrom: s.fixture.productFixture.shippedFrom,
-          imageUrl: s.fixture.productFixture.imageUrl,
-          brand: s.fixture.productFixture.brand,
-          category: s.fixture.productFixture.category,
-          galleryJson: s.fixture.productFixture.galleryJson,
-          videoUrl: null,
-          priceBeforeDiscount: s.fixture.productFixture.priceBeforeDiscount,
-          discountText: s.fixture.productFixture.discountText,
-          favoriteCount: s.fixture.productFixture.favoriteCount,
-          stock: s.fixture.productFixture.stock,
-          description: s.fixture.productFixture.description,
-          specificationJson: s.fixture.productFixture.specificationJson,
-          variationJson: null,
-          weight: {
-            value: s.fixture.productFixture.weight.value,
-            unit: s.fixture.productFixture.weight.unit,
-            rawText: s.fixture.productFixture.weight.rawText,
-            source: s.fixture.productFixture.weight.source,
-            confidence: s.fixture.productFixture.weight.confidence,
-          },
-          features: s.fixture.productFixture.features,
-          confidenceScore: 1.0,
-        },
-        scoring: s.scoring,
-      })),
-    });
-
-    await upsertAiReport(env.DB, {
-      id: generateId("air"),
-      comparisonId,
-      userId: message.userId,
-      model: message.mode,
-      provider: "9router",
-      promptVersion: "v1",
-      report: aiReport.report,
-      confidence: aiReport.report.confidence ?? 0,
-      rawResponseR2Key: null,
-    });
-  } catch (err) {
-    console.warn("AI report generation failed:", err);
-  }
+  if (parts.length === 0) parts.push(`skor ${(best.scoring.finalScore * 100).toFixed(1)}/100`);
+  return parts.join(", ");
 }
 
 export async function processJobSync(
@@ -433,137 +407,256 @@ export async function processJobSync(
   message: QueueMessage,
   jobId: string
 ): Promise<ProcessJobResult> {
-  const fixtures: SelectedFixture[] = [];
+  const log = async (level: "info" | "warn" | "error", msg: string, metadata?: unknown) => {
+    await createJobLog(env.DB, {
+      id: generateId("log"),
+      jobId,
+      level,
+      message: msg,
+      metadataJson: metadata ? JSON.stringify(metadata) : null,
+    });
+  };
 
-  await createJobLog(env.DB, {
-    id: generateId("log"),
-    jobId,
-    level: "info",
-    message: `Job ${jobId} started for session ${message.researchSessionId} (${message.mode})`,
-    metadataJson: JSON.stringify({ mode: message.mode, keyword: message.keyword ?? null, linkCount: message.links?.length ?? 0 }),
+  await log("info", `Job ${jobId} started for session ${message.researchSessionId} (${message.mode})`, {
+    mode: message.mode,
+    keyword: message.keyword ?? null,
+    linkCount: message.links?.length ?? 0,
   });
+
+  const browserConfig = await loadBrowserRunConfig(env);
+  if (!browserConfig) {
+    const msg = "Konfigurasi Browser Run belum tersedia. Set di admin UI (/settings/config) atau env BROWSER_RUN_BASE_URL.";
+    await log("error", msg);
+    await updateJobStatus(env.DB, jobId, jobStatus.failed, {
+      currentStep: "configMissing",
+      errorMessage: msg,
+    });
+    await updateResearchSessionStatus(env.DB, message.researchSessionId, jobStatus.failed, {
+      errorMessage: msg,
+    });
+    return { comparisonId: null, bestProductId: null, totalProducts: 0, failed: 1, partial: false };
+  }
+
+  const extractor: ShopeeExtractorLike = new BrowserRunAdapter({
+    config: {
+      baseUrl: browserConfig.baseUrl,
+      apiKey: browserConfig.apiKey,
+      timeoutMs: 30000,
+      providerKey: "browserRun",
+    },
+  });
+
+  await updateJobStatus(env.DB, jobId, jobStatus.processing, {
+    currentStep: "extracting",
+    progressCurrent: 0,
+  });
+
+  const items: ExtractedItem[] = [];
+  let failed = 0;
 
   if (message.mode === researchMode.compareLinks) {
     const links = message.links ?? [];
-    console.log(`[compare-links] Processing ${links.length} links`);
-    await createJobLog(env.DB, {
-      id: generateId("log"),
-      jobId,
-      level: "info",
-      message: `Memproses ${links.length} link Shopee`,
-    });
-    const shopIdMap = new Map<string, string>();
-    for (const url of links) {
-      const f = selectFixtureByUrl(url, shopIdMap);
-      if (f) fixtures.push(f);
+    for (let i = 0; i < links.length; i++) {
+      const url = links[i]!;
+      await log("info", `Mengekstrak ${i + 1}/${links.length}: ${url}`);
+      try {
+        const result = await extractOneUrl(env, url, extractor);
+        if (result) {
+          items.push(result);
+        } else {
+          failed++;
+          await createExtractionFailure(env.DB, {
+            id: generateId("efl"),
+            ownerId: message.researchSessionId,
+            ownerType: "session",
+            adapter: "browserRun",
+            url,
+            errorMessage: "Gagal resolve URL atau ekstrak produk",
+          });
+        }
+      } catch (err) {
+        failed++;
+        const safe = sanitizeError(err instanceof Error ? err.message : String(err));
+        await log("error", `Gagal ekstrak ${url}: ${safe}`);
+        await createExtractionFailure(env.DB, {
+          id: generateId("efl"),
+          ownerId: message.researchSessionId,
+          ownerType: "session",
+          adapter: "browserRun",
+          url,
+          errorMessage: safe,
+        });
+      }
+      await updateJobStatus(env.DB, jobId, jobStatus.processing, {
+        progressCurrent: i + 1,
+        progressTotal: links.length,
+        currentStep: "extracting",
+      });
     }
   } else if (message.mode === researchMode.keywordSearch) {
     const keyword = message.keyword ?? "";
+    const shippedFrom = message.shippedFrom ?? "DKI Jakarta";
     const limit = message.limit ?? 10;
-    console.log(`[keyword-search] Processing keyword: "${keyword}", limit: ${limit}`);
-    await createJobLog(env.DB, {
-      id: generateId("log"),
-      jobId,
-      level: "info",
-      message: `Mencari produk untuk keyword "${keyword}" (limit ${limit})`,
-    });
-    fixtures.push(...selectFixturesByKeyword(keyword, limit));
+    await log("info", `Mencari produk untuk keyword "${keyword}" (limit ${limit}, shippedFrom ${shippedFrom})`);
+    try {
+      const candidates = await extractSearchCandidates(env, keyword, shippedFrom, limit, extractor);
+      items.push(...candidates);
+      failed = Math.max(0, limit - candidates.length);
+    } catch (err) {
+      failed++;
+      const safe = sanitizeError(err instanceof Error ? err.message : String(err));
+      await log("error", `Pencarian gagal: ${safe}`);
+      await createExtractionFailure(env.DB, {
+        id: generateId("efl"),
+        ownerId: message.researchSessionId,
+        ownerType: "session",
+        adapter: "browserRun.search",
+        url: `keyword:${keyword}`,
+        errorMessage: safe,
+      });
+    }
+  } else {
+    await log("error", `Unknown mode: ${String(message.mode)}`);
   }
 
-  console.log(`[jobProcessor] Persisting ${fixtures.length} fixtures`);
-  await createJobLog(env.DB, {
-    id: generateId("log"),
-    jobId,
-    level: "info",
-    message: `Menyimpan ${fixtures.length} produk ke D1`,
-  });
-  try {
-    await persistFixtures(env, fixtures);
-    console.log(`[jobProcessor] Persist done`);
-    await createJobLog(env.DB, {
-      id: generateId("log"),
-      jobId,
-      level: "info",
-      message: `${fixtures.length} produk berhasil disimpan`,
+  if (items.length === 0) {
+    await updateJobStatus(env.DB, jobId, jobStatus.failed, {
+      currentStep: "noData",
+      errorMessage: "Tidak ada produk yang berhasil diekstrak",
     });
-  } catch (err) {
-    console.error(`[jobProcessor] Persist failed:`, err);
-    await createJobLog(env.DB, {
-      id: generateId("log"),
-      jobId,
-      level: "error",
-      message: `Gagal menyimpan produk: ${err instanceof Error ? err.message : "Unknown"}`,
+    await updateResearchSessionStatus(env.DB, message.researchSessionId, jobStatus.failed, {
+      errorMessage: "Tidak ada produk yang berhasil diekstrak",
     });
-    throw err;
+    return { comparisonId: null, bestProductId: null, totalProducts: 0, failed, partial: false };
   }
 
-  const scored = scoreFixtures(fixtures);
-  const ranked = rankProducts(scored.map((s) => ({ product: s.fixture.productFixture as never, scoring: s.scoring })));
+  await log("info", `Menyimpan ${items.length} produk ke D1`);
+  const scored: ScoredItem[] = [];
+  for (const item of items) {
+    try {
+      const persisted = await persistExtractedItem(env, item);
+      scored.push(scoreItem(item, persisted.shopId));
+    } catch (err) {
+      failed++;
+      const safe = sanitizeError(err instanceof Error ? err.message : String(err));
+      await log("error", `Persist produk gagal: ${safe}`);
+    }
+  }
+
+  if (scored.length === 0) {
+    await updateJobStatus(env.DB, jobId, jobStatus.failed, {
+      currentStep: "persistFailed",
+      errorMessage: "Semua produk gagal disimpan",
+    });
+    await updateResearchSessionStatus(env.DB, message.researchSessionId, jobStatus.failed, {
+      errorMessage: "Semua produk gagal disimpan",
+    });
+    return { comparisonId: null, bestProductId: null, totalProducts: 0, failed, partial: false };
+  }
+
+  scored.sort((a, b) => b.scoring.finalScore - a.scoring.finalScore);
+  const ranked = rankProducts(
+    scored.map((s) => ({ product: s.product as never, scoring: s.scoring }))
+  );
 
   const keyword = message.keyword ?? null;
   const shippedFrom = message.shippedFrom ?? null;
   const title = message.mode === researchMode.keywordSearch
-    ? `Top ${fixtures.length} for "${keyword}"`
-    : `Compare ${fixtures.length} products`;
+    ? `Top ${scored.length} untuk "${keyword}"`
+    : `Perbandingan ${scored.length} produk`;
 
-  console.log(`[jobProcessor] Saving comparison`);
-  await createJobLog(env.DB, {
-    id: generateId("log"),
-    jobId,
-    level: "info",
-    message: "Membuat perbandingan dan menyimpan ranking",
-  });
-  let comparisonId = "";
+  await log("info", `Membuat perbandingan untuk ${scored.length} produk`);
+  const comparisonId = generateId("cmp");
+  const best = scored[0];
+  const bestProductId = best?.productId ?? null;
   try {
-    comparisonId = await saveComparison(env, message, title, scored, ranked, keyword, shippedFrom);
-    console.log(`[jobProcessor] Comparison saved: ${comparisonId}`);
-    await createJobLog(env.DB, {
-      id: generateId("log"),
-      jobId,
-      level: "info",
-      message: `Perbandingan ${comparisonId} berhasil disimpan`,
-    });
-    await generateAiReport(env, message, comparisonId, scored);
-    console.log(`[jobProcessor] AI report done`);
-    await createJobLog(env.DB, {
-      id: generateId("log"),
-      jobId,
-      level: "info",
-      message: "AI report berhasil di-generate",
+    await createComparison(env.DB, {
+      id: comparisonId,
+      researchSessionId: message.researchSessionId,
+      userId: message.userId,
+      title,
+      mode: message.mode,
+      keyword,
+      shippedFrom,
+      bestProductId,
+      summary: null,
     });
   } catch (err) {
-    console.error(`[jobProcessor] Save/AI failed:`, err);
-    await createJobLog(env.DB, {
-      id: generateId("log"),
-      jobId,
-      level: "error",
-      message: `Gagal membuat perbandingan/AI: ${err instanceof Error ? err.message : "Unknown"}`,
-    });
+    const safe = sanitizeError(err instanceof Error ? err.message : String(err));
+    await log("error", `Gagal membuat comparison: ${safe}`);
     throw err;
   }
 
-  const bestProductId = fixtures.length > 0 ? fixtures[0]!.productId : null;
-  console.log(`[jobProcessor] Updating session status`);
-  await createJobLog(env.DB, {
-    id: generateId("log"),
-    jobId,
-    level: "info",
-    message: `Job ${jobId} selesai. Produk terbaik: ${bestProductId ?? "N/A"}`,
-  });
-  await updateResearchSessionStatus(env.DB, message.researchSessionId, jobStatus.completed, {
+  for (let i = 0; i < ranked.length; i++) {
+    const item = ranked[i]!;
+    const candidateScored = scored.find((s) => s.productId === (item.product as { shopeeItemId?: string | null }).shopeeItemId) || scored[i];
+    if (!candidateScored) continue;
+    await createComparisonItem(env.DB, {
+      id: generateId("cim"),
+      comparisonId,
+      productId: candidateScored.productId,
+      shopId: candidateScored.shopId,
+      rank: i + 1,
+      finalScore: candidateScored.scoring.finalScore,
+      ratingScore: candidateScored.scoring.ratingScore,
+      reviewCountScore: candidateScored.scoring.reviewCountScore,
+      soldCountScore: candidateScored.scoring.soldCountScore,
+      priceScore: candidateScored.scoring.priceScore,
+      shopTrustScore: candidateScored.scoring.shopTrustScore,
+      responseRateScore: candidateScored.scoring.responseRateScore,
+      featureMatchScore: candidateScored.scoring.featureMatchScore,
+      riskPenalty: candidateScored.scoring.riskPenalty,
+      prosJson: null,
+      consJson: null,
+      riskJson: candidateScored.risks.map((r) => JSON.stringify(r)),
+    });
+  }
+
+  await log("info", `Membuat rekomendasi AI via Mastra workflow`);
+  try {
+    const workflowResult = await runResearchWorkflow({
+      db: env.DB,
+      env: env as unknown as Record<string, string | undefined>,
+      userQuery: message.keyword ?? `Perbandingan ${scored.length} produk Shopee`,
+      bestReason: generateBestReason(scored),
+      products: scored.map((s) => s.product),
+      shops: new Map(scored.filter((s) => s.shop).map((s) => [s.product.shopeeShopId ?? "", s.shop as ShopSnapshot])),
+    });
+    await upsertAiReport(env.DB, {
+      id: generateId("air"),
+      comparisonId,
+      userId: message.userId,
+      model: env.NINEROUTER_BASE_URL ? "9router-primary" : "deterministic",
+      provider: env.NINEROUTER_BASE_URL ? "9router" : "deterministic",
+      promptVersion: "v1",
+      report: workflowResult.report,
+      confidence: workflowResult.report.confidence ?? 0,
+      rawResponseR2Key: null,
+    });
+    await log("info", `Mastra workflow selesai (${workflowResult.workflowId}, ${workflowResult.stepCount} steps, usedMastra=${workflowResult.usedMastra})`);
+  } catch (err) {
+    const safe = sanitizeError(err instanceof Error ? err.message : String(err));
+    await log("warn", `Mastra workflow gagal, lanjut dengan report kosong: ${safe}`);
+  }
+
+  const finalStatus = failed > 0 ? jobStatus.partialSuccess : jobStatus.completed;
+  await updateResearchSessionStatus(env.DB, message.researchSessionId, finalStatus, {
     bestProductId: bestProductId ?? undefined,
-    totalProducts: fixtures.length,
-    completedProducts: fixtures.length,
+    totalProducts: scored.length,
+    completedProducts: scored.length,
   });
-  await updateJobStatus(env.DB, jobId, jobStatus.completed, {
-    progressCurrent: fixtures.length,
-    progressTotal: fixtures.length,
+  await updateJobStatus(env.DB, jobId, finalStatus, {
+    progressCurrent: scored.length,
+    progressTotal: scored.length,
     currentStep: "completed",
   });
+  await log("info", `Job selesai. Produk terbaik: ${bestProductId ?? "N/A"}. Failed: ${failed}`);
 
   return {
     comparisonId,
     bestProductId,
-    totalProducts: fixtures.length,
+    totalProducts: scored.length,
+    failed,
+    partial: failed > 0,
   };
 }

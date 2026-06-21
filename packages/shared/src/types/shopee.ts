@@ -218,6 +218,7 @@ export interface AiReportStructured {
 export interface QueueMessage {
   userId: string;
   researchSessionId: string;
+  jobId?: string;
   mode: string;
   links?: string[];
   keyword?: string;
@@ -227,6 +228,7 @@ export interface QueueMessage {
   priceMax?: number | null;
   minimumRating?: number | null;
   storeStatus?: string[] | null;
+  sentAt?: string;
 }
 
 export interface ResolveFallbackConfig {

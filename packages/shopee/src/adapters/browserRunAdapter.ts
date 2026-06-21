@@ -46,7 +46,11 @@ export class BrowserRunAdapter {
 
   constructor(options: BrowserRunAdapterOptions) {
     this.config = options.config;
-    this.fetchImpl = options.fetchImpl ?? fetch;
+    if (options.fetchImpl) {
+      this.fetchImpl = options.fetchImpl.bind(globalThis);
+    } else {
+      this.fetchImpl = ((url, init) => fetch(url, init)) as typeof fetch;
+    }
   }
 
   async resolveUrl(input: ResolveUrlInput): Promise<ResolveUrlResult> {
@@ -136,31 +140,37 @@ export class BrowserRunAdapter {
   }
 
   private async browserFetch(url: string): Promise<string> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.config.timeoutMs);
-    try {
-      const headers: Record<string, string> = {
-        "content-type": "application/json",
-      };
-      if (this.config.apiKey) {
-        headers.authorization = `Bearer ${this.config.apiKey}`;
-      }
-      const response = await this.fetchImpl(`${this.config.baseUrl.replace(/\/$/, "")}/content`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ url, renderJs: true }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        throw new Error(`Browser Run HTTP ${response.status}`);
-      }
-      const data = (await response.json()) as { html?: string; content?: string };
-      return data.html ?? data.content ?? "";
-    } catch (error) {
-      clearTimeout(timeoutId);
-      throw new Error(sanitizeForLog(error instanceof Error ? error.message : "Unknown error"));
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+    if (this.config.apiKey) {
+      headers.authorization = `Bearer ${this.config.apiKey}`;
     }
+    const targetUrl = `${this.config.baseUrl.replace(/\/$/, "")}/content`;
+    const fetchOptions: RequestInit = {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ url, renderJs: true }),
+      signal: AbortSignal.timeout(this.config.timeoutMs),
+    };
+    let response: Response;
+    try {
+      response = await this.fetchImpl(targetUrl, fetchOptions);
+    } catch (fetchErr) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      throw new Error(`Browser Run fetch failed: ${sanitizeForLog(msg)}`);
+    }
+    if (!response.ok) {
+      throw new Error(`Browser Run HTTP ${response.status}`);
+    }
+    let data: { html?: string; content?: string };
+    try {
+      data = (await response.json()) as { html?: string; content?: string };
+    } catch (parseErr) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Browser Run JSON parse failed: ${sanitizeForLog(parseErr instanceof Error ? parseErr.message : String(parseErr))} body=${text.slice(0, 200)}`);
+    }
+    return data.html ?? data.content ?? "";
   }
 
   private parseSearchResults(html: string, input: SearchInput): SearchResultCandidate[] {

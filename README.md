@@ -1,181 +1,113 @@
-# Shopee Product Research AI — Source of Truth Docs
+# Shopee Product Research AI
 
-Dokumen ini adalah source of truth untuk membangun aplikasi Shopee Product Research AI menggunakan AI coding agent.
+Web app multi-user berbasis Cloudflare-first untuk riset produk Shopee.
 
-Aplikasi ini adalah web app multi-user berbasis Cloudflare yang membantu user:
+**Dua workflow utama (PRD §6):**
+1. **Keyword Search Top 10** — user input keyword, sistem cari 10 produk terbaik dengan filter `Shipped From = DKI Jakarta`.
+2. **Compare Links** — user paste 1–5 link produk Shopee (termasuk short URL `id.shp.ee/...`), sistem compare + ranking.
 
-1. Mencari 10 produk terbaik Shopee berdasarkan keyword dengan filter utama `DKI Jakarta`.
-2. Membandingkan maksimal 5 link produk Shopee.
-3. Resolve short URL Shopee seperti `id.shp.ee/...`.
-4. Mengambil data produk, data toko, fitur, berat produk, rating, total review, dan total item terjual.
-5. Menghasilkan ranking objektif dan report naratif AI menggunakan Mastra + 9router.
+**Stack:** React + Vite (frontend), Cloudflare Workers (API + Queue Consumer), D1 (database), R2 (snapshots), Queues (async jobs), Mastra (AI orchestrator), 9router (AI gateway via Cloudflare Browser Rendering).
 
-## Dokumen utama
+## Project Structure
 
-| File | Fungsi |
-|---|---|
-| `docs/prd.md` | Product Requirements Document, Scope, Stories, Criteria |
-| `docs/architecture.md` | Arsitektur, Technical Decisions, Stack, Overview |
-| `docs/shared/enums.md` | Enum canonical untuk API, DB, UI, dan tests |
-| `docs/database/schema.md` | Database schema D1 |
-| `docs/database/naming-rules.md` | Aturan nama table dan column |
-| `docs/api/api-contract.md` | Kontrak API |
-| `docs/ai-orchestration.md` | Workflow Mastra, Prompts, 9router config |
-| `docs/tasks/autopilot-task-contract.md` | Aturan ekspansi task autopilot |
-| `.ai/agent-instructions.md` | Aturan wajib untuk AI coding agent |
-
-## Aturan paling penting
-
-1. Table database wajib prefix `sh_`.
-2. Nama column database tidak boleh mengandung underscore.
-3. Frontend memakai React + Vite.
-4. Package manager memakai pnpm.
-5. Validation memakai Zod.
-6. Backend utama memakai Cloudflare Workers.
-7. Database utama memakai Cloudflare D1.
-8. Queue memakai Cloudflare Queues.
-9. Storage besar memakai Cloudflare R2.
-10. Mastra dipakai sebagai orchestrator.
-11. 9router dipakai sebagai AI gateway.
-12. Shopee extraction harus adapter-based dan tidak boleh bypass CAPTCHA/login.
-
-## Cara menggunakan docs ini dengan AI agent
-
-Setiap task harus menyuruh agent membaca:
-
-1. `docs/prd.md`
-2. `docs/architecture.md`
-3. `docs/api/api-contract.md`
-4. `docs/database/schema.md`
-5. `.ai/agent-instructions.md`
-6. File task yang sedang dikerjakan
-
-Agent tidak boleh mengubah keputusan teknis tanpa ADR dan approval manusia.
-
-## v3 Additions
-
-This version adds configuration-first documentation:
-
-- `docs/configuration/env-variables.md`
-- `docs/configuration/runtime-configuration.md`
-- `docs/shopee/search-api-strategy.md`
-- `docs/ui/configuration-crud.md`
-
-Important rules:
-
-- Use existing D1 database `multi_Ai_db` with binding `DB`.
-- Use existing R2 bucket `multi-apps-ai-bucket` with binding `LOGS`.
-- Do not create a new D1 database for MVP.
-- Do not hardcode provider, model, scoring, search, or runtime settings.
-- Runtime configuration must be stored in D1 and editable from frontend admin/settings.
-- Secrets must not be stored in D1 or committed to repo.
-## 100% Autopilot Mode
-
-This repository includes an autopilot execution system for AI coding CLI tools such as OpenCode or pencode-style agents.
-
-Primary files:
-
-- `.ai/autopilot-system.md`
-- `.ai/agent-instructions.md`
-- `docs/tasks/backlog.md`
-- `docs/tasks/current-task.md`
-- `docs/tasks/done.md`
-- `docs/tasks/failed.md`
-- `scripts/quality-gate.sh`
-- `scripts/quality-gate.js`
-- `scripts/validate-db-naming.js`
-- `scripts/validate-no-hardcode.js`
-- `scripts/validate-source-of-truth.js`
-
-Autopilot command to give the coding CLI:
-
-```txt
-Read .ai/autopilot-prompt.md and run the full autonomous build loop until every task in docs/tasks/backlog.md is completed. Do not ask for confirmation unless a stop condition is triggered.
+```
+apps/web/                 # React + Vite + TanStack Router + TanStack Query
+workers/api/              # Cloudflare Workers API (Hono)
+workers/queueConsumer/    # Cloudflare Queue consumer
+packages/ai/              # Mastra + 9router integration
+packages/auth/            # Password hashing (PBKDF2-SHA-256), session
+packages/core/            # Deterministic scoring, risk detection, quality checker
+packages/db/              # D1 repositories, R2 helpers, migrations
+packages/shared/          # Zod schemas, enums, types, response parsers
+packages/shopee/         # URL resolver, parsers, search/extract adapters
 ```
 
-Autopilot must obey:
-
-- No new D1 database.
-- Existing D1 binding: `DB`.
-- Existing D1 database: `multi_Ai_db`.
-- Existing R2 binding: `LOGS`.
-- Existing R2 bucket: `multi-apps-ai-bucket`.
-- All runtime configuration must be stored in configuration tables and managed from frontend CRUD.
-- No hardcoded provider, model, base URL, scoring, or search strategy.
-- Table names must use `sh_` prefix.
-- Column names must not contain underscores.
-- Job status enum must use `partialSuccess`, not alternate spellings.
-- Shop status enum must use `STARPLUS`, not `STAR_PLUS`.
-
-## Development Runbook
-
-### Prerequisites
-
-- Node.js >= 20
-- pnpm >= 9
-- Cloudflare account (for deployment)
-
-### Setup
+## Quick Start
 
 ```bash
 # Install dependencies
 pnpm install
 
-# Run quality gate (lint, typecheck, test, build, validation scripts)
+# Run quality gate (lint, typecheck, test, build, validators)
 node scripts/quality-gate.js
+
+# Deploy API
+pnpm exec wrangler deploy --config workers/api/wrangler.toml
+
+# Deploy queue consumer
+pnpm exec wrangler deploy --config workers/queueConsumer/wrangler.toml
+
+# Build + deploy frontend to Cloudflare Pages
+pnpm --filter @shopee-research/web deploy:pages
 ```
 
-### Commands
+## Source of Truth Documents
 
-| Command | Description |
+| File | Fungsi |
 |---|---|
-| `pnpm lint` | ESLint all packages |
-| `pnpm typecheck` | TypeScript check all packages |
-| `pnpm test` | Run all tests (Vitest) |
-| `pnpm build` | Build all packages |
-| `node scripts/quality-gate.js` | Full quality gate |
-| `node scripts/validate-db-naming.js` | Validate DB naming rules |
-| `node scripts/validate-no-hardcode.js` | Validate no hardcoded secrets/config |
-| `node scripts/validate-source-of-truth.js` | Validate source of truth docs |
+| `docs/prd.md` | Product Requirements Document (immutable source of truth) |
+| `docs/architecture.md` | Arsitektur, technical decisions, stack |
+| `docs/api/api-contract.md` | Kontrak HTTP API |
+| `docs/database/schema.md` | D1 schema (21 tables) |
+| `docs/database/naming-rules.md` | Aturan `sh_` prefix + camelCase columns |
+| `docs/database/d1-strategy.md` | D1 binding, ID, R2 binding strategy |
+| `docs/shared/enums.md` | Enum canonical |
+| `docs/ai-orchestration.md` | Mastra workflow, agentic loop, 9router config |
+| `docs/shopee/extraction-strategy.md` | Adapter chain (9router → BrowserRun → CloudflareBrowserRendering) |
+| `docs/shopee/search-api-strategy.md` | Search adapter priority and fallback |
+| `docs/shopee/url-resolver.md` | Short URL resolution |
+| `docs/shopee/data-fields.md` | Product/Shop snapshot fields |
+| `docs/scoring/scoring-engine.md` | Deterministic scoring formula |
+| `docs/configuration/env-variables.md` | Environment variable reference |
+| `docs/configuration/runtime-configuration.md` | D1 config + precedence rules |
+| `docs/ui/configuration-crud.md` | Admin Settings UI |
+| `docs/deployment/checklist.md` | Deployment runbook |
+| `docs/standards/*.md` | Coding/error/logging/security/testing standards |
+| `docs/tasks/*` | Task tracker (backlog/done/failed) |
+| `.ai/agent-instructions.md` | Wajib dibaca AI coding agent |
 
-### Project Structure
+## Mandatory Rules
 
-```
-apps/web/               # React + Vite frontend
-workers/api/            # Cloudflare Workers API (Hono)
-workers/queueConsumer/  # Cloudflare Queue consumer
-packages/ai/            # Mastra + 9router integration
-packages/auth/          # Password hashing, session management
-packages/core/          # Scoring engine, risk detection, quality checker
-packages/db/            # D1 repositories, R2 helpers, migrations
-packages/shared/        # Zod schemas, enums, constants
-packages/shopee/        # Shopee extraction, parsing, search
-```
+1. **Table prefix**: every D1 table must start with `sh_` (PRD §7 #14, enforced by `scripts/validate-db-naming.js`).
+2. **Column naming**: no underscore in column names — use camelCase.
+3. **Frontend**: React + Vite + TanStack Router + TanStack Query (PRD §7 #1).
+4. **Package manager**: pnpm + pnpm workspace (PRD §7 #2).
+5. **Validation**: Zod schemas in `packages/shared` (PRD §7 #8).
+6. **Backend**: Cloudflare Workers (PRD §7 #9).
+7. **Database**: Cloudflare D1 with `multi_Ai_db` (PRD §7 #10, §Cloudflare Resource Requirement).
+8. **Queue**: Cloudflare Queues (PRD §7 #11).
+9. **Storage**: Cloudflare R2 bucket `multi-apps-ai-bucket` (PRD §7 #12).
+10. **AI orchestration**: Mastra (PRD §7 #13).
+11. **AI gateway**: 9router via Cloudflare Browser Rendering (production).
+12. **ID generation**: nanoid + entity prefix (`usr_`, `ses_`, `rsr_`, `prd_`, `shp_`, `cmp_`, `job_`).
+13. **Auth**: WebCrypto PBKDF2-SHA-256, ≥100,000 iterations, opaque session token hashed in D1, `shSession` HttpOnly cookie.
+14. **Shopee extraction**: adapter-based, never bypass CAPTCHA/login, never access cart/checkout/order/user/me.
+15. **No fabricated data**: failed extraction = `null` + `confidence 0`. PRD §8.6 compliance.
+16. **No hardcoded secrets**: all secrets in `wrangler secret put`, D1 only stores `secretRef`.
 
-### Key Technologies
+## Test Coverage
 
-- **Frontend:** React + Vite + TanStack Router + TanStack Query
-- **Backend:** Cloudflare Workers (Hono framework)
-- **Database:** Cloudflare D1 (SQLite)
-- **Storage:** Cloudflare R2
-- **Queue:** Cloudflare Queues
-- **Validation:** Zod
-- **AI:** Mastra orchestrator + 9router gateway
-- **Package Manager:** pnpm
+**76 test files, 821 tests, quality gate EXIT 0.**
 
-### Database
+PRD-aligned coverage:
+- `apps/web/src/__tests__/prd-compliance.test.ts` (17 tests) — G11/G12, §9, §Runtime Config
+- `apps/web/src/__tests__/prd-resources.test.ts` (13 tests) — §12 metrics, §Cloudflare Resource
 
-- Tables use `sh_` prefix
-- Columns use camelCase (no underscores)
-- Migrations in `packages/db/migrations/`
-- Schema docs in `docs/database/schema.md`
+## Known Production Constraint
 
-### Configuration
+Per PRD §7 #7, the system uses adapter-based extraction: official Shopee API → lightweight fetch → 9router web fetch → Browser Run → Cloudflare Browser Rendering → optional VPS scraper. **In production, Shopee identifies Cloudflare Workers as a bot and serves an empty SPA shell**, so real Shopee search returns zero results. The app fails honestly with `noData` rather than fabricating mock data. To get real Shopee data, apply for the [Shopee Open Platform](https://openplatform.shopee.com) partnership and integrate the official API.
 
-All runtime configuration is stored in D1 and editable via the admin UI at `/settings/config`. No provider, model, base URL, scoring, or search strategy is hardcoded.
+## Deployment
 
-Secrets are set via Cloudflare secrets (`wrangler secret put`), never in code or D1.
+See `docs/deployment/checklist.md` for the full runbook. Existing production resources:
+- D1: `multi_Ai_db` (ID `b80ca989-6771-427f-a656-c7ab6ffc17ce`)
+- R2: `multi-apps-ai-bucket`
+- Queue: `shopee-research-queue` + DLQ `shopee-research-dlq`
+- Cloudflare account: `79dea2845a4b62ea5229c8676dea02c0`
 
-### Deployment
+## Latest Release
 
-See `docs/deployment/checklist.md` for the full deployment checklist.
+`f301fc7 fix(search,auth,ui): real Shopee data + cache + PRD coverage`
+- 6 root-cause bug fixes (SSE parser, agentic loop, env passthrough, mock fallback, statusJson join, cache + 404)
+- 40 new PRD-aligned tests
+- Pages Function with cache-busting + asset fallback

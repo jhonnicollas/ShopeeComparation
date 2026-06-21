@@ -53,14 +53,14 @@ Admin/settings frontend harus memiliki menu:
 | providerKey | modelKey | displayName | usageType | isDefault | isEnabled |
 |---|---|---|---|---:|---:|
 | `9router` | `primary` | `Primary Model` | `reasoning` | true | true |
-| `9router` | `fast` | `Fast Model` | `extraction` | false | true |
+| `9router` | `extraction` | `Extraction Model` | `extraction` | true | true |
 | `9router` | `fallback` | `Fallback Model` | `fallback` | false | true |
 
-`modelName` harus bisa diubah dari frontend karena model yang tersedia di 9router dapat berubah.
+`modelName` harus bisa diubah dari frontend karena model yang tersedia di 9router dapat berubah. The `extraction` model is used by the Cloudflare Browser Rendering agentic loop (PRD §Runtime Configuration: "Frontend admin harus bisa … Mengubah model primary, fast, fallback").
 
 ## Test Console
 
-Frontend harus menyediakan tombol test:
+Frontend harus menyediakan tombol test (PRD §Required Configuration UI):
 
 - Test provider connection.
 - Test model response.
@@ -68,12 +68,7 @@ Frontend harus menyediakan tombol test:
 - Test timeout behavior.
 - Test fallback model.
 
-Test result disimpan ke D1:
-
-- lastTestStatus
-- lastTestAt
-- lastTestMessage
-- lastLatencyMs
+Test result disimpan ke D1 di kolom `lastTestStatus`, `lastTestAt`, `lastTestMessage`, plus `lastLatencyMs` (on AI model row).
 
 ## Runtime Config Loading
 

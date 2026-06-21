@@ -1,14 +1,18 @@
 # API Contract
 
+**Base URL:** `https://shopee-product-research-api.indiehomesungairaya.workers.dev` (production) — proxied from frontend at `https://shopee-product-research-web.pages.dev/api/*` via Pages Function.
+
+All routes are mounted on the API Worker under `/api` prefix. Frontend calls `/api/*` which is rewritten by `apps/web/functions/_worker.js` to the API Worker.
+
 ## API Principles
 
-- All API requests and responses must be validated with Zod.
-- All field names use camelCase.
-- API must not expose internal stacktrace.
-- All protected endpoints require session cookie.
-- Heavy operations must return jobId, not wait synchronously.
-- Enum values must follow `docs/shared/enums.md`.
-- API errors must use the standard error shape below.
+- All API requests and responses must be validated with Zod (`packages/shared/src/schemas`).
+- All field names use camelCase (PRD §7 #14).
+- API must not expose internal stacktrace. Standard error shape below.
+- All protected endpoints require session cookie (`shSession`, HttpOnly).
+- Heavy operations return `202 Accepted` with `jobId` and `researchSessionId`, frontend polls status (PRD §7 #6 polling, not WebSocket).
+- Enum values follow `docs/shared/enums.md` and `packages/shared/src/constants/enums.ts`.
+- HTTP status codes: `200` OK, `202` Accepted (async), `400` bad input, `401` unauth, `403` forbidden, `404` not found, `409` conflict, `429` rate-limited, `500` internal.
 
 ## Standard Error Response
 
@@ -24,26 +28,9 @@
 
 Rules:
 
-- `code` must be one of the error codes in `docs/shared/enums.md`.
-- `message` is user-facing and must not contain stacktrace or secrets.
-- `details` may contain safe validation details in development and safe field-level hints in production.
-
-## Field Evidence Shape
-
-When an endpoint returns detailed extracted product, shop, weight, feature, resolver, or report data, it may include evidence rows:
-
-```json
-{
-  "ownerType": "product",
-  "ownerId": "prd_xxx",
-  "fieldName": "priceMin",
-  "valueText": "125000",
-  "source": "productDetailApi",
-  "confidence": 0.92,
-  "status": "available",
-  "rawSnapshotR2Key": "raw/product/prd_xxx.json"
-}
-```
+- `code` is one of `errorCode` enum values (`packages/shared/src/constants/enums.ts`).
+- `message` is user-facing. Never contains stacktrace or secrets.
+- `details` may contain safe validation field-level hints.
 
 ## Auth API
 
@@ -52,73 +39,44 @@ When an endpoint returns detailed extracted product, shop, weight, feature, reso
 Request:
 
 ```json
-{
-  "email": "user@example.com",
-  "password": "secretPassword",
-  "name": "Jhon"
-}
+{ "email": "user@example.com", "password": "secretPassword123", "name": "Jhon" }
 ```
 
-Response:
+Response 200:
 
 ```json
-{
-  "user": {
-    "id": "usr_xxx",
-    "email": "user@example.com",
-    "name": "Jhon",
-    "role": "user"
-  }
-}
+{ "user": { "id": "usr_xxx", "email": "user@example.com", "name": "Jhon", "role": "user" } }
 ```
+
+Sets `shSession` HttpOnly cookie.
 
 ### POST /api/auth/login
 
 Request:
 
 ```json
-{
-  "email": "user@example.com",
-  "password": "secretPassword"
-}
+{ "email": "user@example.com", "password": "secretPassword123" }
 ```
 
-Response:
+Response 200:
 
 ```json
-{
-  "user": {
-    "id": "usr_xxx",
-    "email": "user@example.com",
-    "role": "user"
-  }
-}
+{ "user": { "id": "usr_xxx", "email": "user@example.com", "role": "user" } }
 ```
 
 ### POST /api/auth/logout
 
-Response:
-
-```json
-{
-  "success": true
-}
-```
+Response 200: `{ "success": true }`. Revokes session in D1, clears cookie.
 
 ### GET /api/auth/me
 
-Response:
+Response 200:
 
 ```json
-{
-  "user": {
-    "id": "usr_xxx",
-    "email": "user@example.com",
-    "name": "Jhon",
-    "role": "user"
-  }
-}
+{ "user": { "id": "usr_xxx", "email": "user@example.com", "name": "Jhon", "role": "user" } }
 ```
+
+Returns 401 if no valid session.
 
 ## Research API
 
@@ -135,15 +93,13 @@ Request:
 }
 ```
 
-Response:
+Response 202:
 
 ```json
-{
-  "researchSessionId": "rsr_xxx",
-  "jobId": "job_xxx",
-  "status": "pending"
-}
+{ "researchSessionId": "rsr_xxx", "jobId": "job_xxx", "status": "pending" }
 ```
+
+Validation: 1–5 links (PRD §8.4). Dedupes duplicates. Rejects non-Shopee URLs. Accepts both full Shopee URLs and `id.shp.ee` short URLs.
 
 ### POST /api/research/keyword-search
 
@@ -161,19 +117,19 @@ Request:
 }
 ```
 
-Response:
+Response 202:
 
 ```json
-{
-  "researchSessionId": "rsr_xxx",
-  "jobId": "job_xxx",
-  "status": "pending"
-}
+{ "researchSessionId": "rsr_xxx", "jobId": "job_xxx", "status": "pending" }
 ```
 
-### GET /api/research
+Defaults: `shippedFrom="DKI Jakarta"`, `limit=10` (PRD §8.3).
 
-Response:
+### GET /api/research/
+
+List research sessions for current user (most recent first).
+
+Response 200:
 
 ```json
 {
@@ -190,22 +146,33 @@ Response:
 }
 ```
 
-### GET /api/research/:id
+### GET /api/research/sessions/:id
 
-Response:
+Get a single research session by ID.
+
+Response 200:
 
 ```json
 {
-  "researchSession": {},
-  "comparison": {},
-  "items": [],
-  "report": {}
+  "researchSessionId": "rsr_xxx",
+  "mode": "keywordSearch",
+  "keyword": "tensimeter",
+  "shippedFrom": "DKI Jakarta",
+  "status": "completed",
+  "bestProductId": "prd_xxx",
+  "totalProducts": 5,
+  "completedProducts": 5,
+  "errorMessage": null
 }
 ```
 
-### GET /api/research/:id/status
+Returns 404 `SESSION_NOT_FOUND` if not found, 403 if not owner.
 
-Response:
+### GET /api/research/sessions/:id/status
+
+Lightweight status endpoint for polling.
+
+Response 200:
 
 ```json
 {
@@ -217,6 +184,107 @@ Response:
 }
 ```
 
+### GET /api/research/jobs/:id
+
+Full job status.
+
+Response 200:
+
+```json
+{
+  "jobId": "job_xxx",
+  "researchSessionId": "rsr_xxx",
+  "type": "compareLinks",
+  "status": "processing",
+  "progressCurrent": 3,
+  "progressTotal": 5,
+  "currentStep": "extracting",
+  "errorMessage": null
+}
+```
+
+Job status enum: `pending | processing | completed | failed | partialSuccess` (PRD §Acceptance — Job Progress).
+
+### GET /api/research/jobs/:id/logs
+
+Response 200:
+
+```json
+{
+  "items": [
+    { "level": "info", "message": "Resolved short URL", "createdAt": "2026-06-17T00:00:00.000Z" }
+  ]
+}
+```
+
+### GET /api/research/comparisons/by-session/:sessionId
+
+Returns the comparison + ranked items + product + shop details for a session.
+
+Response 200:
+
+```json
+{
+  "comparison": { "id": "cmp_xxx", "researchSessionId": "rsr_xxx", "bestProductId": "prd_xxx" },
+  "items": [
+    {
+      "id": "cmpitm_xxx",
+      "rank": 1,
+      "productId": "prd_xxx",
+      "shopId": "shp_xxx",
+      "finalScore": 0.85,
+      "ratingScore": 0.95,
+      "reviewCountScore": 0.7,
+      "soldCountScore": 0.8,
+      "priceScore": 0.75,
+      "shopTrustScore": 0.9,
+      "responseRateScore": 0.95,
+      "featureMatchScore": 0.6,
+      "riskPenalty": 0,
+      "prosJson": ["Tinggi rating", "Respon cepat"],
+      "consJson": ["Harga di atas rata-rata"],
+      "riskJson": []
+    }
+  ],
+  "products": { "prd_xxx": { "id": "prd_xxx", "title": "...", "priceMin": 125000, "rating": 4.8, "weight": {...} } },
+  "shops": { "shp_xxx": { "id": "shp_xxx", "name": "...", "primaryStatus": "MALL", "rating": 4.9, "statusJson": ["MALL"] } }
+}
+```
+
+`statusJson` is parsed as `string[]` server-side; never raw JSON string.
+
+### GET /api/research/comparisons/:comparisonId/ai-report
+
+Response 200:
+
+```json
+{
+  "report": {
+    "bestProductId": "prd_xxx",
+    "bestProductName": "...",
+    "ranking": [{ "productId": "prd_xxx", "rank": 1, "reason": "..." }],
+    "valueForMoneyProductId": "prd_xxx",
+    "safestProductId": "prd_xxx",
+    "riskiestProductId": "prd_yyy",
+    "prosCons": [{ "productId": "prd_xxx", "pros": ["..."], "cons": ["..."] }],
+    "redFlags": [],
+    "confidence": 0.85,
+    "missingDataNotes": ["product weight not found"]
+  },
+  "rawText": null
+}
+```
+
+AI output is Zod-validated against the report schema before persistence (PRD §8.10).
+
+### GET /api/research/products/:id
+
+Single product by internal ID.
+
+### GET /api/research/shops/:id
+
+Single shop by internal ID. Returns shop with `statusJson` parsed as `string[]`.
+
 ## Shopee API
 
 ### POST /api/shopee/resolve-url
@@ -224,12 +292,10 @@ Response:
 Request:
 
 ```json
-{
-  "url": "https://id.shp.ee/kf239Muk"
-}
+{ "url": "https://id.shp.ee/kf239Muk" }
 ```
 
-Response:
+Response 200:
 
 ```json
 {
@@ -243,89 +309,40 @@ Response:
 }
 ```
 
-## Jobs API
-
-### GET /api/jobs/:id
-
-Response:
-
-```json
-{
-  "id": "job_xxx",
-  "status": "processing",
-  "progressCurrent": 3,
-  "progressTotal": 5,
-  "currentStep": "fetchingProduct",
-  "errorMessage": null
-}
-```
-
-### GET /api/jobs/:id/logs
-
-Response:
-
-```json
-{
-  "items": [
-    {
-      "level": "info",
-      "message": "Resolved short URL",
-      "createdAt": "2026-06-17T00:00:00.000Z"
-    }
-  ]
-}
-```
+`resolveMethod` enum: `direct | redirect | webFetch | browserRun | manual`. `status`: `resolved | failed`. On failure, `errorMessage` field is set and IDs are null (PRD §8.5 — never crash on URL failure).
 
 ## Configuration API
 
-Configuration APIs are admin-only unless stated otherwise.
+Configuration APIs require admin role. CRUD endpoints under `/api/admin/configs/*`:
 
-### App Configs
-
-```txt
-GET    /api/admin/configs/app
-POST   /api/admin/configs/app
-GET    /api/admin/configs/app/:id
-PATCH  /api/admin/configs/app/:id
-DELETE /api/admin/configs/app/:id
 ```
+GET    /api/admin/configs/apps
+POST   /api/admin/configs/apps
+GET    /api/admin/configs/apps/:id
+PATCH  /api/admin/configs/apps/:id
+DELETE /api/admin/configs/apps/:id
 
-### AI Provider Configs
-
-```txt
 GET    /api/admin/configs/ai-providers
 POST   /api/admin/configs/ai-providers
 GET    /api/admin/configs/ai-providers/:id
 PATCH  /api/admin/configs/ai-providers/:id
 DELETE /api/admin/configs/ai-providers/:id
 POST   /api/admin/configs/ai-providers/:id/test
-```
 
-### AI Model Configs
-
-```txt
 GET    /api/admin/configs/ai-models
 POST   /api/admin/configs/ai-models
 GET    /api/admin/configs/ai-models/:id
 PATCH  /api/admin/configs/ai-models/:id
 DELETE /api/admin/configs/ai-models/:id
 POST   /api/admin/configs/ai-models/:id/test
-```
 
-### Search Provider Configs
-
-```txt
 GET    /api/admin/configs/search-providers
 POST   /api/admin/configs/search-providers
 GET    /api/admin/configs/search-providers/:id
 PATCH  /api/admin/configs/search-providers/:id
 DELETE /api/admin/configs/search-providers/:id
 POST   /api/admin/configs/search-providers/:id/test
-```
 
-### Scoring Configs
-
-```txt
 GET    /api/admin/configs/scoring
 POST   /api/admin/configs/scoring
 GET    /api/admin/configs/scoring/:id
@@ -335,24 +352,22 @@ DELETE /api/admin/configs/scoring/:id
 
 ## Public Runtime Config API
 
-Frontend may read safe public config only.
-
-```txt
-GET /api/config/public
+```
+GET /api/config/public         (no auth)
+GET /api/config/apps/public    (no auth)
 ```
 
-This endpoint must not return secrets or `secretRef` values.
+These endpoints must NOT return secrets or `secretRef` values. Only safe public config (e.g. `app.defaultShippedFrom`, `app.maxCompareLinks`).
 
-## AI Model Test Request
+## AI Model Test
+
+Request:
 
 ```json
-{
-  "testPrompt": "Return JSON only: {\"ok\": true}",
-  "expectJson": true
-}
+{ "testPrompt": "Return JSON only: {\"ok\": true}", "expectJson": true }
 ```
 
-## AI Model Test Response
+Response:
 
 ```json
 {
@@ -362,3 +377,25 @@ This endpoint must not return secrets or `secretRef` values.
   "message": "Model test succeeded"
 }
 ```
+
+## Admin Jobs
+
+```
+GET /api/admin/jobs            (list all jobs)
+GET /api/admin/jobs/:id        (single job)
+GET /api/admin/jobs/:id/logs   (job logs)
+```
+
+Requires admin role.
+
+## Pages Function Proxy
+
+`apps/web/functions/_worker.js` runs in Cloudflare Pages. It:
+
+- Proxies `https://shopee-product-research-web.pages.dev/api/*` → `https://shopee-product-research-api.indiehomesungairaya.workers.dev/api/*`
+- Adds `Access-Control-Allow-Origin: https://shopee-product-research-web.pages.dev` to all responses
+- Strips `Host` header and sets `Origin: https://shopee-product-research-web.pages.dev` on upstream requests
+- Serves static assets from the Pages deployment via `env.ASSETS.fetch(request)`
+- Sets `Cache-Control: no-store, no-cache, must-revalidate` on all responses (PRD-friendly: frontend never sees stale API responses)
+
+Without this Pages Function, the deployed frontend has no `/api/*` proxy and returns 404 on any API call.

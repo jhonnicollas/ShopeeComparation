@@ -2,52 +2,100 @@
 
 ## Cloudflare Services
 
-| Service | Usage |
-|---|---|
-| Cloudflare Pages | Host React + Vite frontend |
-| Cloudflare Workers | Backend API and queue consumers |
-| Cloudflare D1 | Structured relational data |
-| Cloudflare R2 | Raw snapshots and large artifacts |
-| Cloudflare Queues | Async job execution |
-| Cloudflare Browser Run | Optional browser rendering fallback |
+| Service | Usage | Production Binding |
+|---|---|---|
+| Cloudflare Pages | Host React + Vite frontend (SPA) + Pages Functions for `/api/*` proxy | `shopee-product-research-web.pages.dev` |
+| Cloudflare Workers | Backend API (Hono) and queue consumers | `shopee-product-research-api`, `shopee-product-research-queue-consumer` |
+| Cloudflare D1 | Structured relational data (21 tables, all `sh_` prefix) | `DB` → `multi_Ai_db` (id `b80ca989-6771-427f-a656-c7ab6ffc17ce`) |
+| Cloudflare R2 | Raw snapshots and large artifacts (HTML, JSON, AI raw) | `LOGS` → `multi-apps-ai-bucket` |
+| Cloudflare Queues | Async job execution | `RESEARCH_QUEUE` → `shopee-research-queue` + DLQ `shopee-research-dlq` |
+| Cloudflare Browser Run | Primary Shopee rendering (headless Chromium via REST API) | Used via `packages/shopee/src/adapters/cloudflareBrowserRenderingAdapter.ts` |
 
 ## Request Flow
 
 ### Compare Links
 
 ```txt
-User submits 1–5 links
-→ API Worker validates auth and input
-→ API Worker creates sh_researchSessions row
-→ API Worker creates sh_jobs row
-→ API Worker sends message to Cloudflare Queues
-→ Queue Consumer runs Mastra workflow
-→ Workflow resolves URLs and extracts data
-→ Structured data saved to D1
-→ Raw artifacts saved to R2
-→ AI report generated via 9router
-→ Job marked completed or partialSuccess
-→ Frontend polls job status and displays result
+User submits 1–5 links (browser)
+  ↓
+Pages Function (_worker.js) proxies /api/* to API Worker
+  ↓
+API Worker (Hono) validates session, input via Zod
+  ↓
+API Worker creates sh_researchSessions + sh_jobs rows
+  ↓
+API Worker enqueues message to RESEARCH_QUEUE → returns 202
+  ↓
+Queue Consumer receives message
+  ↓
+loadSearchConfig(env.DB) — reads from sh_searchProviderConfigs
+  ↓
+loadSearchConfig returns CLOUDFLARE_* env or webFetch fallback
+  ↓
+CloudflareBrowserRenderingAdapter / NineRouterFetchAdapter / BrowserRunAdapter
+  ↓
+For each link:
+  → resolveUrl (short URL id.shp.ee → canonical)
+  → extractProduct (Cloudflare Browser Rendering snapshot)
+  → extractShop (same)
+  ↓
+D1: sh_products, sh_shops, sh_productWeights, sh_productFeatures upsert
+R2: raw HTML/JSON snapshots via saveRawProductSnapshot
+  ↓
+packages/core: calculateProductScore + detectRisks + rankProducts
+  ↓
+packages/ai: runResearchWorkflow via Mastra (3 agents)
+  → RecommendationWriter
+  → RiskAnalyzer
+  → DataQualityAgent
+  ↓
+9router via 9router client → AI report JSON (Zod-validated)
+  ↓
+sh_aiReports row + R2 rawResponseR2Key
+  ↓
+sh_comparisons + sh_comparisonItems (rank 1..N)
+  ↓
+sh_jobs.status = completed | partialSuccess | failed
+  ↓
+Frontend polls /api/research/jobs/:id every 3s → /result/:sessionId
 ```
 
 ### Keyword Search
 
 ```txt
-User submits keyword
-→ API Worker validates auth and input
-→ API Worker creates research session and job
-→ Queue Consumer executes keyword workflow
-→ Shopee search adapter collects candidates
-→ Candidates filtered by DKI Jakarta
-→ Product and shop data enriched
-→ Scoring engine ranks top 10
-→ Mastra generates AI report
-→ Result saved to D1/R2
+User submits keyword + shippedFrom + limit (browser)
+  ↓
+API Worker validates input (Zod)
+  ↓
+Queue Consumer picks up message
+  ↓
+loadSearchConfig + CLOUDFLARE_* env check
+  ↓
+CloudflareBrowserRenderingAdapter.searchProducts(keyword)
+  → Renders https://shopee.co.id/search?keyword=...
+  → Cheerio extracts product URLs from rendered HTML
+  → Returns SearchResultCandidate[]
+  ↓
+[If 0 candidates returned by real fetch — job fails with noData]
+  ↓
+Dedupe by shopId:itemId
+  ↓
+For each candidate: extractProduct + extractShop via adapter
+  ↓
+shippedFromFilter (DKI Jakarta priority)
+  ↓
+candidateEnrichmentJob (parallel, bounded concurrency)
+  ↓
+topTenRanking
+  ↓
+scoring + risk + AI report (same as Compare Links)
+  ↓
+Result persisted to D1, frontend polls
 ```
 
 ## Runtime Boundaries
 
-Frontend must only call internal API.
+Frontend must only call internal API (proxied by Pages Function).
 
 API Worker must not contain parsing logic. It calls services.
 
@@ -56,140 +104,203 @@ Shopee extraction must live in `packages/shopee`.
 Scoring must live in `packages/core`.
 
 AI prompt and workflow must live in `packages/ai`.
-# Data Flow
 
-## Compare Links Data Flow
+D1 schema must live in `packages/db/migrations`.
+
+## Data Flow
+
+### Compare Links Data Flow
 
 ```txt
 Input links
-→ Zod validation
-→ research session row
-→ job row
-→ queue message
-→ URL resolver
-→ product extractor
-→ shop extractor
-→ weight extractor
-→ normalizer
-→ scoring engine
-→ risk analyzer
-→ Mastra report workflow
-→ D1 structured result
-→ R2 raw artifacts
-→ result page
+  ↓
+Zod validation (researchSchema)
+  ↓
+research session row (sh_researchSessions)
+  ↓
+job row (sh_jobs, status=pending)
+  ↓
+queue message (QueueMessage JSON)
+  ↓
+URL resolver (id.shp.ee → canonical)
+  ↓
+product extractor (CloudflareBrowserRenderingAdapter)
+  ↓
+shop extractor (same)
+  ↓
+weight extractor (regex/AI from HTML)
+  ↓
+normalizer (shop status enum)
+  ↓
+scoring engine (calculateProductScore)
+  ↓
+risk analyzer (detectRisks)
+  ↓
+Mastra report workflow (RecommendationWriter + RiskAnalyzer + DataQualityAgent)
+  ↓
+D1 structured result (sh_comparisons, sh_comparisonItems, sh_aiReports)
+  ↓
+R2 raw artifacts (rawSnapshotR2Key, rawResponseR2Key)
+  ↓
+result page (apps/web/src/pages/ResultPage.tsx)
 ```
 
-## Keyword Search Data Flow
+### Keyword Search Data Flow
 
 ```txt
 Input keyword
-→ Zod validation
-→ research session row
-→ job row
-→ queue message
-→ query planner
-→ search adapter
-→ candidate collector
-→ DKI Jakarta filter
-→ product enrichment
-→ shop enrichment
-→ weight extraction
-→ scoring
-→ top 10 ranking
-→ AI report
-→ result page
+  ↓
+Zod validation
+  ↓
+research session row
+  ↓
+job row
+  ↓
+queue message
+  ↓
+loadSearchConfig (D1) → CLOUDFLARE_* env
+  ↓
+CloudflareBrowserRenderingAdapter.searchProducts
+  → Renders Shopee search page
+  → Cheerio extracts product URLs
+  → Dedupe by shopId:itemId
+  ↓
+shippedFromFilter (DKI Jakarta)
+  ↓
+candidateEnrichmentJob (extractProduct + extractShop for each)
+  ↓
+topTenRanking (rank by finalScore)
+  ↓
+AI report (Mastra workflow)
+  ↓
+result page
 ```
 
-## Data Quality Flow
+## Data Quality Invariant
 
-Every extracted field must be represented as:
-
+Every extracted field is represented as:
 ```ts
-{
-  value: unknown | null;
-  source: string | null;
-  confidence: number;
-  status: "available" | "unavailable" | "partial";
-}
+{ value: unknown | null; source: string | null; confidence: number }
 ```
 
-Missing data must not be inferred as fact.
-# Folder Structure
+Missing data stays missing — never inferred as fact. Per PRD §8.6.
+
+## Folder Structure
 
 ```txt
 shopee-product-research-ai/
   apps/
     web/
       src/
-        app/
-        pages/
-        components/
-        features/
-        lib/
-      package.json
+        app/             # router config (TanStack Router)
+        pages/           # page components (Login, Register, Compare, Result, etc.)
+        components/      # reusable components (AiReportView, RedFlagList, etc.)
+        lib/             # apiRequest, schemas, helpers
+        __tests__/       # PRD-compliance.test.ts, prd-resources.test.ts
+      functions/
+        _worker.js       # Pages Function: /api/* proxy + asset fallback
+      scripts/
+        copy-pages-function.mjs  # build-time copy of _worker.js
+      package.json       # scripts: build, deploy:pages, test
+      wrangler.toml
 
   workers/
     api/
       src/
-      wrangler.toml
+        routes/         # auth, research, shopee, config, admin
+        middleware/     # rateLimit
+        lib/            # auth, errors, nineRouter
+      wrangler.toml    # DB, LOGS, RESEARCH_QUEUE bindings
 
     queueConsumer/
       src/
-      wrangler.toml
-
-    mastra/
-      src/
-      wrangler.toml
+        index.ts        # processQueueBatch, env spreading
+      wrangler.toml    # queue consumer config
 
   packages/
     shared/
       src/
-        types/
-        schemas/
-        constants/
-        utils/
+        types/          # ShopSnapshot, ProductSnapshot, etc.
+        schemas/        # Zod schemas (researchSchema, queueMessageSchema)
+        constants/      # enums.ts (jobStatus, shopStatus, aiModelUsageType, etc.)
+        utils/          # responseParser, assertNever
 
     db/
-      migrations/
+      migrations/      # 0001_initial_schema.sql ... 0004_ai_reports_unique.sql
       src/
-        queries/
-        repositories/
+        repositories/   # products-shops-items, configs, aiReports, etc.
+        aiResponseStorage.ts
+        queue.ts
+        r2.ts
 
     core/
       src/
-        scoring/
-        comparison/
-        normalization/
-        risk/
+        scoring/        # engine, breakdown, ranking
+        risk/           # engine
+        quality/        # data quality checker
 
     shopee/
       src/
-        resolver/
-        extractor/
-        parser/
-        adapters/
-        fixtures/
+        adapters/       # nineRouterFetchAdapter, browserRunAdapter, cloudflareBrowserRenderingAdapter
+        resolver/       # urlParser, resolveUrl, webFetchAdapter, browserRunAdapter
+        parser/         # productParser, shopParser, weightExtractor, featureExtractor
+        contracts/      # products, shops Zod schemas
+        extractors/     # mockExtractor, fallbackExtractor, snapshotStorage
+        collectors/     # candidateCollector
+        filters/        # shippedFromFilter
+        jobs/           # candidateEnrichmentJob, topTenRanking
+        fixtures/       # products, shops (test-only)
 
     ai/
       src/
-        mastra/
-        agents/
-        workflows/
-        prompts/
-        9router/
+        mastra/         # researchWorkflow.ts
+        agents/         # recommendationWriter, riskAnalyzer, dataQualityAgent
+        workflows/      # runner.ts
+        nineRouter/     # client.ts (AI gateway via 9router)
+        jobProcessor.ts # main entry point called by queue consumer
+        retry.ts
+        partialSuccess.ts
+
+    auth/
+      src/
+        password.ts     # PBKDF2-SHA-256, 100000 iterations
+        session.ts      # opaque session token, hash in D1
+        validation.ts
 
   docs/
+    prd.md              # immutable source of truth
+    architecture.md
+    api/api-contract.md
+    database/           # schema, naming-rules, d1-strategy
+    shared/enums.md
+    ai-orchestration.md
+    shopee/             # extraction-strategy, search-api-strategy, url-resolver, data-fields
+    scoring/scoring-engine.md
+    configuration/      # env-variables, runtime-configuration
+    ui/configuration-crud.md
+    deployment/checklist.md
+    standards/          # coding, error, logging, security, testing
+    tasks/              # backlog, done, failed, contract
+
   .ai/
+    agent-instructions.md
+    autopilot-system.md
 ```
 
 ## Rules
 
 - `apps/web` cannot import from `workers`.
-- `apps/web` can import `packages/shared` only.
-- `workers/api` can import `packages/shared`, `packages/db`, `packages/core`, `packages/shopee`, and `packages/ai`.
+- `apps/web` can import `packages/shared` and `packages/core` only.
+- `workers/api` and `workers/queueConsumer` can import `packages/*`.
 - Shopee-specific logic must not exist outside `packages/shopee`.
 - AI prompt logic must not exist outside `packages/ai`.
 - Scoring logic must not exist outside `packages/core`.
+
+## Pages Function vs Mastra Worker
+
+- `apps/web/functions/_worker.js` is a Cloudflare Pages Function (not a separate Worker). It runs in the Pages deployment context and proxies `/api/*` to the API Worker.
+- Mastra workflow is invoked **inside the queue consumer** (not a separate Worker). The `packages/ai` package exports `processJobSync()` which is called from `workers/queueConsumer/src/index.ts`.
+- The `workers/mastra` path mentioned in earlier docs is **not deployed**. All AI workflow runs in the queue consumer for simpler infra.
 # Implementation Stack
 
 This document locks the implementation choices that were still ambiguous in the source-of-truth docs. Autopilot agents must follow this stack unless an ADR is approved by a human.

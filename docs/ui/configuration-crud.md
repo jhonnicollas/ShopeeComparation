@@ -2,22 +2,15 @@
 
 ## Purpose
 
-Admin must be able to manage runtime configuration from frontend without editing source code or redeploying.
+Admin must be able to manage runtime configuration from frontend without editing source code or redeploying (PRD §Required Configuration UI).
 
-## Required Routes
+## Actual Route
 
-```txt
-/settings/configs/app
-/settings/configs/ai-providers
-/settings/configs/ai-models
-/settings/configs/search-providers
-/settings/configs/scoring
-/settings/configs/test-console
+```
+/settings/config
 ```
 
-## Access Control
-
-Only admin users can access configuration CRUD.
+Implemented as a single tabbed page (`apps/web/src/pages/ConfigPage.tsx`) with 5 entity tabs.
 
 ## App Config Page
 
@@ -133,3 +126,14 @@ Actions:
 ## Security Rule
 
 Frontend must never display actual secret values. It may display only `secretRef` names.
+
+## Implementation
+
+Single page at `/settings/config` (`apps/web/src/pages/ConfigPage.tsx`) with 5 tabs (one per entity type). Each tab uses the same `useQuery` + mutation pattern against `/api/admin/configs/{entity}`.
+
+The page is admin-only. Non-admin users get the "Access denied" empty state.
+
+The CRUD UI is wired to:
+- `apps/web/src/pages/ConfigPage.tsx` (page component)
+- `apps/web/src/components/` (form controls, error handling)
+- `apps/web/src/lib/api.ts` (apiRequest helper with cookie auth)

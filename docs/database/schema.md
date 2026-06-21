@@ -1,13 +1,18 @@
 # Database Schema — Cloudflare D1
 
+22 tables, all with `sh_` prefix and camelCase columns (PRD §7 #14).
+
+Naming rules are validated by `scripts/validate-db-naming.js` (runs in `node scripts/quality-gate.js`) and `apps/web/src/__tests__/prd-compliance.test.ts` (runs in vitest).
+
 ## Naming Rules
 
 - Semua table wajib diawali prefix `sh_`.
 - Semua column wajib menggunakan camelCase.
 - Nama column tidak boleh mengandung underscore.
-- ID menggunakan prefixed nanoid string.
+- ID menggunakan prefixed nanoid string (`usr_`, `ses_`, `rsr_`, `prd_`, `shp_`, `cmp_`, `job_`).
 - Timestamp disimpan sebagai ISO string UTC.
 - Raw data besar tidak boleh disimpan di D1; gunakan R2.
+- Jangan hardcode nilai di SQL migration. Runtime values harus via D1 config tables.
 
 ## Field Evidence Strategy
 

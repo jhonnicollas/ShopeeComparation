@@ -28,7 +28,7 @@ app.get("/health", (c) => {
 
 export interface QueueMessageBatch {
   messages: Array<{
-    body: string;
+    body: unknown;
     ack: () => void;
     retry: () => void;
   }>;
@@ -54,15 +54,44 @@ function sanitizeError(msg: string | undefined): string {
     .slice(0, 200);
 }
 
+function parseMessageBody(body: unknown): unknown {
+  if (body === null || body === undefined) return null;
+  if (typeof body === "string") {
+    try {
+      return JSON.parse(body);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof body === "object") {
+    const wrapper = body as { body?: unknown; contentType?: unknown };
+    if (typeof wrapper.body === "string") {
+      try {
+        return JSON.parse(wrapper.body);
+      } catch {
+        return null;
+      }
+    }
+    return body;
+  }
+  return null;
+}
+
 export async function processQueueBatch(batch: QueueMessageBatch, env: Bindings): Promise<void> {
   for (const message of batch.messages) {
     let queueMessage: QueueMessage | null = null;
     try {
-      const parsed = JSON.parse(message.body);
+      console.log("[Queue] Raw message body:", JSON.stringify(message.body).slice(0, 500), "type:", typeof message.body);
+      const parsed = parseMessageBody(message.body);
+      if (!parsed || typeof parsed !== "object") {
+        console.error("[Queue] Invalid queue message body (not JSON object)");
+        message.ack();
+        continue;
+      }
       const result = queueMessageSchema.safeParse(parsed);
       if (!result.success) {
-        console.error("Invalid queue message:", result.error.issues);
-        message.retry();
+        console.error("[Queue] Invalid queue message schema:", result.error.issues, "parsed:", JSON.stringify(parsed).slice(0, 500));
+        message.ack();
         continue;
       }
       queueMessage = result.data;
@@ -139,11 +168,31 @@ export async function processQueueBatch(batch: QueueMessageBatch, env: Bindings)
               errorMessage: safeErr,
             });
           }
+        } else {
+          const fallback = parseMessageBody(message.body);
+          if (fallback && typeof fallback === "object") {
+            const researchSessionId = (fallback as { researchSessionId?: unknown }).researchSessionId;
+            if (typeof researchSessionId === "string") {
+              const job = await findLatestJobByResearchSession(env.DB, researchSessionId);
+              if (job) {
+                await updateJobStatus(env.DB, job.id, jobStatus.failed, {
+                  errorMessage: `[Queue] unparseable message: ${safeErr}`,
+                  currentStep: "failed",
+                });
+                await createJobLog(env.DB, {
+                  id: generateId("log"),
+                  jobId: job.id,
+                  level: "error",
+                  message: `[Queue] Pesan tidak bisa diparse: ${safeErr}`,
+                });
+              }
+            }
+          }
         }
       } catch (innerErr) {
         console.error("[Queue] Failed to record job failure:", innerErr);
       }
-      message.retry();
+      message.ack();
     }
   }
   void researchMode;

@@ -1,6 +1,7 @@
 name = "shopee-product-research-queue-consumer"
 main = "src/index.ts"
 compatibility_date = "2026-06-17"
+compatibility_flags = ["nodejs_compat"]
 account_id = "79dea2845a4b62ea5229c8676dea02c0"
 
 [vars]

@@ -43,7 +43,7 @@ describe("processQueueBatch", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
-  it("retries messages with invalid JSON", async () => {
+  it("acks and drops messages with invalid JSON (no retry for poison messages)", async () => {
     const mock = createMockMessage("not valid json{");
     await processQueueBatch(
       {
@@ -52,11 +52,11 @@ describe("processQueueBatch", () => {
       },
       createMockEnv()
     );
-    expect(mock.retryFn).toHaveBeenCalledTimes(1);
-    expect(mock.ackFn).not.toHaveBeenCalled();
+    expect(mock.ackFn).toHaveBeenCalledTimes(1);
+    expect(mock.retryFn).not.toHaveBeenCalled();
   });
 
-  it("retries messages that fail schema validation", async () => {
+  it("acks and drops messages that fail schema validation", async () => {
     const invalidMessage = {
       userId: "usr_123",
       researchSessionId: "rsr_456",
@@ -70,11 +70,11 @@ describe("processQueueBatch", () => {
       },
       createMockEnv()
     );
-    expect(mock.retryFn).toHaveBeenCalledTimes(1);
-    expect(mock.ackFn).not.toHaveBeenCalled();
+    expect(mock.ackFn).toHaveBeenCalledTimes(1);
+    expect(mock.retryFn).not.toHaveBeenCalled();
   });
 
-  it("retries messages with missing required fields", async () => {
+  it("acks and drops messages with missing required fields", async () => {
     const incompleteMessage = {
       userId: "usr_123",
     };
@@ -86,8 +86,8 @@ describe("processQueueBatch", () => {
       },
       createMockEnv()
     );
-    expect(mock.retryFn).toHaveBeenCalledTimes(1);
-    expect(mock.ackFn).not.toHaveBeenCalled();
+    expect(mock.ackFn).toHaveBeenCalledTimes(1);
+    expect(mock.retryFn).not.toHaveBeenCalled();
   });
 
   it("processes multiple messages independently", async () => {
@@ -99,8 +99,8 @@ describe("processQueueBatch", () => {
       },
       createMockEnv()
     );
-    expect(invalidMock.retryFn).toHaveBeenCalledTimes(1);
-    expect(invalidMock.ackFn).not.toHaveBeenCalled();
+    expect(invalidMock.ackFn).toHaveBeenCalledTimes(1);
+    expect(invalidMock.retryFn).not.toHaveBeenCalled();
   });
 
   it("handles empty batch gracefully", async () => {
@@ -167,6 +167,7 @@ describe("processQueueBatch", () => {
       createMockEnv()
     );
     expect(console.error).toHaveBeenCalled();
-    expect(mock.retryFn).toHaveBeenCalledTimes(1);
+    expect(mock.ackFn).toHaveBeenCalledTimes(1);
+    expect(mock.retryFn).not.toHaveBeenCalled();
   });
 });

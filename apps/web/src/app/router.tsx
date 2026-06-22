@@ -23,6 +23,7 @@ import { ResultPage } from "../pages/ResultPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { ShopDetailPage } from "../pages/ShopDetailPage";
 import { AdminDashboardPage } from "../pages/AdminDashboardPage";
+import { AdminUsersPage } from "../pages/AdminUsersPage";
 import { RequireAuth } from "../components/RequireAuth.js";
 import { RequireAdmin } from "../components/RequireAdmin.js";
 import { logout, useAuth } from "../lib/auth.js";
@@ -181,6 +182,16 @@ const adminRoute = createRoute({
   ),
 });
 
+const adminUsersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin/users",
+  component: () => (
+    <RequireAdmin>
+      <AdminUsersPage />
+    </RequireAdmin>
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -197,6 +208,7 @@ const routeTree = rootRoute.addChildren([
   productDetailRoute,
   shopDetailRoute,
   adminRoute,
+  adminUsersRoute,
 ]);
 
 export const router = createRouter({ routeTree });

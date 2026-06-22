@@ -75,3 +75,58 @@ export async function updateUserPassword(
     .bind(passwordHash, passwordSalt, now, userId)
     .run();
 }
+
+export interface AdminUserListItem {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  activeSessionCount: number;
+  researchSessionCount: number;
+}
+
+export async function listAllUsers(db: D1Database): Promise<AdminUserListItem[]> {
+  const usersResult = await db
+    .prepare("SELECT * FROM sh_users ORDER BY createdAt DESC")
+    .all<UserRow>();
+  const items: AdminUserListItem[] = [];
+  for (const u of usersResult.results ?? []) {
+    const [sessCount, rsCount] = await Promise.all([
+      db
+        .prepare("SELECT COUNT(*) as n FROM sh_sessions WHERE userId = ? AND revokedAt IS NULL")
+        .bind(u.id)
+        .first<{ n: number }>(),
+      db
+        .prepare("SELECT COUNT(*) as n FROM sh_researchSessions WHERE userId = ?")
+        .bind(u.id)
+        .first<{ n: number }>(),
+    ]);
+    items.push({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      status: u.status,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+      activeSessionCount: sessCount?.n ?? 0,
+      researchSessionCount: rsCount?.n ?? 0,
+    });
+  }
+  return items;
+}
+
+export async function setUserStatus(
+  db: D1Database,
+  userId: string,
+  status: "active" | "disabled"
+): Promise<void> {
+  const now = new Date().toISOString();
+  await db
+    .prepare("UPDATE sh_users SET status = ?, updatedAt = ? WHERE id = ?")
+    .bind(status, now, userId)
+    .run();
+}

@@ -541,6 +541,161 @@ researchRouter.get("/comparisons/:comparisonId/ai-report", async (c) => {
   );
 });
 
+function escapeCsvField(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const s = String(value);
+  if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+researchRouter.get("/comparisons/by-session/:sessionId/export", async (c) => {
+  const auth = await authenticate(c.env.DB, c.req.header("cookie"));
+  if (!auth.authenticated) {
+    const err = authErrorResponse(auth);
+    return c.json(err.body, err.status as 401 | 403);
+  }
+
+  const sessionId = c.req.param("sessionId");
+
+  // Validate format FIRST so we return 400 (not 404) for invalid input even
+  // when the session does not exist.
+  const format = (c.req.query("format") ?? "json").toLowerCase();
+  if (format !== "json" && format !== "csv") {
+    return c.json(
+      { error: { code: "INVALID_INPUT", message: "format must be 'json' or 'csv'", details: null } },
+      400
+    );
+  }
+
+  const session = await findResearchSessionById(c.env.DB, sessionId);
+  if (!session) {
+    return notFoundResponse(c, "SESSION_NOT_FOUND", "Session not found");
+  }
+  if (session.userId !== auth.user.userId) {
+    return forbiddenResponse(c, "Cannot access this session");
+  }
+
+  const comparison = await findComparisonBySession(c.env.DB, sessionId);
+  if (!comparison) {
+    return notFoundResponse(c, "COMPARISON_NOT_FOUND", "Comparison not found");
+  }
+
+  const items = await listComparisonItemsByComparisonDb(c.env.DB, comparison.id);
+  const productIds = Array.from(new Set(items.map((i) => i.productId).filter((id): id is string => Boolean(id))));
+  const productResults = await Promise.all(
+    productIds.map((pid) => findProductById(c.env.DB, pid))
+  );
+  const productMap: Record<string, NonNullable<typeof productResults[number]>> = {};
+  for (let i = 0; i < productIds.length; i++) {
+    const pid = productIds[i];
+    const p = productResults[i];
+    if (pid && p) productMap[pid] = p;
+  }
+  const shopIds = Array.from(
+    new Set(items.map((i) => i.shopId).filter((id): id is string => Boolean(id)))
+  );
+  const shopResults = await Promise.all(
+    shopIds.map((sid) => findShopById(c.env.DB, sid))
+  );
+  const shopMap: Record<string, NonNullable<typeof shopResults[number]>> = {};
+  for (let i = 0; i < shopIds.length; i++) {
+    const sid = shopIds[i];
+    const s = shopResults[i];
+    if (sid && s) shopMap[sid] = s;
+  }
+  const aiReport = await findAiReportByComparison(c.env.DB, comparison.id);
+  let aiReportParsed: unknown = null;
+  if (aiReport?.reportJson) {
+    try { aiReportParsed = JSON.parse(aiReport.reportJson); } catch { /* ignore */ }
+  }
+
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    session: {
+      researchSessionId: session.id,
+      mode: session.mode,
+      keyword: session.keyword,
+      shippedFrom: session.shippedFrom,
+      status: session.status,
+      createdAt: session.createdAt,
+      bestProductId: session.bestProductId,
+    },
+    comparison: {
+      id: comparison.id,
+      title: comparison.title,
+      bestProductId: comparison.bestProductId,
+      items,
+    },
+    products: productMap,
+    shops: shopMap,
+    aiReport: aiReportParsed,
+  };
+
+  if (format === "json") {
+    return new Response(JSON.stringify(exportData, null, 2), {
+      status: 200,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "content-disposition": `attachment; filename="research-${sessionId}.json"`,
+      },
+    });
+  }
+
+  // CSV: one row per comparison item with product + shop fields
+  const rows: string[] = [];
+  rows.push(
+    [
+      "rank", "productId", "productTitle", "brand", "category", "shopId", "shopName", "shopStatus",
+      "shippedFrom", "priceMin", "priceMax", "rating", "reviewCount", "soldCount",
+      "weightGrams", "finalScore", "ratingScore", "reviewCountScore", "soldCountScore",
+      "priceScore", "shopTrustScore", "responseRateScore", "featureMatchScore", "riskPenalty",
+    ].join(",")
+  );
+  for (const item of items) {
+    const product = productMap[item.productId];
+    const shop = item.shopId ? shopMap[item.shopId] : null;
+    rows.push(
+      [
+        item.rank,
+        item.productId,
+        product?.title ?? "",
+        product?.brand ?? "",
+        product?.category ?? "",
+        item.shopId ?? "",
+        shop?.name ?? "",
+        shop?.primaryStatus ?? "",
+        product?.shippedFrom ?? "",
+        product?.priceMin ?? "",
+        product?.priceMax ?? "",
+        product?.rating ?? "",
+        product?.reviewCount ?? "",
+        product?.soldCount ?? "",
+        (product as { weight?: { value?: number | null } } | undefined)?.weight?.value ?? "",
+        item.finalScore,
+        item.ratingScore,
+        item.reviewCountScore,
+        item.soldCountScore,
+        item.priceScore,
+        item.shopTrustScore,
+        item.responseRateScore,
+        item.featureMatchScore,
+        item.riskPenalty,
+      ]
+        .map(escapeCsvField)
+        .join(",")
+    );
+  }
+  return new Response(rows.join("\n"), {
+    status: 200,
+    headers: {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="research-${sessionId}.csv"`,
+    },
+  });
+});
+
 researchRouter.get("/products/:id", async (c) => {
   const auth = await authenticate(c.env.DB, c.req.header("cookie"));
   if (!auth.authenticated) {

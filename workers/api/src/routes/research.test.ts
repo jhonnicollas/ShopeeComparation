@@ -698,3 +698,42 @@ describe("GET /api/research/shops/:id", () => {
     expect(body.name).toBe("Test Shop");
   });
 });
+
+describe("GET /api/research/comparisons/by-session/:sessionId/export", () => {
+  let db: MockD1Database;
+  let queue: MockQueue;
+
+  beforeEach(() => {
+    db = new MockD1Database();
+    queue = new MockQueue();
+  });
+
+  it("returns 401 when no session", async () => {
+    const res = await researchRouter.request(
+      "/comparisons/by-session/cmp_1/export?format=json",
+      { method: "GET" },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 400 for invalid format", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/comparisons/by-session/cmp_x/export?format=xml",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 404 for non-existent session", async () => {
+    const token = await createUserSession(db);
+    const res = await researchRouter.request(
+      "/comparisons/by-session/cmp_does_not_exist/export?format=json",
+      { method: "GET", headers: { cookie: `session_token=${token}` } },
+      createEnv(db, queue)
+    );
+    expect(res.status).toBe(404);
+  });
+});

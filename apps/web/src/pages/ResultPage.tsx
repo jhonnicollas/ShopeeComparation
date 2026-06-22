@@ -263,6 +263,24 @@ export function ResultPage() {
             </span>
             <span className="bestScore">Skor: {formatScore(bestItem.finalScore)}</span>
           </div>
+          <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+            <a
+              href={`/api/research/comparisons/by-session/${sessionId}/export?format=json`}
+              className="secondaryButton"
+              data-testid="export-json"
+              download
+            >
+              Export JSON
+            </a>
+            <a
+              href={`/api/research/comparisons/by-session/${sessionId}/export?format=csv`}
+              className="secondaryButton"
+              data-testid="export-csv"
+              download
+            >
+              Export CSV
+            </a>
+          </div>
         </div>
       )}
 

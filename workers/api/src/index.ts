@@ -4,6 +4,7 @@ import { authRouter } from "./routes/auth.js";
 import { configRouter } from "./routes/config.js";
 import { researchRouter } from "./routes/research.js";
 import { shopeeRouter } from "./routes/shopee.js";
+import { adminRouter } from "./routes/admin.js";
 import { rateLimitMiddleware } from "./middleware/rateLimit.js";
 import { internalErrorResponse } from "./lib/errors.js";
 
@@ -68,5 +69,6 @@ app.route("/api/auth", authRouter);
 app.route("/api/config", configRouter);
 app.route("/api/research", researchRouter);
 app.route("/api/shopee", shopeeRouter);
+app.route("/api/admin", adminRouter);
 
 export default app;

@@ -215,11 +215,28 @@ export function ResultPage() {
             <small>Data tidak diarang. Sesuai PRD §8.6, field kosong disimpan null dengan confidence 0.</small>
           </div>
         )}
-        {session.status === "partialSuccess" && (
-          <div className="partialSuccessBanner">
-            Beberapa item gagal di-enrich. Menampilkan hasil sebagian.
+      {session.status === "partialSuccess" && (
+        <div className="partialSuccessBanner">
+          Beberapa item gagal di-enrich. Menampilkan hasil sebagian.
+        </div>
+      )}
+      {items.length > 0 && items[0] && (() => {
+        const firstProduct = products[items[0].productId];
+        const firstShop = items[0].shopId ? shops[items[0].shopId] : null;
+        const isDemo = Boolean(
+          (firstProduct?.shopeeItemId ?? "").startsWith("demo-") ||
+          (firstProduct?.shopeeShopId ?? "").startsWith("demo-") ||
+          (firstShop?.shopeeShopId ?? "").startsWith("demo-")
+        );
+        if (!isDemo) return null;
+        return (
+          <div className="demoModeBanner" role="status" data-testid="demo-mode-banner">
+            <strong>⚠️ DEMO MODE</strong>
+            <br />
+            Data ini adalah dataset demo terkurasi, BUKAN data Shopee real. Diaktifkan oleh admin melalui <code>app.demoMode</code> di <code>sh_appConfigs</code>. Disable dengan set <code>app.demoMode=false</code>. Confidence semua field = 0.3.
           </div>
-        )}
+        );
+      })()}
         <p className="lede">
           {isKeywordSearch && (
             <>

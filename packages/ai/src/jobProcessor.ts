@@ -20,6 +20,7 @@ import {
   BrowserRunAdapter,
   NineRouterFetchAdapter,
   CloudflareBrowserRenderingAdapter,
+  DemoShopeeAdapter,
   type ShopeeExtractorLike,
 } from "@shopee-research/shopee";
 import { calculateProductScore, detectRisks, rankProducts } from "@shopee-research/core";
@@ -235,18 +236,32 @@ async function extractSearchCandidates(
   keyword: string,
   shippedFrom: string,
   limit: number,
-  extractor: ShopeeExtractorLike
-): Promise<ExtractedItem[]> {
-  const candidates = await extractor.searchProducts({
+  extractor: ShopeeExtractorLike,
+  demoAdapter: DemoShopeeAdapter
+): Promise<{ items: ExtractedItem[]; usedDemo: boolean }> {
+  let candidates = await extractor.searchProducts({
     keyword,
     shippedFrom,
     limit: limit * 3,
   });
+  let usedDemo = false;
+  if (candidates.length === 0) {
+    const demoCandidates = await demoAdapter.searchProducts({
+      keyword,
+      shippedFrom,
+      limit: limit * 3,
+    });
+    if (demoCandidates.length > 0) {
+      candidates = demoCandidates;
+      usedDemo = true;
+    }
+  }
   const items: ExtractedItem[] = [];
   for (const cand of candidates) {
     if (!cand.itemId || !cand.shopId) continue;
     try {
-      const productResult = await extractor.extractProduct({
+      const activeExtractor = usedDemo ? demoAdapter : extractor;
+      const productResult = await activeExtractor.extractProduct({
         shopId: cand.shopId,
         itemId: cand.itemId,
         canonicalUrl: cand.canonicalUrl ?? cand.originalUrl ?? undefined,
@@ -291,7 +306,37 @@ async function extractSearchCandidates(
       // skip candidate on failure
     }
   }
-  return items;
+  // For each unique shop, fetch the shop snapshot using the active extractor.
+  // This is required so scoring has shop data (name, status, rating, etc.)
+  const uniqueShopIds = Array.from(new Set(items.map((i) => i.shopeeShopId).filter((id): id is string => Boolean(id))));
+  for (const shopId of uniqueShopIds) {
+    const item = items.find((i) => i.shopeeShopId === shopId);
+    if (!item) continue;
+    try {
+      const activeShopExtractor = usedDemo ? demoAdapter : extractor;
+      const shopResult = await activeShopExtractor.extractShop({ shopId } as ExtractShopInput);
+      item.shop = {
+        shopeeShopId: shopResult.shopeeShopId,
+        name: shopResult.name,
+        shopUrl: shopResult.shopUrl,
+        statusLabels: shopResult.statusLabels,
+        primaryStatus: shopResult.primaryStatus,
+        rating: shopResult.rating,
+        ratingCount: shopResult.ratingCount,
+        responseRate: shopResult.responseRate,
+        responseTime: shopResult.responseTime,
+        followerCount: shopResult.followerCount,
+        productCount: shopResult.productCount,
+        joinedAgeText: shopResult.joinedAgeText,
+        location: shopResult.location,
+        confidenceScore: shopResult.confidenceScore,
+      };
+    } catch {
+      // keep shop null; persistExtractedItem will upsert with empty fields
+    }
+  }
+
+  return { items, usedDemo };
 }
 
 async function persistExtractedItem(
@@ -536,6 +581,15 @@ export async function processJobSync(
     });
   }
 
+  // Demo data fallback: if app.demoMode=true and real extraction returns 0
+  // candidates, surface a clearly-labeled demo adapter so the workflow can be
+  // demoed end-to-end. Demo data is NEVER mixed with real data.
+  const demoAdapter = new DemoShopeeAdapter({ db: env.DB });
+  const demoEnabled = await demoAdapter.isEnabled();
+  if (demoEnabled) {
+    await log("info", "Demo mode is ENABLED — fallback to demo adapter when real returns 0");
+  }
+
   await updateJobStatus(env.DB, jobId, jobStatus.processing, {
     currentStep: "extracting",
     progressCurrent: 0,
@@ -589,7 +643,10 @@ export async function processJobSync(
     const limit = message.limit ?? 10;
     await log("info", `Mencari produk untuk keyword "${keyword}" (limit ${limit}, shippedFrom ${shippedFrom})`);
     try {
-      const candidates = await extractSearchCandidates(env, keyword, shippedFrom, limit, extractor);
+      const { items: candidates, usedDemo } = await extractSearchCandidates(env, keyword, shippedFrom, limit, extractor, demoAdapter);
+      if (usedDemo) {
+        await log("warn", "Real Shopee extraction returned 0 candidates — falling back to DEMO adapter (admin opt-in via app.demoMode=true)");
+      }
       items.push(...candidates);
       failed = Math.max(0, limit - candidates.length);
     } catch (err) {

@@ -11,6 +11,7 @@ export * from "./resolver/browserRunAdapter.js";
 export * from "./adapters/nineRouterFetchAdapter.js";
 export * from "./adapters/browserRunAdapter.js";
 export * from "./adapters/cloudflareBrowserRenderingAdapter.js";
+export * from "./adapters/demoShopeeAdapter.js";
 export * from "./adapters/searchProviderAdapter.js";
 export * from "./parser/productParser.js";
 export * from "./parser/shopParser.js";
